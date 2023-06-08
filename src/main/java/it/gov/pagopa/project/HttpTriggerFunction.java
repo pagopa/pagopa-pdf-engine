@@ -4,16 +4,14 @@ import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.project.exception.CompileTemplateException;
-import it.gov.pagopa.project.exception.FillTemplateException;
-import it.gov.pagopa.project.exception.GeneratePDFException;
+import it.gov.pagopa.project.exception.PDFEngineException;
 import it.gov.pagopa.project.model.AppErrorCodeEnum;
 import it.gov.pagopa.project.model.ErrorMessage;
 import it.gov.pagopa.project.model.ErrorResponse;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
-import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
 
+import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -30,6 +28,13 @@ public class HttpTriggerFunction {
 
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
+
+    private final GeneratePDFService generatePDFService;
+
+    @Inject
+    public HttpTriggerFunction(GeneratePDFService generatePDFService) {
+        this.generatePDFService = generatePDFService;
+    }
 
     /**
      * This function will be invoked when a Http Trigger occurs.
@@ -52,27 +57,44 @@ public class HttpTriggerFunction {
         GeneratePDFInput generatePDFInput = request.getBody();
 
         if (generatePDFInput == null) {
-            return request.createResponseBuilder(BAD_REQUEST).body(buildResponseBody(BAD_REQUEST, PDFE_899, INVALID_REQUEST_MESSAGE)).build();
+            logger.severe("Invalid request the payload is null");
+            return request
+                    .createResponseBuilder(BAD_REQUEST)
+                    .body(buildResponseBody(BAD_REQUEST, PDFE_899, INVALID_REQUEST_MESSAGE))
+                    .build();
         }
 
         if (generatePDFInput.getTemplate() == null || generatePDFInput.getTemplate().isBlank()) {
-            return request.createResponseBuilder(BAD_REQUEST).body(buildResponseBody(BAD_REQUEST, PDFE_897, INVALID_REQUEST_MESSAGE)).build();
+            String errMsg = String.format("Invalid request the provided HTML template is empty or null: %s", generatePDFInput.getTemplate());
+            logger.severe(errMsg);
+            return request
+                    .createResponseBuilder(BAD_REQUEST)
+                    .body(buildResponseBody(BAD_REQUEST, PDFE_897, INVALID_REQUEST_MESSAGE))
+                    .build();
         }
 
         if (generatePDFInput.getData() == null) {
-            return request.createResponseBuilder(BAD_REQUEST).body(buildResponseBody(BAD_REQUEST, PDFE_898, INVALID_REQUEST_MESSAGE)).build();
+            logger.severe("Invalid request the PDF document input data are null");
+            return request
+                    .createResponseBuilder(BAD_REQUEST)
+                    .body(buildResponseBody(BAD_REQUEST, PDFE_898, INVALID_REQUEST_MESSAGE))
+                    .build();
         }
 
-        GeneratePDFService service = new GeneratePDFServiceImpl();
         ByteArrayOutputStream outputStream;
         try {
-            outputStream = service.generatePDF(generatePDFInput);
-        } catch (CompileTemplateException e) {
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(buildResponseBody(INTERNAL_SERVER_ERROR, e.getErrorCode(), ERROR_GENERATING_PDF_MESSAGE)).build();
-        } catch (FillTemplateException e) {
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(buildResponseBody(INTERNAL_SERVER_ERROR, e.getErrorCode(), ERROR_GENERATING_PDF_MESSAGE)).build();
-        } catch (GeneratePDFException e) {
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(buildResponseBody(INTERNAL_SERVER_ERROR, e.getErrorCode(), ERROR_GENERATING_PDF_MESSAGE)).build();
+            outputStream = generatePDFService.generatePDF(generatePDFInput);
+        } catch (PDFEngineException e) {
+            String errMsg = String.format("Error generating the PDF document: %s", e);
+            logger.severe(errMsg);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(
+                            buildResponseBody(
+                                    INTERNAL_SERVER_ERROR,
+                                    e.getErrorCode(),
+                                    ERROR_GENERATING_PDF_MESSAGE))
+                    .build();
         }
 
         return request

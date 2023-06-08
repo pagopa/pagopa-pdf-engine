@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Model class for PDF Engine input
+ */
 @Data
 public class GeneratePDFInput {
 

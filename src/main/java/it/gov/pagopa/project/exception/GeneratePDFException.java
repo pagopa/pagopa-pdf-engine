@@ -7,10 +7,7 @@ import java.util.Objects;
 /**
  * Thrown in case of problems when generating the PDFA/2a document
  */
-public class GeneratePDFException extends Exception {
-
-    /** Error code of this exception */
-    private final AppErrorCodeEnum errorCode;
+public class GeneratePDFException extends PDFEngineException {
 
     /**
      * Constructs new exception with provided error code and message
@@ -19,8 +16,7 @@ public class GeneratePDFException extends Exception {
      * @param message Detail message
      */
     public GeneratePDFException(AppErrorCodeEnum errorCode, String message) {
-        super(message);
-        this.errorCode = Objects.requireNonNull(errorCode);
+        super(errorCode, message);
     }
 
     /**
@@ -31,16 +27,7 @@ public class GeneratePDFException extends Exception {
      * @param cause Exception causing the constructed one
      */
     public GeneratePDFException(AppErrorCodeEnum errorCode, String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = Objects.requireNonNull(errorCode);
+        super(errorCode, message, cause);
     }
 
-    /**
-     * Returns error code
-     *
-     * @return Error code of this exception
-     */
-    public AppErrorCodeEnum getErrorCode() {
-        return errorCode;
-    }
 }

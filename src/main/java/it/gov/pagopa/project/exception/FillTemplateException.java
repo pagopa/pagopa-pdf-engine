@@ -7,10 +7,7 @@ import java.util.Objects;
 /**
  * Thrown in case of problems when filling the HTML template
  */
-public class FillTemplateException extends Exception {
-
-    /** Error code of this exception */
-    private final AppErrorCodeEnum errorCode;
+public class FillTemplateException extends PDFEngineException {
 
     /**
      * Constructs new exception with provided error code and message
@@ -19,8 +16,7 @@ public class FillTemplateException extends Exception {
      * @param message Detail message
      */
     public FillTemplateException(AppErrorCodeEnum errorCode, String message) {
-        super(message);
-        this.errorCode = Objects.requireNonNull(errorCode);
+        super(errorCode, message);
     }
 
     /**
@@ -31,17 +27,7 @@ public class FillTemplateException extends Exception {
      * @param cause Exception causing the constructed one
      */
     public FillTemplateException(AppErrorCodeEnum errorCode, String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = Objects.requireNonNull(errorCode);
-    }
-
-    /**
-     * Returns error code
-     *
-     * @return Error code of this exception
-     */
-    public AppErrorCodeEnum getErrorCode() {
-        return errorCode;
+        super(errorCode, message, cause);
     }
 
 }
