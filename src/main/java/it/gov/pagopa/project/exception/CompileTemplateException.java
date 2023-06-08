@@ -2,8 +2,6 @@ package it.gov.pagopa.project.exception;
 
 import it.gov.pagopa.project.model.AppErrorCodeEnum;
 
-import java.util.Objects;
-
 /**
  * Thrown in case of problems when compiling the HTML template
  */
