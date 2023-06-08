@@ -2,8 +2,6 @@ package it.gov.pagopa.project.exception;
 
 import it.gov.pagopa.project.model.AppErrorCodeEnum;
 
-import java.util.Objects;
-
 /**
  * Thrown in case of problems when generating the PDFA/2a document
  */

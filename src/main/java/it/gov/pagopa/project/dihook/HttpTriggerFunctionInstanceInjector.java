@@ -8,7 +8,7 @@ import it.gov.pagopa.project.component.DaggerHttpTriggerFunctionComponent;
  */
 public class HttpTriggerFunctionInstanceInjector implements FunctionInstanceInjector {
     @Override
-    public <T> T getInstance(Class<T> aClass) throws Exception {
+    public <T> T getInstance(Class<T> aClass) {
         return (T) DaggerHttpTriggerFunctionComponent.create().buildFunction();
     }
 }
