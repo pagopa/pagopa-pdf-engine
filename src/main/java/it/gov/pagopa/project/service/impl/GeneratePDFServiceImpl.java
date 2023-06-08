@@ -2,7 +2,6 @@ package it.gov.pagopa.project.service.impl;
 
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
-import com.github.jknack.handlebars.helper.ConditionalHelpers;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.PdfAConformanceLevel;
@@ -26,8 +25,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     private final Handlebars handlebars;
 
-    public GeneratePDFServiceImpl() {
-        handlebars = buildHandlebars();
+    public GeneratePDFServiceImpl(Handlebars handlebars) {
+        this.handlebars = handlebars;
     }
 
     @Override
@@ -68,18 +67,14 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         }
     }
 
-    private Handlebars buildHandlebars() {
-        return new Handlebars()
-                .registerHelper("eq", ConditionalHelpers.eq)
-                .registerHelper("not", ConditionalHelpers.not);
-    }
-
     private PdfADocument getPdfADocument(PdfWriter pdfWriter) {
         return new PdfADocument(
                 pdfWriter,
                 PdfAConformanceLevel.PDF_A_2A,
                 new PdfOutputIntent(
-                        "Custom", "", "https://www.color.org",
+                        "Custom",
+                        "",
+                        "https://www.color.org",
                         "sRGB IEC61966-2.1",
                         this.getClass().getResourceAsStream("/sRGB_CS_profile.icm")
                 ));
