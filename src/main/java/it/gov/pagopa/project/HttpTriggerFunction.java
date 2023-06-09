@@ -1,5 +1,8 @@
 package it.gov.pagopa.project;
 
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.helper.ConditionalHelpers;
+import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
@@ -10,8 +13,8 @@ import it.gov.pagopa.project.model.ErrorMessage;
 import it.gov.pagopa.project.model.ErrorResponse;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
+import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
 
-import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -31,9 +34,13 @@ public class HttpTriggerFunction {
 
     private final GeneratePDFService generatePDFService;
 
-    @Inject
+    @VisibleForTesting
     public HttpTriggerFunction(GeneratePDFService generatePDFService) {
         this.generatePDFService = generatePDFService;
+    }
+
+    public HttpTriggerFunction() {
+        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
     }
 
     /**
@@ -116,5 +123,11 @@ public class HttpTriggerFunction {
                                 .build()
                 )
         );
+    }
+
+    private Handlebars buildHandlebars() {
+        return new Handlebars()
+                .registerHelper("eq", ConditionalHelpers.eq)
+                .registerHelper("not", ConditionalHelpers.not);
     }
 }
