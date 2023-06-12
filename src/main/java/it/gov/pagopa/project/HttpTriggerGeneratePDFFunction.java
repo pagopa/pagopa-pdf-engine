@@ -1,7 +1,10 @@
 package it.gov.pagopa.project;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
+import com.github.jknack.handlebars.io.FileTemplateLoader;
+import com.github.jknack.handlebars.io.TemplateLoader;
 import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
@@ -13,57 +16,66 @@ import it.gov.pagopa.project.model.ErrorMessage;
 import it.gov.pagopa.project.model.ErrorResponse;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
+import it.gov.pagopa.project.service.ParseRequestBodyService;
 import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
+import it.gov.pagopa.project.service.impl.ParseRequestBodyServiceImpl;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
-import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
+import static it.gov.pagopa.project.model.AppErrorCodeEnum.PDFE_898;
+import static it.gov.pagopa.project.model.AppErrorCodeEnum.PDFE_899;
 
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class HttpTriggerFunction {
+public class HttpTriggerGeneratePDFFunction {
 
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
 
-    private final GeneratePDFService generatePDFService;
+    private final String writeFileBasePath = System.getenv("WRITE_FILE_BASE_PATH");
+    private final String unzippedFilesFolder = System.getenv("UNZIPPED_FILES_FOLDER");
 
-    @VisibleForTesting
-    public HttpTriggerFunction(GeneratePDFService generatePDFService) {
-        this.generatePDFService = generatePDFService;
+    private final GeneratePDFService generatePDFService;
+    private final ParseRequestBodyService parseRequestBodyService;
+
+    public HttpTriggerGeneratePDFFunction() {
+        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
+        this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
 
-    public HttpTriggerFunction() {
-        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
+    @VisibleForTesting
+    public HttpTriggerGeneratePDFFunction(GeneratePDFService generatePDFService, ParseRequestBodyService parseRequestBodyService) {
+        this.generatePDFService = generatePDFService;
+        this.parseRequestBodyService = parseRequestBodyService;
     }
 
     /**
      * This function will be invoked when a Http Trigger occurs.
-     * This function listens at endpoint "/api/PDFEngine". To invoke it using "curl" command in bash:
-     *  curl -d "HTTP Body" {your host}/api/PDFEngine
+     * This function listens at endpoint "/api/generate-pdf". To invoke it using "curl" command in bash:
+     *  curl -d "HTTP Body" {your host}/api/generate-pdf
      */
-    @FunctionName("PDFEngine")
+    @FunctionName("generate-pdf")
     public HttpResponseMessage run(
             @HttpTrigger(
-                name = "req",
-                methods = {HttpMethod.POST},
-                authLevel = AuthorizationLevel.ANONYMOUS)
-                HttpRequestMessage<GeneratePDFInput> request,
+                    name = "req",
+                    methods = {HttpMethod.POST},
+                    authLevel = AuthorizationLevel.ANONYMOUS)
+                    HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
         Logger logger = context.getLogger();
 
-        String message = String.format("PDFEngine function called at %s", LocalDateTime.now());
+        String message = String.format("Generate PDF function called at %s", LocalDateTime.now());
         logger.info(message);
 
-        GeneratePDFInput generatePDFInput = request.getBody();
-
-        if (generatePDFInput == null) {
+        if (request.getBody().isEmpty()) {
             logger.severe("Invalid request the payload is null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -71,12 +83,14 @@ public class HttpTriggerFunction {
                     .build();
         }
 
-        if (generatePDFInput.getTemplate() == null || generatePDFInput.getTemplate().isBlank()) {
-            String errMsg = String.format("Invalid request the provided HTML template is empty or null: %s", generatePDFInput.getTemplate());
-            logger.severe(errMsg);
+        GeneratePDFInput generatePDFInput;
+        try {
+            generatePDFInput = this.parseRequestBodyService.retrieveInputData(request);
+        } catch (PDFEngineException e) {
+            logger.log(Level.SEVERE, "Error retrieving input data from request body", e);
             return request
                     .createResponseBuilder(BAD_REQUEST)
-                    .body(buildResponseBody(BAD_REQUEST, PDFE_897, INVALID_REQUEST_MESSAGE))
+                    .body(buildResponseBody(BAD_REQUEST, e.getErrorCode(), INVALID_REQUEST_MESSAGE))
                     .build();
         }
 
@@ -92,8 +106,7 @@ public class HttpTriggerFunction {
         try {
             outputStream = generatePDFService.generatePDF(generatePDFInput);
         } catch (PDFEngineException e) {
-            String errMsg = String.format("Error generating the PDF document: %s", e);
-            logger.severe(errMsg);
+            logger.log(Level.SEVERE, "Error generating the PDF document", e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(
@@ -126,8 +139,10 @@ public class HttpTriggerFunction {
     }
 
     private Handlebars buildHandlebars() {
-        return new Handlebars()
+        TemplateLoader loader = new FileTemplateLoader(writeFileBasePath + unzippedFilesFolder, ".html");
+        return new Handlebars(loader)
                 .registerHelper("eq", ConditionalHelpers.eq)
                 .registerHelper("not", ConditionalHelpers.not);
     }
+
 }
