@@ -16,7 +16,7 @@ public interface GeneratePDFService {
     /**
      * Generate a PDF document using the provided HTML template and data
      *
-     * @param generatePDFInput the input containing the HTML template and data
+     * @param generatePDFInput the input containing the document data
      * @return a {@link ByteArrayOutputStream} containing the PDFA/2a document
      * @throws CompileTemplateException thrown for error when compiling the template
      * @throws FillTemplateException thrown for error when filling the template with the provided data

@@ -18,10 +18,15 @@ import it.gov.pagopa.project.service.GeneratePDFService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
+
+    private final String writeFileBasePath = System.getenv("WRITE_FILE_BASE_PATH");
+    private final String unzippedFilesFolder = System.getenv("UNZIPPED_FILES_FOLDER");
+    private final String htmlTemplateFileName = System.getenv("HTML_TEMPLATE_FILE_NAME");
 
     private final Handlebars handlebars;
 
@@ -31,8 +36,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     @Override
     public ByteArrayOutputStream generatePDF(GeneratePDFInput generatePDFInput) throws CompileTemplateException, FillTemplateException, GeneratePDFException {
-        Template template = getTemplate(generatePDFInput, handlebars);
-        String filledTemplate = fillTemplate(generatePDFInput, template);
+        Template template = getTemplate();
+        String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
 
         try (
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -40,9 +45,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 PdfADocument pdf = getPdfADocument(pdfWriter)
         ) {
             pdf.setTagged();
-            FontProvider fontProvider = new FontProvider();
-            fontProvider.addSystemFonts();
-            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, new ConverterProperties().setFontProvider(fontProvider));
+            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties());
             document.close();
             return os;
         } catch (IOException e) {
@@ -50,17 +53,17 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         }
     }
 
-    private String fillTemplate(GeneratePDFInput generatePDFInput, Template template) throws FillTemplateException {
+    private String fillTemplate(Map<String, Object> inputData, Template template) throws FillTemplateException {
         try {
-            return template.apply(generatePDFInput.getData());
+            return template.apply(inputData);
         } catch (IOException e) {
             throw new FillTemplateException(PDFE_900, "Error filling the template with the provided data", e);
         }
     }
 
-    private Template getTemplate(GeneratePDFInput generatePDFInput, Handlebars handlebars) throws CompileTemplateException {
+    private Template getTemplate() throws CompileTemplateException {
         try {
-            return handlebars.compileInline(generatePDFInput.getTemplate());
+            return this.handlebars.compile(htmlTemplateFileName);
         } catch (IOException e) {
             throw new CompileTemplateException(PDFE_901, "Error compiling the provided template", e);
 
@@ -78,5 +81,13 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                         "sRGB IEC61966-2.1",
                         this.getClass().getResourceAsStream("/sRGB_CS_profile.icm")
                 ));
+    }
+
+    private ConverterProperties buildConverterProperties() {
+        FontProvider fontProvider = new FontProvider();
+        fontProvider.addSystemFonts();
+        return new ConverterProperties()
+                .setBaseUri(writeFileBasePath + unzippedFilesFolder)
+                .setFontProvider(fontProvider);
     }
 }
