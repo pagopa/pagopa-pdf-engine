@@ -39,13 +39,15 @@ class GeneratePDFServiceImplTest {
     @SneakyThrows
     void generatePDFWithSuccess() {
         GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setTemplate(
-                IOUtils.toString(
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
-                        StandardCharsets.UTF_8)
-        );
         pdfInput.setData(Collections.singletonMap("a", "b"));
         pdfInput.setApplySignature(false);
+
+        Template template = handlebarsMock.compileInline(
+                IOUtils.toString(
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
+                        StandardCharsets.UTF_8));
+
+        doReturn(template).when(handlebarsMock).compile(anyString());
 
         ByteArrayOutputStream output = sut.generatePDF(pdfInput);
 
@@ -56,9 +58,8 @@ class GeneratePDFServiceImplTest {
     @SneakyThrows
     void generatePDFCompileTemplateException() {
         GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setTemplate("template");
 
-        doThrow(IOException.class).when(handlebarsMock).compileInline(anyString());
+        doThrow(IOException.class).when(handlebarsMock).compile(anyString());
 
         CompileTemplateException e = assertThrows(CompileTemplateException.class, () -> sut.generatePDF(pdfInput));
 
@@ -68,13 +69,12 @@ class GeneratePDFServiceImplTest {
     @Test
     @SneakyThrows
     void generatePDFFillTemplateException() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setTemplate("template");
-        pdfInput.setData(Collections.EMPTY_MAP);
-
         Template templateMock = mock(Template.class);
 
-        doReturn(templateMock).when(handlebarsMock).compileInline(anyString());
+        GeneratePDFInput pdfInput = new GeneratePDFInput();
+        pdfInput.setData(Collections.EMPTY_MAP);
+
+        doReturn(templateMock).when(handlebarsMock).compile(anyString());
         doThrow(IOException.class).when(templateMock).apply(anyMap());
 
         FillTemplateException e = assertThrows(FillTemplateException.class, () -> sut.generatePDF(pdfInput));
