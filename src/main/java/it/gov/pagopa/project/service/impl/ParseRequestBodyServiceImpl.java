@@ -3,18 +3,17 @@ package it.gov.pagopa.project.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.microsoft.azure.functions.HttpRequestMessage;
+import com.google.common.annotations.VisibleForTesting;
 import it.gov.pagopa.project.exception.RequestBodyParseException;
 import it.gov.pagopa.project.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.ParseRequestBodyService;
 import net.lingala.zip4j.ZipFile;
-import org.apache.commons.fileupload.FileUploadBase;
+import org.apache.commons.fileupload.FileUploadBase.FileUploadIOException;
 import org.apache.commons.fileupload.MultipartStream;
 
 import java.io.*;
 import java.util.Map;
-import java.util.Optional;
 
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 
@@ -34,12 +33,11 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
     }
 
     @Override
-    public GeneratePDFInput retrieveInputData(HttpRequestMessage<Optional<byte[]>> request) throws UnexpectedRequestBodyFieldException, RequestBodyParseException {
-        byte[] body = request.getBody().get();
-        String contentType = request.getHeaders().get(CONTENT_TYPE_HEADER);
+    public GeneratePDFInput retrieveInputData(byte[] requestBody, Map<String, String> requestHeaders) throws UnexpectedRequestBodyFieldException, RequestBodyParseException {
+        String contentType = requestHeaders.get(CONTENT_TYPE_HEADER);
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
 
-        MultipartStream multipartStream = getMultipartStream(body, contentType);
+        MultipartStream multipartStream = getMultipartStream(requestBody, contentType);
         boolean nextPart = isNextPart(multipartStream);
 
         while (nextPart) {
@@ -67,7 +65,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
     private boolean hasNextPart(MultipartStream multipartStream) throws RequestBodyParseException {
         try {
             return multipartStream.readBoundary();
-        } catch (FileUploadBase.FileUploadIOException e) {
+        } catch (FileUploadIOException e) {
             throw new RequestBodyParseException(PDFE_709, PDFE_709.getErrorMessage(), e);
         } catch (MultipartStream.MalformedStreamException e) {
             throw new RequestBodyParseException(PDFE_710, PDFE_710.getErrorMessage(), e);
@@ -102,7 +100,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
     private String readHeader(MultipartStream multipartStream) throws RequestBodyParseException {
         try {
             return multipartStream.readHeaders();
-        } catch (FileUploadBase.FileUploadIOException e) {
+        } catch (FileUploadIOException e) {
             throw new RequestBodyParseException(PDFE_701, PDFE_701.getErrorMessage(), e);
         } catch (MultipartStream.MalformedStreamException e) {
             throw new RequestBodyParseException(PDFE_702, PDFE_701.getErrorMessage(), e);
@@ -118,7 +116,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
     }
 
     private void unzipTemplateFolderAndWriteToFileSystem(MultipartStream multipartStream) throws RequestBodyParseException {
-        try (FileOutputStream fos = new FileOutputStream(writeFileBasePath + zipFileName);) {
+        try (FileOutputStream fos = new FileOutputStream(writeFileBasePath + zipFileName)) {
             multipartStream.readBodyData(fos);
         } catch (FileNotFoundException e) {
             throw new RequestBodyParseException(PDFE_703, PDFE_703.getErrorMessage(), e);
@@ -133,7 +131,8 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
     }
 
-    private MultipartStream getMultipartStream(byte[] body, String contentType) {
+    @VisibleForTesting
+    public MultipartStream getMultipartStream(byte[] body, String contentType) {
         InputStream inputStream = new ByteArrayInputStream(body);
         // Get boundary from content-type header
         String boundary = contentType.split(";")[1].split("=")[1];
