@@ -34,6 +34,8 @@ public enum AppErrorCodeEnum {
     PDFE_708("PDFE_708", "I/O error when reading apply signature boolean from request and writing it to the output stream"),
     PDFE_709("PDFE_709", "Error when switching to the next multipart stream token, byte exceeded the size limits"),
     PDFE_710("PDFE_710", "Error when switching to the next multipart stream token, stream end unexpectedly"),
+    PDFE_711("PDFE_711", "Content-type header is null"),
+    PDFE_712("PDFE_712", "Content-type header is not multipart/form-data"),
 
     PDFE_896("PDFE_896", "Unexpected field in request body"),
     PDFE_897("PDFE_897", "Invalid HTML template"),

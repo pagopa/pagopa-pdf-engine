@@ -41,8 +41,8 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
-import static it.gov.pagopa.project.model.AppErrorCodeEnum.PDFE_700;
-import static it.gov.pagopa.project.model.AppErrorCodeEnum.PDFE_898;
+import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
+import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -113,7 +113,7 @@ class HttpTriggerFunctionTest {
 
     @Test
     @SneakyThrows
-    void runFailOnParseRequestBody() {
+    void runFailOnParseRequestBodyWith400() {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
@@ -132,6 +132,29 @@ class HttpTriggerFunctionTest {
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
         assertEquals(PDFE_700, ((ErrorResponse) body).getAppErrorCode());
+    }
+
+    @Test
+    @SneakyThrows
+    void runFailOnParseRequestBodyWith500() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        doThrow(new RequestBodyParseException(PDFE_704, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        createHttpMessageBuilderSub(request);
+
+        // Invoke
+        final HttpResponseMessage response = function.run(request, executionContextMock);
+
+        // Verify
+        assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
+        Object body = response.getBody();
+        assertNotNull(body);
+        assertTrue(body instanceof ErrorResponse);
+        assertEquals(PDFE_704, ((ErrorResponse) body).getAppErrorCode());
     }
 
     @Test
