@@ -63,6 +63,10 @@ microservice-chart:
   envConfig:
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
+    UNZIPPED_FILES_FOLDER: "/unzipped"
+    WRITE_FILE_BASE_PATH: "C:/tmp"
+    ZIP_FILE_NAME: "/input.zip"
+    HTML_TEMPLATE_FILE_NAME: "template"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
   keyvault:
