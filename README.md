@@ -42,6 +42,10 @@ See the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubuserc
 
 ## Start Project Locally 🚀
 
+> **Warning**
+> If you are running the project from macOS you must change the WRITE_FILE_BASE_PATH environment variable with an absolute
+> path, such as `/Users/<username>/tmp` (the `tmp` folder must exist)
+
 ### Run locally with Docker
 
 #### Prerequisites
@@ -118,10 +122,12 @@ curl --location 'http://localhost:54078/generate-pdf' \
 	}"' \
 --form 'applySignature="false"'
 ``` 
-As you can see in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template file and other optional attachments, such as CSS files.
+As you can see in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template
+file and other optional attachments, such as CSS files, that will be used to generate the PDF document.
 
 > **Warning**
-> The HTML template file must be named as follows: `template.html`
+> The HTML template file must be named to match the value of the `HTML_TEMPLATE_FILE_NAME` environment variable 
+> (default is `template`) (example of HTML template file name: `template.html`)
 
 ---
 
