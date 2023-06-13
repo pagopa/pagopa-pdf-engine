@@ -44,8 +44,7 @@ import java.util.logging.Logger;
 
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
-import static it.gov.pagopa.project.model.AppErrorCodeEnum.PDFE_898;
-import static it.gov.pagopa.project.model.AppErrorCodeEnum.PDFE_899;
+import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 
 /**
  * Azure Functions with HTTP Trigger.
@@ -105,9 +104,10 @@ public class HttpTriggerGeneratePDFFunction {
             generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders());
         } catch (PDFEngineException e) {
             logger.log(Level.SEVERE, "Error retrieving input data from request body", e);
+            HttpStatus status = getHttpStatus(e);
             return request
-                    .createResponseBuilder(BAD_REQUEST)
-                    .body(buildResponseBody(BAD_REQUEST, e.getErrorCode(), INVALID_REQUEST_MESSAGE))
+                    .createResponseBuilder(status)
+                    .body(buildResponseBody(status, e.getErrorCode(), INVALID_REQUEST_MESSAGE))
                     .build();
         }
 
@@ -141,6 +141,16 @@ public class HttpTriggerGeneratePDFFunction {
                 .header("content-disposition", "attachment; ")
                 .body(outputStream.toByteArray())
                 .build();
+    }
+
+    private static HttpStatus getHttpStatus(PDFEngineException e) {
+        HttpStatus status;
+        if (e.getErrorCode().equals(PDFE_703) || e.getErrorCode().equals(PDFE_704) || e.getErrorCode().equals(PDFE_705)) {
+           status = INTERNAL_SERVER_ERROR;
+        } else {
+            status = BAD_REQUEST;
+        }
+        return status;
     }
 
     private ErrorResponse buildResponseBody(HttpStatus status, AppErrorCodeEnum appErrorCode, String message) {

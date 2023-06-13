@@ -38,6 +38,8 @@ import static org.mockito.Mockito.*;
 class ParseRequestBodyServiceImplTest {
 
     private static final String HEADER_TEMPLATE = "some string; fieldName=\"%s\"; other string";
+    private static final String CONTENT_TYPE_HEADER_VALUE = "multipart/form-data";
+    private static final String CONTENT_TYPE_HEADER = "content-type";
 
     private ObjectMapper objectMapperMock;
     private ParseRequestBodyServiceImpl sut;
@@ -50,6 +52,28 @@ class ParseRequestBodyServiceImplTest {
 
     @Test
     @SneakyThrows
+    void retrieveInputDataFailGetContentTypeHeaderIsNull() {
+        RequestBodyParseException e = assertThrows(
+                RequestBodyParseException.class,
+                () -> sut.retrieveInputData(new byte[2], Collections.emptyMap())
+        );
+
+        assertEquals(AppErrorCodeEnum.PDFE_711, e.getErrorCode());
+    }
+
+    @Test
+    @SneakyThrows
+    void retrieveInputDataFailGetContentTypeHeaderIsNotMultipart() {
+        RequestBodyParseException e = assertThrows(
+                RequestBodyParseException.class,
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, "application/json"))
+        );
+
+        assertEquals(AppErrorCodeEnum.PDFE_712, e.getErrorCode());
+    }
+
+    @Test
+    @SneakyThrows
     void retrieveInputDataFailSkipPreambleThrowsIOException() {
         MultipartStream multipartStreamMock = mock(MultipartStream.class);
 
@@ -58,7 +82,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_700, e.getErrorCode());
@@ -75,7 +99,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_701, e.getErrorCode());
@@ -92,7 +116,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_702, e.getErrorCode());
@@ -110,7 +134,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_703, e.getErrorCode());
@@ -128,7 +152,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_704, e.getErrorCode());
@@ -146,7 +170,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_706, e.getErrorCode());
@@ -164,7 +188,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_707, e.getErrorCode());
@@ -182,7 +206,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_708, e.getErrorCode());
@@ -199,7 +223,7 @@ class ParseRequestBodyServiceImplTest {
 
         UnexpectedRequestBodyFieldException e = assertThrows(
                 UnexpectedRequestBodyFieldException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_896, e.getErrorCode());
@@ -217,7 +241,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_709, e.getErrorCode());
@@ -235,7 +259,7 @@ class ParseRequestBodyServiceImplTest {
 
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
-                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap("content-type", "content"))
+                () -> sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE))
         );
 
         assertEquals(AppErrorCodeEnum.PDFE_710, e.getErrorCode());

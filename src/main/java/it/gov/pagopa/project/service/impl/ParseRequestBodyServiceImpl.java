@@ -147,10 +147,17 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
     }
 
     @VisibleForTesting
-    public MultipartStream getMultipartStream(byte[] body, String contentType) {
+    public MultipartStream getMultipartStream(byte[] body, String contentType) throws RequestBodyParseException {
         InputStream inputStream = new ByteArrayInputStream(body);
+        if (contentType == null) {
+            throw new RequestBodyParseException(PDFE_711, PDFE_711.getErrorMessage());
+        }
+        String[] splitContentType = contentType.split(";");
+        if (!splitContentType[0].equals("multipart/form-data")) {
+            throw new RequestBodyParseException(PDFE_712, PDFE_712.getErrorMessage());
+        }
         // Get boundary from content-type header
-        String boundary = contentType.split(";")[1].split("=")[1];
+        String boundary = splitContentType[1].split("=")[1];
         // Using MultipartStream to parse body input stream
         return new MultipartStream(inputStream, boundary.getBytes(), MULTIPART_STREAM_BUFFER_SIZE, null);
     }
