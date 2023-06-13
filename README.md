@@ -7,9 +7,9 @@ Java Azure Function that exposes REST API to generate a PDFA/2a document based o
 ---
 ## Summary 📖
 
-- [API Documentation 📖](#api-documentation)
+- [API Documentation 📖](#api-documentation-)
 - [Technology Stack](#technology-stack)
-- [Start Project Locally 🚀](#start-project-locally)
+- [Start Project Locally 🚀](#start-project-locally-)
   * [Run locally with Docker](#run-locally-with-docker)
       + [Prerequisites](#prerequisites)
       + [Run docker container](#run-docker-container)
@@ -17,13 +17,13 @@ Java Azure Function that exposes REST API to generate a PDFA/2a document based o
       + [Prerequisites](#prerequisites-1)
       + [Run the project](#run-the-project)
   * [Test](#test)
-- [Develop Locally 💻](#develop-locally)
+- [Develop Locally 💻](#develop-locally-)
   * [Prerequisites](#prerequisites-2)
-  * [Testing 🧪](#testing)
+  * [Testing 🧪](#testing-)
     + [Unit testing](#unit-testing)
     + [Integration testing](#integration-testing)
     + [Performance testing](#performance-testing)
-- [Contributors 👥](#contributors)
+- [Contributors 👥](#contributors-)
   * [Mainteiners](#mainteiners)
 
 ---
@@ -54,7 +54,7 @@ See the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubuserc
 
 ### Run locally with Maven
 
-### Prerequisites
+#### Prerequisites
 - maven
 
 #### Run the project
@@ -118,9 +118,11 @@ curl --location 'http://localhost:54078/generate-pdf' \
 	}"' \
 --form 'applySignature="false"'
 ``` 
-As you can se in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template file and other optional attachment, such as CSS files.
+As you can see in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template file and other optional attachments, such as CSS files.
+
 > **Warning**
 > The HTML template file must be named as follows: `template.html`
+
 ---
 
 ## Develop Locally 💻
