@@ -54,7 +54,7 @@ public class HttpTriggerGeneratePDFFunction {
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
 
-    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "C:/tmp");
+    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
     private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
 
     private final GeneratePDFService generatePDFService;

@@ -1,42 +1,151 @@
-# pagoPA Functions template
+# pagoPA Generate PDF function
 
-Java template to create an Azure Function.
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-pdf-engine&metric=alert_status)](https://sonarcloud.io/dashboard?id=pagopa_pagopa-pdf-engine)
 
-## Function examples
-There is an example of a Http Trigger function.
+Java Azure Function that exposes REST API to generate a PDFA/2a document based on the provided data and HTML template.
+
+---
+## Summary 📖
+
+- [API Documentation 📖](#api-documentation)
+- [Technology Stack](#technology-stack)
+- [Start Project Locally 🚀](#start-project-locally)
+  * [Run locally with Docker](#run-locally-with-docker)
+      + [Prerequisites](#prerequisites)
+      + [Run docker container](#run-docker-container)
+  * [Run locally with Maven](#run-locally-with-maven)
+      + [Prerequisites](#prerequisites-1)
+      + [Run the project](#run-the-project)
+  * [Test](#test)
+- [Develop Locally 💻](#develop-locally)
+  * [Prerequisites](#prerequisites-2)
+  * [Testing 🧪](#testing)
+    + [Unit testing](#unit-testing)
+    + [Integration testing](#integration-testing)
+    + [Performance testing](#performance-testing)
+- [Contributors 👥](#contributors)
+  * [Mainteiners](#mainteiners)
+
+---
+## API Documentation 📖
+See the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pagopa/pagopa-pdf-engine/main/openapi/openapi.json)
 
 ---
 
-## Run locally with Docker
-`docker build -t pagopa-functions-template .`
+## Technology Stack
+- Java 11
+- IText7
+- Handlebars
+- Zip4j
 
-`docker run -p 8999:80 pagopa-functions-template`
+---
 
-### Test
-`curl http://localhost:8999/example`
+## Start Project Locally 🚀
 
-## Run locally with Maven
+### Run locally with Docker
 
+#### Prerequisites
+- docker
+
+#### Run docker container
+`docker build -t pagopa-pdf-engine .`
+
+`docker run -p 7071:80 pagopa-pdf-engine`
+
+### Run locally with Maven
+
+### Prerequisites
+- maven
+
+#### Run the project
 `mvn clean package`
 
 `mvn azure-functions:run`
 
 ### Test
-`curl http://localhost:7071/example` 
+```
+curl --location 'http://localhost:54078/generate-pdf' \
+--form 'template=@"template.zip"' \
+--form 'data="{
+		\"transaction\": {
+			\"id\": \"F57E2F8E-25FF-4183-AB7B-4A5EC1A96644\",
+			\"timestamp\": \"2020-07-10 15:00:00.000\",
+			\"amount\": 300.00,
+			\"psp\": {
+				\"name\": \"Nexi\",
+				\"fee\": {
+					\"amount\": 2.00
+				}
+			},
+			\"rrn\": \"1234567890\",
+			\"paymentMethod\": {
+				\"name\": \"Visa *1234\",
+				\"logo\": \"https://...\",
+				\"accountHolder\": \"Marzia Roccaraso\",
+				\"extraFee\": false
+			},
+			\"authCode\": \"9999999999\"
+		},
+		\"user\": {
+			\"data\": {
+				\"firstName\": \"Marzia\",
+				\"lastName\": \"Roccaraso\",
+				\"taxCode\": \"RCCMRZ88A52C409A\"
+			},
+			\"email\": \"email@test.it\"
+		},
+		\"cart\": {
+			\"items\": [{
+				\"refNumber\": {
+					\"type\": \"codiceAvviso\",
+					\"value\": \"123456789012345678\"
+				},
+				\"debtor\": {
+					\"fullName\": \"Giuseppe Bianchi\",
+					\"taxCode\": \"BNCGSP70A12F205X\"
+				},
+				\"payee\": {
+					\"name\": \"Comune di Controguerra\",
+					\"taxCode\": \"82001760675\"
+				},
+				\"subject\": \"TARI 2022\",
+				\"amount\": 150.00
+			}],
+			\"amountPartial\": 300.00
+		},
+		\"noticeCode\": \"noticeCodeTest\",
+		\"amount\": 100
+	}"' \
+--form 'applySignature="false"'
+``` 
+As you can se in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template file and other optional attachment, such as CSS files.
+> **Warning**
+> The HTML template file must be named as follows: `template.html`
+---
+
+## Develop Locally 💻
+
+### Prerequisites
+- git
+- maven
+- jdk-11
+
+### Testing 🧪
+
+#### Unit testing
+
+To run the **Junit** tests:
+
+`mvn clean verify`
+
+#### Integration testing
+
+#### Performance testing
 
 ---
 
+## Contributors 👥
+Made with ❤️ by PagoPa S.p.A.
 
-## TODO
-Once cloned the repo, you should:
-- to deploy on standard Azure service:
-  - rename `deploy-pipelines-standard.yml` to `deploy-pipelines.yml`
-  - remove `helm` folder
-- to deploy on Kubernetes:
-  - rename `deploy-pipelines-aks.yml` to `deploy-pipelines.yml`
-  - customize `helm` configuration
-- configure the following GitHub action in `.github` folder: 
-  - `deploy.yml`
-  - `sonar_analysis.yml`
-
-Configure the SonarCloud project :point_right: [guide](https://pagopa.atlassian.net/wiki/spaces/DEVOPS/pages/147193860/SonarCloud+experimental).
+### Mainteiners
+See `CODEOWNERS` file

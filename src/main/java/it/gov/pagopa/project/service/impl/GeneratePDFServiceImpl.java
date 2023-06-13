@@ -39,7 +39,7 @@ import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
-    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "C:/tmp");
+    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
     private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
     private final String htmlTemplateFileName = System.getenv().getOrDefault("HTML_TEMPLATE_FILE_NAME", "template");
 

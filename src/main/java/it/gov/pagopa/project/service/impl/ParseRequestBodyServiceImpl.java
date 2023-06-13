@@ -37,7 +37,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
     private static final String CONTENT_TYPE_HEADER = "content-type";
     private static final int MULTIPART_STREAM_BUFFER_SIZE = 1024;
 
-    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "C:/tmp");
+    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
     private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
     private final String zipFileName = System.getenv().getOrDefault("ZIP_FILE_NAME", "/input.zip");
 
