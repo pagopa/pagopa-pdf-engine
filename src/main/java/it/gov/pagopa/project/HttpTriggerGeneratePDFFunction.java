@@ -75,7 +75,8 @@ public class HttpTriggerGeneratePDFFunction {
         String message = String.format("Generate PDF function called at %s", LocalDateTime.now());
         logger.info(message);
 
-        if (request.getBody().isEmpty()) {
+        Optional<byte[]> optionalRequestBody = request.getBody();
+        if (optionalRequestBody.isEmpty()) {
             logger.severe("Invalid request the payload is null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -83,9 +84,10 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
+        byte[] requestBody = optionalRequestBody.get();
         GeneratePDFInput generatePDFInput;
         try {
-            generatePDFInput = this.parseRequestBodyService.retrieveInputData(request);
+            generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders());
         } catch (PDFEngineException e) {
             logger.log(Level.SEVERE, "Error retrieving input data from request body", e);
             return request

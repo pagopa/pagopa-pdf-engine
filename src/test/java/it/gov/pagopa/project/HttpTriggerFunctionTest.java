@@ -5,7 +5,6 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.project.exception.CompileTemplateException;
-import it.gov.pagopa.project.exception.PDFEngineException;
 import it.gov.pagopa.project.exception.RequestBodyParseException;
 import it.gov.pagopa.project.model.AppErrorCodeEnum;
 import it.gov.pagopa.project.model.ErrorResponse;
@@ -43,7 +42,7 @@ class HttpTriggerFunctionTest {
     private ParseRequestBodyService parseRequestBodyServiceMock;
 
     @Mock
-    ExecutionContext context;
+    private ExecutionContext executionContextMock;
 
     @BeforeEach
     void setUp() {
@@ -54,7 +53,6 @@ class HttpTriggerFunctionTest {
     @SneakyThrows
     void runOk() {
         // Setup
-        final ExecutionContext context = mock(ExecutionContext.class);
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
@@ -62,14 +60,14 @@ class HttpTriggerFunctionTest {
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
 
-        doReturn(Logger.getGlobal()).when(context).getLogger();
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
         doReturn(new ByteArrayOutputStream()).when(generatePDFServiceMock).generatePDF(any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
-        final HttpResponseMessage response = function.run(request, context);
+        final HttpResponseMessage response = function.run(request, executionContextMock);
 
         // Verify
         assertEquals(HttpStatus.OK, response.getStatus());
@@ -80,16 +78,15 @@ class HttpTriggerFunctionTest {
     @Test
     void runFailOnInvalidInput() {
         // Setup
-        final ExecutionContext context = mock(ExecutionContext.class);
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        doReturn(Logger.getGlobal()).when(context).getLogger();
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.empty()).when(request).getBody();
         createHttpMessageBuilderSub(request);
 
         // Invoke
-        final HttpResponseMessage response = function.run(request, context);
+        final HttpResponseMessage response = function.run(request, executionContextMock);
 
         // Verify
         assertEquals(BAD_REQUEST, response.getStatus());
@@ -103,17 +100,16 @@ class HttpTriggerFunctionTest {
     @SneakyThrows
     void runFailOnParseRequestBody() {
         // Setup
-        final ExecutionContext context = mock(ExecutionContext.class);
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        doReturn(Logger.getGlobal()).when(context).getLogger();
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doThrow(new RequestBodyParseException(PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any());
+        doThrow(new RequestBodyParseException(PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
         createHttpMessageBuilderSub(request);
 
         // Invoke
-        final HttpResponseMessage response = function.run(request, context);
+        final HttpResponseMessage response = function.run(request, executionContextMock);
 
         // Verify
         assertEquals(BAD_REQUEST, response.getStatus());
@@ -127,19 +123,18 @@ class HttpTriggerFunctionTest {
     @SneakyThrows
     void runFailOnInvalidData() {
         // Setup
-        final ExecutionContext context = mock(ExecutionContext.class);
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
 
-        doReturn(Logger.getGlobal()).when(context).getLogger();
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
         createHttpMessageBuilderSub(request);
 
         // Invoke
-        final HttpResponseMessage response = function.run(request, context);
+        final HttpResponseMessage response = function.run(request, executionContextMock);
 
         // Verify
         assertEquals(BAD_REQUEST, response.getStatus());
@@ -153,7 +148,6 @@ class HttpTriggerFunctionTest {
     @SneakyThrows
     void runFailOnGeneratePDFForPDFEngineException() {
         // Setup
-        final ExecutionContext context = mock(ExecutionContext.class);
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
@@ -161,14 +155,14 @@ class HttpTriggerFunctionTest {
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
 
-        doReturn(Logger.getGlobal()).when(context).getLogger();
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
         doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock).generatePDF(any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
-        final HttpResponseMessage response = function.run(request, context);
+        final HttpResponseMessage response = function.run(request, executionContextMock);
 
         // Verify
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
