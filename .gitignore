@@ -38,3 +38,5 @@ bin/
 obj/
 
 .vscode/
+**/.terraform
+**/*.lock.hcl

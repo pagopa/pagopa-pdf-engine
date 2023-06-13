@@ -5,7 +5,7 @@ locals {
   }
 
   prefix          = "pagopa"
-  domain          = "apiconfig"
+  domain          = "shared"
   location_short  = "weu"
   product         = "${var.prefix}-${var.env_short}"
 
@@ -54,6 +54,6 @@ variable "github_repository_environment" {
   default = {
     protected_branches     = false
     custom_branch_policies = true
-    reviewers_teams        = ["pagopa-tech", "infrastrutture-admins"]
+    reviewers_teams        = ["pagopa-team-core", "infrastrutture-admins"]
   }
 }
