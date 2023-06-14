@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "0.0.1-3-PRDP-13-feat-add-function"
+    "version": "0.0.2-PRDP-13-feat-add-function"
   },
   "servers": [
     {
