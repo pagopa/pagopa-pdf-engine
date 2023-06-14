@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "0.0.3-PRDP-40-fix-build-and-deploy"
+    "version": "0.0.4-PRDP-40-fix-build-and-deploy-new"
   },
   "servers": [
     {
