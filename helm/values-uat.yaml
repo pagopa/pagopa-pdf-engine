@@ -1,9 +1,9 @@
 microservice-chart:
-  namespace: "<namespace>" # TODO
+  namespace: "shared"
   nameOverride: ""
   fullnameOverride: ""
   image:
-    repository: pagopaucommonacr.azurecr.io/pagopa<project-name>  # TODO
+    repository: ghcr.io/pagopa/pagopapdfengine
     tag: "0.0.1"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
@@ -29,8 +29,8 @@ microservice-chart:
     port: 80
   ingress:
     create: true
-    host: "weuuat.<namespace>.internal.uat.platform.pagopa.it"  # TODO
-    path: /pagopa-<project-name>-service/(.*) # TODO
+    host: "weuuat.shared.internal.uat.platform.pagopa.it"
+    path: /pagopa-pdf-engine/(.*)
   serviceAccount:
     create: false
     annotations: {}
@@ -61,12 +61,16 @@ microservice-chart:
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "75"
   envConfig:
-    WEBSITE_SITE_NAME: "pagopa<project-name>" # required to show cloud role name in application insights # TODO
+    WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
+    UNZIPPED_FILES_FOLDER: "/unzipped"
+    WRITE_FILE_BASE_PATH: "/tmp"
+    ZIP_FILE_NAME: "/input.zip"
+    HTML_TEMPLATE_FILE_NAME: "template"
   envSecret:
-    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string' # TODO set in kv
+    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
   keyvault:
-    name: "pagopa-u-<namespace>-kv" # TODO
+    name: "pagopa-u-shared-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   nodeSelector: {}
   tolerations: []
