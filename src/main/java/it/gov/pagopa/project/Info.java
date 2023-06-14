@@ -20,7 +20,7 @@ public class Info {
 	public HttpResponseMessage run (
 			@HttpTrigger(name = "InfoTrigger",
 			methods = {HttpMethod.GET},
-			route = "info",
+			route = "info123",
 			authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
 			final ExecutionContext context) {
 
