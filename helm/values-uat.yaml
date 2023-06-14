@@ -3,8 +3,8 @@ microservice-chart:
   nameOverride: ""
   fullnameOverride: ""
   image:
-    repository: ghcr.io/pagopa/pagopapdfengine
-    tag: "0.0.1"
+    repository: ghcr.io/pagopa/pagopa-pdf-engine
+    tag: "0.0.2-PRDP-13-feat-add-function"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -75,3 +75,7 @@ microservice-chart:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  canaryDelivery:
+    deployment:
+      image:
+        tag: 0.0.2-PRDP-13-feat-add-function

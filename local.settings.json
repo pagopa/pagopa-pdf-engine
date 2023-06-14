@@ -1,0 +1,10 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+      "FUNCTIONS_WORKER_RUNTIME": "java",
+      "UNZIPPED_FILES_FOLDER": "/unzipped",
+      "WRITE_FILE_BASE_PATH": "/tmp",
+      "ZIP_FILE_NAME": "/input.zip",
+      "HTML_TEMPLATE_FILE_NAME": "template"
+    }
+  }
