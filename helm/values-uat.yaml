@@ -68,7 +68,7 @@ microservice-chart:
     ZIP_FILE_NAME: "/input.zip"
     HTML_TEMPLATE_FILE_NAME: "template"
   envSecret:
-    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
+    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
   keyvault:
     name: "pagopa-u-shared-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
