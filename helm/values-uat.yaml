@@ -30,7 +30,7 @@ microservice-chart:
   ingress:
     create: true
     host: "weuuat.shared.internal.uat.platform.pagopa.it"
-    path: /pagopa-pdf-engine/(.*) # TODO
+    path: /pagopa-pdf-engine/(.*)
   serviceAccount:
     create: false
     annotations: {}
@@ -64,13 +64,13 @@ microservice-chart:
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     UNZIPPED_FILES_FOLDER: "/unzipped"
-    WRITE_FILE_BASE_PATH: "C:/tmp"
+    WRITE_FILE_BASE_PATH: "/tmp"
     ZIP_FILE_NAME: "/input.zip"
     HTML_TEMPLATE_FILE_NAME: "template"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
   keyvault:
-    name: "pagopa-u-shared-kv" # TODO
+    name: "pagopa-u-shared-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   nodeSelector: {}
   tolerations: []
