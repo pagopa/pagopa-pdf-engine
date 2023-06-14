@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>0.0.4-PRDP-40-fix-build-and-deploy-new</version>
+    <version>0.1.0-PRDP-40-fix-build-and-deploy-new</version>
     <packaging>jar</packaging>
 
     <name>PagoPA PDF Engine Function</name>

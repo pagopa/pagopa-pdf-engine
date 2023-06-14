@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
-    tag: "0.0.4-PRDP-40-fix-build-and-deploy-new"
+    tag: "0.1.0-PRDP-40-fix-build-and-deploy-new"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -78,4 +78,4 @@ microservice-chart:
   canaryDelivery:
     deployment:
       image:
-        tag: 0.0.4-PRDP-40-fix-build-and-deploy-new
+        tag: 0.1.0-PRDP-40-fix-build-and-deploy-new
