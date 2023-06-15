@@ -147,7 +147,10 @@ To run the **Junit** tests:
 `mvn clean verify`
 
 #### Integration testing
+From `./integration-test/src`
 
+1. `yarn install`
+2. `yarn test`
 #### Performance testing
 
 ---
