@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class HttpTriggerFunctionTest {
+class HttpTriggerGeneratePDFFunctionTest {
 
     private HttpTriggerGeneratePDFFunction function;
 
@@ -160,13 +160,13 @@ class HttpTriggerFunctionTest {
 
     @Test
     @SneakyThrows
-    void runFailOnInvalidData() {
+    void runFailOnInvalidTemplate() {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setTemplateSavedOnFileSystem(false);
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
@@ -181,12 +181,12 @@ class HttpTriggerFunctionTest {
         Object body = response.getBody();
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
-        assertEquals(PDFE_898, ((ErrorResponse) body).getAppErrorCode());
+        assertEquals(PDFE_897, ((ErrorResponse) body).getAppErrorCode());
     }
 
     @Test
     @SneakyThrows
-    void runFailOnInvalidTemplate() {
+    void runFailOnInvalidData() {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
