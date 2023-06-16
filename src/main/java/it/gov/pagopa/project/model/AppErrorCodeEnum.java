@@ -38,7 +38,7 @@ public enum AppErrorCodeEnum {
     PDFE_712("PDFE_712", "Content-type header is not multipart/form-data"),
 
     PDFE_896("PDFE_896", "Unexpected field in request body"),
-    PDFE_897("PDFE_897", "Invalid HTML template"),
+    PDFE_897("PDFE_897", "Invalid HTML template, template not provided"),
     PDFE_898("PDFE_898", "Invalid document data"),
     PDFE_899("PDFE_899", "Invalid payload"),
 
