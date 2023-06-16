@@ -3,26 +3,29 @@ const { Given, When, Then } = require('@cucumber/cucumber');
 const {readZipFile, retrieveInputData} = require("./common");
 const {generatePDF} = require('./pdf_engine_client');
 
- Given('a a zip file, that contains a valid HTML template', function () {
-   this.zipFile = readZipFile("template.zip");
- });
+ Given('a zip file, that contains a valid HTML template', function () {
+  this.zipFile = readZipFile("template.zip");
+});
 
  Given('a Map of key-values', function () {
-   this.inputData = retrieveInputData();
- });
+  this.inputData = retrieveInputData();
+});
 
- When('an Http POST request is sent to the PDF Engine with a zip file and the key-values', async function () {
-   this.response = await generatePDF(this.zipFile, this.inputData);
- });
-
- Then('response has a {int} Http status', function (expectedStatus) {
-   assert.strictEqual(this.response.status, expectedStatus);
- });
-
+When('an Http POST request is sent to the PDF Engine with a zip file and the key-values', async function () {
+  this.response = await generatePDF(this.zipFile, this.inputData);
+});
 
 When('an Http POST request is sent to the PDF Engine with a zip file and without key-values', async function () {
-     this.response = await generatePDF(this.zipFile, null);
-   });
+  this.response = await generatePDF(this.zipFile, null);
+});
+
+When('an Http POST request is sent to the PDF Engine with key-values and without a zip file', async function () {
+  this.response = await generatePDF(null, this.inputData);
+});
+
+Then('response has a {int} Http status', function (expectedStatus) {
+  assert.strictEqual(this.response.status, expectedStatus);
+});
 
 Then('application error code is {string}', function (expectedAppErrorCode) {
   assert.strictEqual(this.response.data.appErrorCode, expectedAppErrorCode);
