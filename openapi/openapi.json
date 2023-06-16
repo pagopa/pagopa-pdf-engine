@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "servers": [
     {
@@ -94,7 +94,7 @@
         }
       ]
     },
-    "/pdf-engine": {
+    "/generate-pdf": {
       "post": {
         "tags": [
           "default"
