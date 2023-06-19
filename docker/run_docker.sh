@@ -46,7 +46,7 @@ done
 
 
 stack_name=$(cd .. && basename "$PWD")
-docker build -t pagopa-pdf-engine
+docker build -t pagopa-pdf-engine ../
 docker run -p 80:80 pagopa-pdf-engine --name="${stack_name}"
 docker wait "${stack_name}"
 
