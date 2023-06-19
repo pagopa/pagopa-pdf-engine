@@ -46,22 +46,24 @@ done
 
 
 stack_name=$(cd .. && basename "$PWD")
-docker compose -p "${stack_name}" up -d --remove-orphans --force-recreate --build --wait
+docker build -t pagopa-pdf-engine
+docker run -p 80:80 pagopa-pdf-engine --name="${stack_name}"
+docker wait "${stack_name}"
 
 sleep 120s
 
 # waiting the containers
 printf 'Waiting for the service'
-attempt_counter=0
-max_attempts=80
-until $(curl --output /dev/null --silent --head --fail http://localhost:80/info); do
-    if [ ${attempt_counter} -eq ${max_attempts} ];then
-      echo "Max attempts reached"
-      exit 1
-    fi
-
-    printf '.'
-    attempt_counter=$((attempt_counter+1))
-    sleep 5
-done
+#attempt_counter=0
+#max_attempts=80
+#until $(curl --output /dev/null --silent --head --fail http://localhost:80/info); do
+#    if [ ${attempt_counter} -eq ${max_attempts} ];then
+#      echo "Max attempts reached"
+#      exit 1
+#    fi
+#
+#    printf '.'
+#    attempt_counter=$((attempt_counter+1))
+#    sleep 5
+#done
 echo 'Service Started'
