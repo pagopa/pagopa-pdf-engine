@@ -8,7 +8,7 @@
     <version>1.0.1</version>
     <packaging>jar</packaging>
 
-    <name>PagoPA PDF Engine Function</name>
+    <name>pagopa-pdf-engine</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
