@@ -48,12 +48,12 @@ done
 stack_name=$(cd .. && basename "$PWD")
 docker compose -p "${stack_name}" up -d --remove-orphans --force-recreate --build --wait
 
-sleep 30s
+sleep 120s
 
 # waiting the containers
 printf 'Waiting for the service'
 attempt_counter=0
-max_attempts=50
+max_attempts=80
 until $(curl --output /dev/null --silent --head --fail http://localhost:80/info); do
     if [ ${attempt_counter} -eq ${max_attempts} ];then
       echo "Max attempts reached"
