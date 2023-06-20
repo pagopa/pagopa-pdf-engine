@@ -60,7 +60,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
             String fieldName = header.split(";")[1].split("=")[1].split("\"")[1];
             switch (fieldName) {
                 case "template":
-                    unzipTemplateFolderAndWriteToFileSystem(multipartStream);
+                    generatePDFInput.setTemplateSavedOnFileSystem(unzipTemplateFolderAndWriteToFileSystem(multipartStream));
                     break;
                 case "data":
                     generatePDFInput.setData(getDocumentInputData(multipartStream));
@@ -130,7 +130,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
     }
 
-    private void unzipTemplateFolderAndWriteToFileSystem(MultipartStream multipartStream) throws RequestBodyParseException {
+    private boolean unzipTemplateFolderAndWriteToFileSystem(MultipartStream multipartStream) throws RequestBodyParseException {
         try (FileOutputStream fos = new FileOutputStream(writeFileBasePath + zipFileName)) {
             multipartStream.readBodyData(fos);
         } catch (FileNotFoundException e) {
@@ -144,6 +144,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         } catch (IOException e) {
             throw new RequestBodyParseException(PDFE_705, PDFE_705.getErrorMessage(), e);
         }
+        return true;
     }
 
     @VisibleForTesting

@@ -111,6 +111,14 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
+        if (!generatePDFInput.isTemplateSavedOnFileSystem()) {
+            logger.severe("Invalid request, template HTML not provided");
+            return request
+                    .createResponseBuilder(BAD_REQUEST)
+                    .body(buildResponseBody(BAD_REQUEST, PDFE_897, INVALID_REQUEST_MESSAGE))
+                    .build();
+        }
+
         if (generatePDFInput.getData() == null) {
             logger.severe("Invalid request the PDF document input data are null");
             return request

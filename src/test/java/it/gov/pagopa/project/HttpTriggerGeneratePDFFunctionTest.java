@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class HttpTriggerFunctionTest {
+class HttpTriggerGeneratePDFFunctionTest {
 
     private HttpTriggerGeneratePDFFunction function;
 
@@ -74,6 +74,7 @@ class HttpTriggerFunctionTest {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
@@ -159,12 +160,39 @@ class HttpTriggerFunctionTest {
 
     @Test
     @SneakyThrows
+    void runFailOnInvalidTemplate() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setTemplateSavedOnFileSystem(false);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        createHttpMessageBuilderSub(request);
+
+        // Invoke
+        final HttpResponseMessage response = function.run(request, executionContextMock);
+
+        // Verify
+        assertEquals(BAD_REQUEST, response.getStatus());
+        Object body = response.getBody();
+        assertNotNull(body);
+        assertTrue(body instanceof ErrorResponse);
+        assertEquals(PDFE_897, ((ErrorResponse) body).getAppErrorCode());
+    }
+
+    @Test
+    @SneakyThrows
     void runFailOnInvalidData() {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
@@ -192,6 +220,7 @@ class HttpTriggerFunctionTest {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
