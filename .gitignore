@@ -15,7 +15,6 @@ target/
 *.jar
 *.war
 *.ear
-*.zip
 *.tar.gz
 *.rar
 
@@ -40,3 +39,5 @@ obj/
 .vscode/
 **/.terraform
 **/*.lock.hcl
+**/node_modules
+yarn.lock
