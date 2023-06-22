@@ -39,3 +39,5 @@ obj/
 .vscode/
 **/.terraform
 **/*.lock.hcl
+**/node_modules
+yarn.lock
