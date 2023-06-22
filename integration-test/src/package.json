@@ -17,8 +17,5 @@
     "dotenv-cli": "^7.2.1",
     "form-data": "^4.0.0",
     "npx": "^10.2.2"
-  },
-  "dependencies": {
-    "@azure/data-tables": "^13.2.2"
   }
 }
