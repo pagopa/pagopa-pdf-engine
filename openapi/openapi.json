@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "1.0.4"
+    "version": "1.1.0-PRDP-49-ci-update-uat-chart"
   },
   "servers": [
     {
