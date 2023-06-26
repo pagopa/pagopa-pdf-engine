@@ -131,7 +131,7 @@ public class HttpTriggerGeneratePDFFunction {
             byte[] fileBytes = inputStream.readAllBytes();
             return request
                     .createResponseBuilder(HttpStatus.OK)
-                    .header("content-type", "application/pdf")
+                    .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
                     .header("content-length", String.valueOf(fileBytes.length))
                     .header("content-disposition", "attachment; ")
                     .body(fileBytes)
