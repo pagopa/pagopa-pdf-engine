@@ -28,6 +28,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -64,7 +65,7 @@ class GeneratePDFServiceImplTest {
 
         doReturn(template).when(handlebarsMock).compile(anyString());
 
-        ByteArrayOutputStream output = sut.generatePDF(pdfInput);
+        BufferedInputStream output = sut.generatePDF(pdfInput);
 
         assertNotNull(output);
     }

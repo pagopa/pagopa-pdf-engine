@@ -30,10 +30,14 @@ import it.gov.pagopa.project.exception.FillTemplateException;
 import it.gov.pagopa.project.exception.GeneratePDFException;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
+import org.apache.commons.io.IOUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 
@@ -50,22 +54,40 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     }
 
     @Override
-    public ByteArrayOutputStream generatePDF(GeneratePDFInput generatePDFInput) throws CompileTemplateException, FillTemplateException, GeneratePDFException {
+    public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput)
+            throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException {
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
-
+        File tempFile = Files.createTempFile("document", "pdf").toFile();
         try (
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                FileOutputStream os = new FileOutputStream(tempFile);
                 PdfWriter pdfWriter = new PdfWriter(os);
                 PdfADocument pdf = getPdfADocument(pdfWriter)
         ) {
             pdf.setTagged();
             Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties());
             document.close();
-            return os;
+
+            if (generatePDFInput.isGenerateZipped()) {
+                File zippedFile = Files.createTempFile("zippedDocument", "zip").toFile();
+                ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(
+                        new FileOutputStream(zippedFile)));
+                ZipEntry zipEntry = new ZipEntry("document.pdf");
+                zipOutputStream.putNextEntry(zipEntry);
+
+                try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(tempFile))) {
+                    IOUtils.copy(bufferedInputStream, zipOutputStream);
+                    zipOutputStream.close();
+                    return new BufferedInputStream(new FileInputStream(zippedFile));
+                }
+            } else {
+                return new BufferedInputStream(new FileInputStream(tempFile));
+            }
+
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
         }
+
     }
 
     private String fillTemplate(Map<String, Object> inputData, Template template) throws FillTemplateException {

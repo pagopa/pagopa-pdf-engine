@@ -35,7 +35,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -79,7 +83,8 @@ class HttpTriggerGeneratePDFFunctionTest {
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
         doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doReturn(new ByteArrayOutputStream()).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(new BufferedInputStream(new FileInputStream(Files.createTempFile("zippedTempFile", null,
+                (FileAttribute<?>) null).toFile()))).when(generatePDFServiceMock).generatePDF(any());
         createHttpMessageBuilderSub(request);
 
         // Invoke

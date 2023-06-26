@@ -35,7 +35,7 @@ import it.gov.pagopa.project.service.ParseRequestBodyService;
 import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
 import it.gov.pagopa.project.service.impl.ParseRequestBodyServiceImpl;
 
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
@@ -127,9 +127,15 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        ByteArrayOutputStream outputStream;
-        try {
-            outputStream = generatePDFService.generatePDF(generatePDFInput);
+        try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput)){
+            byte[] fileBytes = inputStream.readAllBytes();
+            return request
+                    .createResponseBuilder(HttpStatus.OK)
+                    .header("content-type", "application/pdf")
+                    .header("content-length", String.valueOf(fileBytes.length))
+                    .header("content-disposition", "attachment; ")
+                    .body(fileBytes)
+                    .build();
         } catch (PDFEngineException e) {
             logger.log(Level.SEVERE, "Error generating the PDF document", e);
             return request
@@ -140,15 +146,18 @@ public class HttpTriggerGeneratePDFFunction {
                                     e.getErrorCode(),
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
+        } catch (IOException e) {
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(
+                            buildResponseBody(
+                                    INTERNAL_SERVER_ERROR,
+                                    null,
+                                    ERROR_GENERATING_PDF_MESSAGE))
+                    .build();
         }
 
-        return request
-                .createResponseBuilder(HttpStatus.OK)
-                .header("content-type", "application/pdf")
-                .header("content-length", String.valueOf(outputStream.size()))
-                .header("content-disposition", "attachment; ")
-                .body(outputStream.toByteArray())
-                .build();
+
     }
 
     private static HttpStatus getHttpStatus(PDFEngineException e) {
