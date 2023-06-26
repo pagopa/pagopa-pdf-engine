@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import it.gov.pagopa.project.exception.RequestBodyParseException;
 import it.gov.pagopa.project.exception.UnexpectedRequestBodyFieldException;
+import it.gov.pagopa.project.model.AppErrorCodeEnum;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.ParseRequestBodyService;
 import net.lingala.zip4j.ZipFile;
@@ -66,10 +67,10 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
                     generatePDFInput.setData(getDocumentInputData(multipartStream));
                     break;
                 case "applySignature":
-                    generatePDFInput.setApplySignature(getApplySignatureField(multipartStream));
+                    generatePDFInput.setApplySignature(getBooleanField(multipartStream, PDFE_708));
                     break;
                 case "generateZipped":
-                    generatePDFInput.setGenerateZipped(getGenerateZippedField(multipartStream));
+                    generatePDFInput.setGenerateZipped(getBooleanField(multipartStream, PDFE_713));
                     break;
                 default: throw new UnexpectedRequestBodyFieldException(PDFE_896, "Unexpected field " + fieldName);
             }
@@ -90,22 +91,12 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
     }
 
-    private boolean getApplySignatureField(MultipartStream multipartStream) throws RequestBodyParseException {
+    private boolean getBooleanField(MultipartStream multipartStream, AppErrorCodeEnum errorCode) throws RequestBodyParseException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
             multipartStream.readBodyData(outputStream);
         } catch (IOException e) {
-            throw new RequestBodyParseException(PDFE_708, PDFE_708.getErrorMessage(), e);
-        }
-        return Boolean.parseBoolean(outputStream.toString());
-    }
-
-    private boolean getGenerateZippedField(MultipartStream multipartStream) throws RequestBodyParseException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            multipartStream.readBodyData(outputStream);
-        } catch (IOException e) {
-            throw new RequestBodyParseException(PDFE_708, PDFE_708.getErrorMessage(), e);
+            throw new RequestBodyParseException(errorCode, errorCode.getErrorMessage(), e);
         }
         return Boolean.parseBoolean(outputStream.toString());
     }

@@ -36,10 +36,7 @@ public enum AppErrorCodeEnum {
     PDFE_710("PDFE_710", "Error when switching to the next multipart stream token, stream end unexpectedly"),
     PDFE_711("PDFE_711", "Content-type header is null"),
     PDFE_712("PDFE_712", "Content-type header is not multipart/form-data"),
-
     PDFE_713("PDFE_713", "I/O error when reading generate zipped boolean from request and writing it to the output stream"),
-
-    PDFE_714("PDFE_714", "Error when switching to the next multipart stream token, byte exceeded the size limits"),
 
     PDFE_896("PDFE_896", "Unexpected field in request body"),
     PDFE_897("PDFE_897", "Invalid HTML template, template not provided"),
