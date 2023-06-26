@@ -40,7 +40,7 @@ jobs:
       - name: Create temp directory
         shell: bash
         id: create_temp_directory
-        run: mkdir -p /workingDir
+        run: sudo mkdir -p /workingDir
 
       - name: Code Review
         uses: pagopa/github-actions-template/maven-code-review@v1.4.2
