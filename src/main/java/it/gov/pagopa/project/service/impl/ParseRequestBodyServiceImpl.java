@@ -68,6 +68,9 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
                 case "applySignature":
                     generatePDFInput.setApplySignature(getApplySignatureField(multipartStream));
                     break;
+                case "generateZipped":
+                    generatePDFInput.setGenerateZipped(getGenerateZippedField(multipartStream));
+                    break;
                 default: throw new UnexpectedRequestBodyFieldException(PDFE_896, "Unexpected field " + fieldName);
             }
 
@@ -96,6 +99,17 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
         return Boolean.parseBoolean(outputStream.toString());
     }
+
+    private boolean getGenerateZippedField(MultipartStream multipartStream) throws RequestBodyParseException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            multipartStream.readBodyData(outputStream);
+        } catch (IOException e) {
+            throw new RequestBodyParseException(PDFE_708, PDFE_708.getErrorMessage(), e);
+        }
+        return Boolean.parseBoolean(outputStream.toString());
+    }
+
 
     private Map<String,Object> getDocumentInputData(MultipartStream multipartStream) throws RequestBodyParseException {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
