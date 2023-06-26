@@ -44,6 +44,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
     private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
+    private final String workingFilesFolder = System.getenv().getOrDefault("WORKING_FILES_FOLDER", "/workingDir");
     private final String htmlTemplateFileName = System.getenv().getOrDefault("HTML_TEMPLATE_FILE_NAME", "template");
 
     private final Handlebars handlebars;
@@ -138,7 +139,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     private File createTempFile(String fileName, String fileExtension, AppErrorCodeEnum error) throws GeneratePDFException {
         try {
-            return File.createTempFile(fileName, fileExtension, new File(writeFileBasePath + "/workingDir"));
+            return File.createTempFile(fileName, fileExtension, new File(writeFileBasePath + workingFilesFolder));
         } catch (IOException e) {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
         }

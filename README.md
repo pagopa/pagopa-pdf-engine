@@ -44,7 +44,10 @@ See the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubuserc
 
 > **Warning**
 > If you are running the project from macOS you must change the WRITE_FILE_BASE_PATH environment variable with an absolute
-> path, such as `/Users/<username>/<working-directory>` (the `<working-directory>` folder must exist)
+> path, such as `/Users/<username>/<working-directory>` (the `<working-directory>` folder must exist).
+
+> **Warning**
+> Inside the folder defined by the environment variable WRITE_FILE_BASE_PATH, another folder must exist and must be named as the value of the environment variable WORKING_FILES_FOLDER
 
 ### Run locally with Docker
 
