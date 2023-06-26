@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -53,10 +52,30 @@ class GeneratePDFServiceImplTest {
 
     @Test
     @SneakyThrows
-    void generatePDFWithSuccess() {
+    void generatePDFNotZippedWithSuccess() {
         GeneratePDFInput pdfInput = new GeneratePDFInput();
         pdfInput.setData(Collections.singletonMap("a", "b"));
         pdfInput.setApplySignature(false);
+
+        Template template = handlebarsMock.compileInline(
+                IOUtils.toString(
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
+                        StandardCharsets.UTF_8));
+
+        doReturn(template).when(handlebarsMock).compile(anyString());
+
+        BufferedInputStream output = sut.generatePDF(pdfInput);
+
+        assertNotNull(output);
+    }
+
+    @Test
+    @SneakyThrows
+    void generatePDFZippedWithSuccess() {
+        GeneratePDFInput pdfInput = new GeneratePDFInput();
+        pdfInput.setData(Collections.singletonMap("a", "b"));
+        pdfInput.setApplySignature(false);
+        pdfInput.setGenerateZipped(true);
 
         Template template = handlebarsMock.compileInline(
                 IOUtils.toString(

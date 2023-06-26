@@ -28,13 +28,13 @@ import com.itextpdf.pdfa.PdfADocument;
 import it.gov.pagopa.project.exception.CompileTemplateException;
 import it.gov.pagopa.project.exception.FillTemplateException;
 import it.gov.pagopa.project.exception.GeneratePDFException;
+import it.gov.pagopa.project.model.AppErrorCodeEnum;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.attribute.FileAttribute;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -55,12 +55,12 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput)
-            throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException {
+            throws CompileTemplateException, FillTemplateException, GeneratePDFException {
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
-        File tempFile = Files.createTempFile("document", "pdf").toFile();
+        File pdfTempFile = createTempFile("document", "pdf", PDFE_903);
         try (
-                FileOutputStream os = new FileOutputStream(tempFile);
+                FileOutputStream os = new FileOutputStream(pdfTempFile);
                 PdfWriter pdfWriter = new PdfWriter(os);
                 PdfADocument pdf = getPdfADocument(pdfWriter)
         ) {
@@ -69,25 +69,34 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             document.close();
 
             if (generatePDFInput.isGenerateZipped()) {
-                File zippedFile = Files.createTempFile("zippedDocument", "zip").toFile();
-                ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(
-                        new FileOutputStream(zippedFile)));
-                ZipEntry zipEntry = new ZipEntry("document.pdf");
-                zipOutputStream.putNextEntry(zipEntry);
-
-                try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(tempFile))) {
-                    IOUtils.copy(bufferedInputStream, zipOutputStream);
-                    zipOutputStream.close();
-                    return new BufferedInputStream(new FileInputStream(zippedFile));
-                }
-            } else {
-                return new BufferedInputStream(new FileInputStream(tempFile));
+                return zipPDFDocument(pdfTempFile);
             }
+            return new BufferedInputStream(new FileInputStream(pdfTempFile));
 
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
         }
+    }
 
+    private BufferedInputStream zipPDFDocument(File pdfTempFile) throws GeneratePDFException {
+        File zippedTempFile = createTempFile("zippedDocument", "zip", PDFE_904);
+        try (
+                ZipOutputStream zipOutputStream = new ZipOutputStream(
+                        new BufferedOutputStream(
+                                new FileOutputStream(zippedTempFile)))
+        ) {
+            ZipEntry zipEntry = new ZipEntry("document.pdf");
+            zipOutputStream.putNextEntry(zipEntry);
+
+            try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(pdfTempFile))) {
+                IOUtils.copy(bufferedInputStream, zipOutputStream);
+                return new BufferedInputStream(new FileInputStream(zippedTempFile));
+            }
+        } catch (FileNotFoundException e) {
+            throw new GeneratePDFException(PDFE_905, "An error occurred when zipping the PDF document", e);
+        } catch (IOException e) {
+            throw new GeneratePDFException(PDFE_906, "An error occurred when zipping the PDF document", e);
+        }
     }
 
     private String fillTemplate(Map<String, Object> inputData, Template template) throws FillTemplateException {
@@ -126,5 +135,13 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         return new ConverterProperties()
                 .setBaseUri(writeFileBasePath + unzippedFilesFolder)
                 .setFontProvider(fontProvider);
+    }
+
+    private File createTempFile(String fileName, String fileExtension, AppErrorCodeEnum error) throws GeneratePDFException {
+        try {
+            return Files.createTempFile(fileName, fileExtension).toFile();
+        } catch (IOException e) {
+            throw new GeneratePDFException(error, error.getErrorMessage(), e);
+        }
     }
 }

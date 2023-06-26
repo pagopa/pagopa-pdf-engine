@@ -36,10 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.nio.file.Files;
-import java.nio.file.attribute.FileAttribute;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -70,7 +67,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
     @Test
     @SneakyThrows
-    void runOk() {
+    void runGenerateNotZippedOk() {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
@@ -80,11 +77,14 @@ class HttpTriggerGeneratePDFFunctionTest {
         generatePDFInput.setApplySignature(false);
         generatePDFInput.setTemplateSavedOnFileSystem(true);
 
+        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
         doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doReturn(new BufferedInputStream(new FileInputStream(Files.createTempFile("zippedTempFile", null,
-                (FileAttribute<?>) null).toFile()))).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
+
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -93,6 +93,38 @@ class HttpTriggerGeneratePDFFunctionTest {
         // Verify
         assertEquals(HttpStatus.OK, response.getStatus());
         assertEquals( "application/pdf", response.getHeader("content-type"));
+        assertEquals( "attachment; ", response.getHeader("content-disposition"));
+    }
+
+    @Test
+    @SneakyThrows
+    void runGenerateZippedOk() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setData(Collections.singletonMap("a", "b"));
+        generatePDFInput.setApplySignature(false);
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setGenerateZipped(true);
+
+        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
+
+        createHttpMessageBuilderSub(request);
+
+        // Invoke
+        final HttpResponseMessage response = function.run(request, executionContextMock);
+
+        // Verify
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals( "application/zip", response.getHeader("content-type"));
         assertEquals( "attachment; ", response.getHeader("content-disposition"));
     }
 
@@ -242,6 +274,39 @@ class HttpTriggerGeneratePDFFunctionTest {
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
         assertEquals(AppErrorCodeEnum.PDFE_901, ((ErrorResponse) body).getAppErrorCode());
+    }
+
+    @Test
+    @SneakyThrows
+    void runFailOnReadPDFDocumentBytesForIOException() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setData(Collections.singletonMap("a", "b"));
+        generatePDFInput.setApplySignature(false);
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
+
+        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any());
+        doThrow(IOException.class).when(inputStreamMock).readAllBytes();
+
+        createHttpMessageBuilderSub(request);
+
+        // Invoke
+        final HttpResponseMessage response = function.run(request, executionContextMock);
+
+        // Verify
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+        Object body = response.getBody();
+        assertNotNull(body);
+        assertTrue(body instanceof ErrorResponse);
+        assertEquals(AppErrorCodeEnum.PDFE_907, ((ErrorResponse) body).getAppErrorCode());
     }
 
     private void createHttpMessageBuilderSub(HttpRequestMessage<Optional<byte[]>> request) {

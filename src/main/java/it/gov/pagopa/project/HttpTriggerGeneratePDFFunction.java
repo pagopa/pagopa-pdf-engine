@@ -152,7 +152,7 @@ public class HttpTriggerGeneratePDFFunction {
                     .body(
                             buildResponseBody(
                                     INTERNAL_SERVER_ERROR,
-                                    null,
+                                    PDFE_907,
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
         }

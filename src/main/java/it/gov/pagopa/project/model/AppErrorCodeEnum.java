@@ -45,7 +45,14 @@ public enum AppErrorCodeEnum {
 
     PDFE_900("PDFE_900", "Error filling the HTML template"),
     PDFE_901("PDFE_901", "Error compiling the HTML template"),
-    PDFE_902("PDFE_902", "Error generating the PDF document");
+    PDFE_902("PDFE_902", "Error generating the PDF document"),
+    PDFE_903("PDFE_903", "Error creating temp file for PDF document"),
+    PDFE_904("PDFE_904", "Error creating temp file for zipped PDF document"),
+    PDFE_905("PDFE_905", "Error accessing the temporary zip file, file does not exist, cannot be created or cannot be opened"),
+    PDFE_906("PDFE_906", "I/O error when zipping the PDF document"),
+    PDFE_907("PDFE_907", "I/O error on handling the PDF generation result");
+
+
 
     private final String errorCode;
     private final String errorMessage;

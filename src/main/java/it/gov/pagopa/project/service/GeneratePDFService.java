@@ -23,7 +23,6 @@ import it.gov.pagopa.project.model.GeneratePDFInput;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 /**
  * Interface of the service to be used to generate a PDFA/2a document based on the information provided through the {@link GeneratePDFInput}
@@ -39,5 +38,5 @@ public interface GeneratePDFService {
      * @throws FillTemplateException    thrown for error when filling the template with the provided data
      * @throws GeneratePDFException     thrown for error when generating the PDFA/2a document
      */
-    BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput) throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException;
+    BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput) throws CompileTemplateException, FillTemplateException, GeneratePDFException;
 }
