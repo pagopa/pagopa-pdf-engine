@@ -1,4 +1,7 @@
 ARG JAVA_VERSION=11
+ARG WRITE_FILE_BASE_PATH
+ARG WORKING_FILES_FOLDER
+
 # This image additionally contains function core tools – useful when using custom extensions
 FROM mcr.microsoft.com/azure-functions/java:3.0-java$JAVA_VERSION-build AS installer-env
 
@@ -18,9 +21,6 @@ FROM mcr.microsoft.com/azure-functions/java:3.0-java$JAVA_VERSION
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
-ENV BASE_PATH=$WRITE_FILE_BASE_PATH
-ENV WORKING_DIR=$WORKING_FILES_FOLDER
-
 EXPOSE 80
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]
-RUN mkdir -p $BASE_PATH$WORKING_DIR
+RUN mkdir -p $WRITE_FILE_BASE_PATH$WORKING_FILES_FOLDER
