@@ -43,7 +43,7 @@ import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
-    public static final String WORKING_DIR = "/tmp/workingDir";
+    public static final String WORKING_DIR = "/workingDir";
 
     private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
     private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
@@ -140,7 +140,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     }
 
     private File createTempFile(String fileName, String fileExtension, AppErrorCodeEnum error) throws GeneratePDFException {
-        File directory = new File(WORKING_DIR);
+        File directory = new File(writeFileBasePath + WORKING_DIR);
         try {
             if (!directory.exists()) {
                 Files.createDirectory(directory.toPath());

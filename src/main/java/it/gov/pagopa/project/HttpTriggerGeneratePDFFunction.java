@@ -199,7 +199,7 @@ public class HttpTriggerGeneratePDFFunction {
 
     private void clearTempFiles(Logger logger) {
         try {
-            FileUtils.deleteDirectory(new File(WORKING_DIR));
+            FileUtils.deleteDirectory(new File(writeFileBasePath + WORKING_DIR));
             FileUtils.deleteDirectory(new File(writeFileBasePath + unzippedFilesFolder));
             Files.delete(Path.of(writeFileBasePath + zipFileName));
         } catch (IOException e) {
