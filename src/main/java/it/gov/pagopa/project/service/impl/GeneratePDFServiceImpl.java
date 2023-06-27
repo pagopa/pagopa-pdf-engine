@@ -34,6 +34,7 @@ import it.gov.pagopa.project.service.GeneratePDFService;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -139,13 +140,14 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     }
 
     private File createTempFile(String fileName, String fileExtension, AppErrorCodeEnum error) throws GeneratePDFException {
-        File tempFile = null;
         File directory = new File(WORKING_DIR);
         try {
-            tempFile = File.createTempFile(fileName, fileExtension, directory);
-            return tempFile;
+            if (!directory.exists()) {
+                Files.createDirectory(directory.toPath());
+            }
+            return File.createTempFile(fileName, fileExtension, directory);
         } catch (IOException e) {
-            throw new GeneratePDFException(error, error.getErrorMessage() + " " + directory.getAbsolutePath(), e);
+            throw new GeneratePDFException(error, error.getErrorMessage(), e);
         }
     }
 }
