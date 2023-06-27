@@ -34,7 +34,9 @@ import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
 import it.gov.pagopa.project.service.impl.ParseRequestBodyServiceImpl;
 import org.apache.commons.io.FileUtils;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -49,6 +51,7 @@ import java.util.logging.Logger;
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
+import static it.gov.pagopa.project.util.Constants.WORKING_DIRECTORY_FOLDER;
 
 /**
  * Azure Functions with HTTP Trigger.
@@ -102,7 +105,9 @@ public class HttpTriggerGeneratePDFFunction {
 
         Path workingDirPath;
         try {
+            File workingDirectory = createWorkingDirectory();
             workingDirPath = Files.createTempDirectory(
+                    workingDirectory.toPath(),
                     DateTimeFormatter.ofPattern(PATTERN_FORMAT)
                             .withZone(ZoneId.systemDefault())
                             .format(Instant.now())
@@ -219,5 +224,13 @@ public class HttpTriggerGeneratePDFFunction {
             String errMsg = String.format("Unable to clear working directory: %s", workingDirPath);
             logger.log(Level.WARNING, errMsg, e);
         }
+    }
+
+    private static File createWorkingDirectory() throws IOException {
+        File workingDirectory = new File(WORKING_DIRECTORY_FOLDER);
+        if (!workingDirectory.exists()) {
+            Files.createDirectory(Path.of(WORKING_DIRECTORY_FOLDER));
+        }
+        return workingDirectory;
     }
 }
