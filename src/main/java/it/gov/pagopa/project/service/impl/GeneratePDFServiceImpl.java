@@ -139,10 +139,12 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     }
 
     private File createTempFile(String fileName, String fileExtension, AppErrorCodeEnum error) throws GeneratePDFException {
+        File tempFile = null;
         try {
-            return File.createTempFile(fileName, fileExtension, new File(WORKING_DIR));
+            tempFile = File.createTempFile(fileName, fileExtension, new File(WORKING_DIR));
+            return tempFile;
         } catch (IOException e) {
-            throw new GeneratePDFException(error, error.getErrorMessage(), e);
+            throw new GeneratePDFException(error, error.getErrorMessage() + " " + tempFile.getAbsolutePath(), e);
         }
     }
 }
