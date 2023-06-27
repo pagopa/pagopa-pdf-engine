@@ -51,7 +51,6 @@ import java.util.logging.Logger;
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
-import static it.gov.pagopa.project.util.Constants.WORKING_DIRECTORY_FOLDER;
 
 /**
  * Azure Functions with HTTP Trigger.
@@ -227,9 +226,9 @@ public class HttpTriggerGeneratePDFFunction {
     }
 
     private static File createWorkingDirectory() throws IOException {
-        File workingDirectory = new File(WORKING_DIRECTORY_FOLDER);
+        File workingDirectory = new File("temp");
         if (!workingDirectory.exists()) {
-            Files.createDirectory(Path.of(WORKING_DIRECTORY_FOLDER));
+            Files.createDirectory(workingDirectory.toPath());
         }
         return workingDirectory;
     }
