@@ -41,8 +41,7 @@ jobs:
         shell: bash
         id: create_temp_directory
         run: |
-          cd $HOME
-          sudo mkdir -p /workingDir
+          sudo mkdir -p ./workingDir
 
       - name: Code Review
         uses: pagopa/github-actions-template/maven-code-review@v1.4.2
