@@ -19,6 +19,7 @@ import it.gov.pagopa.project.exception.RequestBodyParseException;
 import it.gov.pagopa.project.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -31,9 +32,10 @@ public interface ParseRequestBodyService {
      *
      * @param requestBody the request body
      * @param requestHeaders the request headers
+     * @param workingDirPath the path to the working directory
      * @return {@link GeneratePDFInput} that contains the input data and other necessary information
      * @throws UnexpectedRequestBodyFieldException thrown in case an unexpected field is found when parsing the request body
      * @throws RequestBodyParseException thrown for error when parsing the request body
      */
-    GeneratePDFInput retrieveInputData(byte[] requestBody, Map<String, String> requestHeaders) throws UnexpectedRequestBodyFieldException, RequestBodyParseException;
+    GeneratePDFInput retrieveInputData(byte[] requestBody, Map<String, String> requestHeaders, Path workingDirPath) throws UnexpectedRequestBodyFieldException, RequestBodyParseException;
 }

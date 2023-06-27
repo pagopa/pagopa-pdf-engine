@@ -24,13 +24,17 @@ import it.gov.pagopa.project.model.AppErrorCodeEnum;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -43,11 +47,19 @@ class GeneratePDFServiceImplTest {
 
     private GeneratePDFService sut;
 
+    private Path workingPath;
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
 
         handlebarsMock = spy(buildHandlebars());
         sut = spy(new GeneratePDFServiceImpl(handlebarsMock));
+        workingPath = Files.createTempDirectory("testDir");
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        FileUtils.deleteDirectory(workingPath.toFile());
     }
 
     @Test
@@ -64,9 +76,10 @@ class GeneratePDFServiceImplTest {
 
         doReturn(template).when(handlebarsMock).compile(anyString());
 
-        BufferedInputStream output = sut.generatePDF(pdfInput);
+        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
 
         assertNotNull(output);
+        output.close();
     }
 
     @Test
@@ -84,9 +97,10 @@ class GeneratePDFServiceImplTest {
 
         doReturn(template).when(handlebarsMock).compile(anyString());
 
-        BufferedInputStream output = sut.generatePDF(pdfInput);
+        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
 
         assertNotNull(output);
+        output.close();
     }
 
     @Test
@@ -96,7 +110,7 @@ class GeneratePDFServiceImplTest {
 
         doThrow(IOException.class).when(handlebarsMock).compile(anyString());
 
-        CompileTemplateException e = assertThrows(CompileTemplateException.class, () -> sut.generatePDF(pdfInput));
+        CompileTemplateException e = assertThrows(CompileTemplateException.class, () -> sut.generatePDF(pdfInput, workingPath));
 
         assertEquals(AppErrorCodeEnum.PDFE_901, e.getErrorCode());
     }
@@ -112,7 +126,7 @@ class GeneratePDFServiceImplTest {
         doReturn(templateMock).when(handlebarsMock).compile(anyString());
         doThrow(IOException.class).when(templateMock).apply(anyMap());
 
-        FillTemplateException e = assertThrows(FillTemplateException.class, () -> sut.generatePDF(pdfInput));
+        FillTemplateException e = assertThrows(FillTemplateException.class, () -> sut.generatePDF(pdfInput, workingPath));
 
         assertEquals(AppErrorCodeEnum.PDFE_900, e.getErrorCode());
     }

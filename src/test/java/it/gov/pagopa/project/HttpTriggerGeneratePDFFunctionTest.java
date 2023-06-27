@@ -81,8 +81,8 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any());
         doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
 
         createHttpMessageBuilderSub(request);
@@ -113,8 +113,8 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any());
         doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
 
         createHttpMessageBuilderSub(request);
@@ -158,7 +158,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doThrow(new RequestBodyParseException(PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doThrow(new RequestBodyParseException(PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -181,7 +181,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doThrow(new RequestBodyParseException(PDFE_704, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doThrow(new RequestBodyParseException(PDFE_704, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -207,7 +207,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -233,7 +233,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -261,8 +261,8 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock).generatePDF(any(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -292,8 +292,8 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any());
         doThrow(IOException.class).when(inputStreamMock).readAllBytes();
 
         createHttpMessageBuilderSub(request);
