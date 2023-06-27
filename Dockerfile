@@ -21,4 +21,4 @@ ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
 
 EXPOSE 80
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]
-RUN mkdir -p /workingDir
+RUN mkdir -p /tmp/workingDir

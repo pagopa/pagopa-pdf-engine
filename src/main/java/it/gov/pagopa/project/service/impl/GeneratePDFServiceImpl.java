@@ -140,7 +140,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     }
 
     private File createTempFile(String fileName, String fileExtension, AppErrorCodeEnum error) throws GeneratePDFException {
-        File directory = new File("/temp" + WORKING_DIR);
+        File directory = new File("/tmp" + WORKING_DIR);
         try {
             if (!directory.exists()) {
                 Files.createDirectory(directory.toPath());
