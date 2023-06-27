@@ -50,7 +50,8 @@ public enum AppErrorCodeEnum {
     PDFE_904("PDFE_904", "Error creating temp file for zipped PDF document"),
     PDFE_905("PDFE_905", "Error accessing the temporary zip file, file does not exist, cannot be created or cannot be opened"),
     PDFE_906("PDFE_906", "I/O error when zipping the PDF document"),
-    PDFE_907("PDFE_907", "I/O error on handling the PDF generation result");
+    PDFE_907("PDFE_907", "I/O error on handling the PDF generation result"),
+    PDFE_908("PDFE_908", "I/O error on deleting temp files in /workingDir directory");
 
 
 

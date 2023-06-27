@@ -34,8 +34,11 @@ import it.gov.pagopa.project.service.GeneratePDFService;
 import it.gov.pagopa.project.service.ParseRequestBodyService;
 import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
 import it.gov.pagopa.project.service.impl.ParseRequestBodyServiceImpl;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
@@ -45,6 +48,7 @@ import java.util.logging.Logger;
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
+import static it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl.WORKING_DIR;
 
 /**
  * Azure Functions with HTTP Trigger.
@@ -56,6 +60,7 @@ public class HttpTriggerGeneratePDFFunction {
 
     private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
     private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
+    private final String zipFileName = System.getenv().getOrDefault("ZIP_FILE_NAME", "/input.zip");
 
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
@@ -155,6 +160,8 @@ public class HttpTriggerGeneratePDFFunction {
                                     PDFE_907,
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
+        } finally {
+            clearTempFiles(logger);
         }
 
 
@@ -189,4 +196,14 @@ public class HttpTriggerGeneratePDFFunction {
                 .registerHelper("not", ConditionalHelpers.not);
     }
 
+
+    private void clearTempFiles(Logger logger) {
+        try {
+            FileUtils.deleteDirectory(new File(WORKING_DIR));
+            FileUtils.deleteDirectory(new File(writeFileBasePath + unzippedFilesFolder));
+            Files.delete(Path.of(writeFileBasePath + zipFileName));
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Unable to clear temp files", e);
+        }
+    }
 }
