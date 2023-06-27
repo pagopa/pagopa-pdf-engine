@@ -30,13 +30,12 @@ import it.gov.pagopa.project.util.HttpResponseMessageMock;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockedStatic;
 import org.mockito.stubbing.Answer;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -47,21 +46,19 @@ import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class HttpTriggerGeneratePDFFunctionTest {
 
     private HttpTriggerGeneratePDFFunction function;
 
-    @Mock
     private GeneratePDFService generatePDFServiceMock;
-    @Mock
     private ParseRequestBodyService parseRequestBodyServiceMock;
-
-    @Mock
     private ExecutionContext executionContextMock;
 
     @BeforeEach
     void setUp() {
+        generatePDFServiceMock = mock(GeneratePDFService.class);
+        parseRequestBodyServiceMock = mock(ParseRequestBodyService.class);
+        executionContextMock = mock(ExecutionContext.class);
         function = spy(new HttpTriggerGeneratePDFFunction(generatePDFServiceMock, parseRequestBodyServiceMock));
     }
 
@@ -147,6 +144,34 @@ class HttpTriggerGeneratePDFFunctionTest {
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
         assertEquals(AppErrorCodeEnum.PDFE_899, ((ErrorResponse) body).getAppErrorCode());
+    }
+
+    @Test
+    void runFailOnCreateWorkingDirectory() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        createHttpMessageBuilderSub(request);
+
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            filesMockedStatic.when(
+                    () -> Files.createTempDirectory(any(), anyString())
+            ).thenThrow(IOException.class);
+
+            // Invoke
+            final HttpResponseMessage response = function.run(request, executionContextMock);
+
+            // Verify
+            assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
+            Object body = response.getBody();
+            assertNotNull(body);
+            assertTrue(body instanceof ErrorResponse);
+            assertEquals(PDFE_908, ((ErrorResponse) body).getAppErrorCode());
+        }
+
     }
 
     @Test

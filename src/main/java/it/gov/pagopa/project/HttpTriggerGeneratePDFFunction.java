@@ -225,7 +225,7 @@ public class HttpTriggerGeneratePDFFunction {
         }
     }
 
-    private static File createWorkingDirectory() throws IOException {
+    private File createWorkingDirectory() throws IOException {
         File workingDirectory = new File("temp");
         if (!workingDirectory.exists()) {
             Files.createDirectory(workingDirectory.toPath());
