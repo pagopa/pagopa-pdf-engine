@@ -19,8 +19,6 @@ on:
 
 env:
   PROJECT_KEY: pagopa_pagopa-pdf-engine
-  BASE_PATH: $WRITE_FILE_BASE_PATH
-  WORKING_DIR_PATH: $WORKING_FILES_FOLDER
 
 
 permissions:
