@@ -36,6 +36,7 @@ public enum AppErrorCodeEnum {
     PDFE_710("PDFE_710", "Error when switching to the next multipart stream token, stream end unexpectedly"),
     PDFE_711("PDFE_711", "Content-type header is null"),
     PDFE_712("PDFE_712", "Content-type header is not multipart/form-data"),
+    PDFE_713("PDFE_713", "I/O error when reading generate zipped boolean from request and writing it to the output stream"),
 
     PDFE_896("PDFE_896", "Unexpected field in request body"),
     PDFE_897("PDFE_897", "Invalid HTML template, template not provided"),
@@ -44,7 +45,15 @@ public enum AppErrorCodeEnum {
 
     PDFE_900("PDFE_900", "Error filling the HTML template"),
     PDFE_901("PDFE_901", "Error compiling the HTML template"),
-    PDFE_902("PDFE_902", "Error generating the PDF document");
+    PDFE_902("PDFE_902", "Error generating the PDF document"),
+    PDFE_903("PDFE_903", "Error creating temp file for PDF document"),
+    PDFE_904("PDFE_904", "Error creating temp file for zipped PDF document"),
+    PDFE_905("PDFE_905", "Error accessing the temporary zip file, file does not exist, cannot be created or cannot be opened"),
+    PDFE_906("PDFE_906", "I/O error when zipping the PDF document"),
+    PDFE_907("PDFE_907", "I/O error on handling the PDF generation result"),
+    PDFE_908("PDFE_908", "I/O error on creating the working directory");
+
+
 
     private final String errorCode;
     private final String errorMessage;

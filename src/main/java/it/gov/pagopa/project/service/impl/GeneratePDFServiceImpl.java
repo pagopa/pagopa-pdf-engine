@@ -17,6 +17,7 @@ package it.gov.pagopa.project.service.impl;
 
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
+import com.github.jknack.handlebars.io.FileTemplateLoader;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.PdfAConformanceLevel;
@@ -28,19 +29,23 @@ import com.itextpdf.pdfa.PdfADocument;
 import it.gov.pagopa.project.exception.CompileTemplateException;
 import it.gov.pagopa.project.exception.FillTemplateException;
 import it.gov.pagopa.project.exception.GeneratePDFException;
+import it.gov.pagopa.project.model.AppErrorCodeEnum;
 import it.gov.pagopa.project.model.GeneratePDFInput;
 import it.gov.pagopa.project.service.GeneratePDFService;
+import org.apache.commons.io.IOUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
+import static it.gov.pagopa.project.util.Constants.UNZIPPED_FILES_FOLDER;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
-    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
-    private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
     private final String htmlTemplateFileName = System.getenv().getOrDefault("HTML_TEMPLATE_FILE_NAME", "template");
 
     private final Handlebars handlebars;
@@ -50,21 +55,50 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     }
 
     @Override
-    public ByteArrayOutputStream generatePDF(GeneratePDFInput generatePDFInput) throws CompileTemplateException, FillTemplateException, GeneratePDFException {
+    public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
+            throws CompileTemplateException, FillTemplateException, GeneratePDFException {
+        handlebars.with(new FileTemplateLoader(workingDirPath + UNZIPPED_FILES_FOLDER, ".html"));
+
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
-
+        File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
         try (
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                FileOutputStream os = new FileOutputStream(pdfTempFile);
                 PdfWriter pdfWriter = new PdfWriter(os);
                 PdfADocument pdf = getPdfADocument(pdfWriter)
         ) {
             pdf.setTagged();
-            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties());
+            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties(workingDirPath));
             document.close();
-            return os;
+
+            if (generatePDFInput.isGenerateZipped()) {
+                return zipPDFDocument(pdfTempFile, workingDirPath);
+            }
+            return new BufferedInputStream(new FileInputStream(pdfTempFile));
+
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
+        }
+    }
+
+    private BufferedInputStream zipPDFDocument(File pdfTempFile, Path workingDirPath) throws GeneratePDFException {
+        File zippedTempFile = createTempFile("zippedDocument", "zip", workingDirPath, PDFE_904);
+        try (
+                ZipOutputStream zipOutputStream = new ZipOutputStream(
+                        new BufferedOutputStream(
+                                new FileOutputStream(zippedTempFile)))
+        ) {
+            ZipEntry zipEntry = new ZipEntry("document.pdf");
+            zipOutputStream.putNextEntry(zipEntry);
+
+            try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(pdfTempFile))) {
+                IOUtils.copy(bufferedInputStream, zipOutputStream);
+                return new BufferedInputStream(new FileInputStream(zippedTempFile));
+            }
+        } catch (FileNotFoundException e) {
+            throw new GeneratePDFException(PDFE_905, "An error occurred when zipping the PDF document", e);
+        } catch (IOException e) {
+            throw new GeneratePDFException(PDFE_906, "An error occurred when zipping the PDF document", e);
         }
     }
 
@@ -98,11 +132,19 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 ));
     }
 
-    private ConverterProperties buildConverterProperties() {
+    private ConverterProperties buildConverterProperties(Path workingDirPath) {
         FontProvider fontProvider = new FontProvider();
         fontProvider.addSystemFonts();
         return new ConverterProperties()
-                .setBaseUri(writeFileBasePath + unzippedFilesFolder)
+                .setBaseUri(workingDirPath + UNZIPPED_FILES_FOLDER)
                 .setFontProvider(fontProvider);
+    }
+
+    private File createTempFile(String fileName, String fileExtension, Path workingDirPath, AppErrorCodeEnum error) throws GeneratePDFException {
+        try {
+            return Files.createTempFile(workingDirPath, fileName, fileExtension).toFile();
+        } catch (IOException e) {
+            throw new GeneratePDFException(error, error.getErrorMessage(), e);
+        }
     }
 }

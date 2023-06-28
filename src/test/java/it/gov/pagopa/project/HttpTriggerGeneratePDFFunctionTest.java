@@ -30,12 +30,12 @@ import it.gov.pagopa.project.util.HttpResponseMessageMock;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockedStatic;
 import org.mockito.stubbing.Answer;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -46,27 +46,25 @@ import static it.gov.pagopa.project.model.AppErrorCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class HttpTriggerGeneratePDFFunctionTest {
 
     private HttpTriggerGeneratePDFFunction function;
 
-    @Mock
     private GeneratePDFService generatePDFServiceMock;
-    @Mock
     private ParseRequestBodyService parseRequestBodyServiceMock;
-
-    @Mock
     private ExecutionContext executionContextMock;
 
     @BeforeEach
     void setUp() {
+        generatePDFServiceMock = mock(GeneratePDFService.class);
+        parseRequestBodyServiceMock = mock(ParseRequestBodyService.class);
+        executionContextMock = mock(ExecutionContext.class);
         function = spy(new HttpTriggerGeneratePDFFunction(generatePDFServiceMock, parseRequestBodyServiceMock));
     }
 
     @Test
     @SneakyThrows
-    void runOk() {
+    void runGenerateNotZippedOk() {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
@@ -76,10 +74,14 @@ class HttpTriggerGeneratePDFFunctionTest {
         generatePDFInput.setApplySignature(false);
         generatePDFInput.setTemplateSavedOnFileSystem(true);
 
+        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doReturn(new ByteArrayOutputStream()).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any());
+        doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
+
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -88,6 +90,38 @@ class HttpTriggerGeneratePDFFunctionTest {
         // Verify
         assertEquals(HttpStatus.OK, response.getStatus());
         assertEquals( "application/pdf", response.getHeader("content-type"));
+        assertEquals( "attachment; ", response.getHeader("content-disposition"));
+    }
+
+    @Test
+    @SneakyThrows
+    void runGenerateZippedOk() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setData(Collections.singletonMap("a", "b"));
+        generatePDFInput.setApplySignature(false);
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setGenerateZipped(true);
+
+        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any());
+        doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
+
+        createHttpMessageBuilderSub(request);
+
+        // Invoke
+        final HttpResponseMessage response = function.run(request, executionContextMock);
+
+        // Verify
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals( "application/zip", response.getHeader("content-type"));
         assertEquals( "attachment; ", response.getHeader("content-disposition"));
     }
 
@@ -113,6 +147,34 @@ class HttpTriggerGeneratePDFFunctionTest {
     }
 
     @Test
+    void runFailOnCreateWorkingDirectory() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        createHttpMessageBuilderSub(request);
+
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            filesMockedStatic.when(
+                    () -> Files.createTempDirectory(any(), anyString())
+            ).thenThrow(IOException.class);
+
+            // Invoke
+            final HttpResponseMessage response = function.run(request, executionContextMock);
+
+            // Verify
+            assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
+            Object body = response.getBody();
+            assertNotNull(body);
+            assertTrue(body instanceof ErrorResponse);
+            assertEquals(PDFE_908, ((ErrorResponse) body).getAppErrorCode());
+        }
+
+    }
+
+    @Test
     @SneakyThrows
     void runFailOnParseRequestBodyWith400() {
         // Setup
@@ -121,7 +183,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doThrow(new RequestBodyParseException(PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doThrow(new RequestBodyParseException(PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -144,7 +206,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doThrow(new RequestBodyParseException(PDFE_704, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doThrow(new RequestBodyParseException(PDFE_704, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -170,7 +232,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -196,7 +258,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -224,8 +286,8 @@ class HttpTriggerGeneratePDFFunctionTest {
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap());
-        doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock).generatePDF(any());
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock).generatePDF(any(), any());
         createHttpMessageBuilderSub(request);
 
         // Invoke
@@ -237,6 +299,39 @@ class HttpTriggerGeneratePDFFunctionTest {
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
         assertEquals(AppErrorCodeEnum.PDFE_901, ((ErrorResponse) body).getAppErrorCode());
+    }
+
+    @Test
+    @SneakyThrows
+    void runFailOnReadPDFDocumentBytesForIOException() {
+        // Setup
+        @SuppressWarnings("unchecked")
+        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setData(Collections.singletonMap("a", "b"));
+        generatePDFInput.setApplySignature(false);
+        generatePDFInput.setTemplateSavedOnFileSystem(true);
+
+        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
+        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+        doReturn(Optional.of(new byte[2])).when(request).getBody();
+        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any());
+        doThrow(IOException.class).when(inputStreamMock).readAllBytes();
+
+        createHttpMessageBuilderSub(request);
+
+        // Invoke
+        final HttpResponseMessage response = function.run(request, executionContextMock);
+
+        // Verify
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+        Object body = response.getBody();
+        assertNotNull(body);
+        assertTrue(body instanceof ErrorResponse);
+        assertEquals(AppErrorCodeEnum.PDFE_907, ((ErrorResponse) body).getAppErrorCode());
     }
 
     private void createHttpMessageBuilderSub(HttpRequestMessage<Optional<byte[]>> request) {
