@@ -8,7 +8,6 @@ export function generatePDF(pdfEngineUri, subKey, zipFile, inputData, generateZi
       };
 
       let headers = { 
-        'Content-Type': 'multipart/form-data',
         'Ocp-Apim-Subscription-Key': subKey
     };
 

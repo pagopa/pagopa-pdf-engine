@@ -2,7 +2,7 @@
   "environment": [
     {
       "env": "local",
-      "pefEngineUri": "http://localhost:60486/generate-pdf"
+      "pdfEngineUri": "http://localhost:62703/generate-pdf"
     }
   ]
 }
