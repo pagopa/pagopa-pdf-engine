@@ -1,0 +1,8 @@
+{
+  "environment": [
+    {
+      "env": "local",
+      "pefEngineUri": "http://localhost:60486/generate-pdf"
+    }
+  ]
+}
