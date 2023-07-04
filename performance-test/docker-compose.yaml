@@ -6,7 +6,7 @@ services:
     volumes:
       - '${PWD}/src:/scripts'
     environment:
-      - SUBSCRIPTION_KEY=${cosmos_key}
+      - SUBSCRIPTION_KEY=${sub_key}
       - GENERATE_ZIPPED=${generate_zipped}
       - TEMPLATE_FILE_NAME=${template_file_name}
       - VARS=${env}.environment.json
