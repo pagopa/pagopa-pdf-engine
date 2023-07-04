@@ -17,7 +17,7 @@ To invoke k6 test passing parameter use -e (or --env) flag:
 Call to test the PDF generator:
 
 ```
-k6 run --env VARS=local.environment.json --env TEST_TYPE=./test-types/load.json --env SUBSCRIPTION_KEY=<your-subscription-key> --env GENERATE_ZIPPED=false --env TEMPLATE_FILE_NAME=./zip_files/template.zip pdf_engine.js 
+k6 run --env VARS=local.environment.json --env TEST_TYPE=./test-types/load.json --env SUBSCRIPTION_KEY=<your-subscription-key> --env GENERATE_ZIPPED=false --env TEMPLATE_FILE_NAME=template pdf_engine.js 
 ```
 
 where the mean of the environment variables is:

@@ -53,9 +53,6 @@
     ],
     "http_req_duration": [
       "p(99)<5000"
-    ],
-    "http_req_duration{bizEventMethod:GetOrganizationReceipt}": [
-      "p(95)<1500"
     ]
   }
 }
