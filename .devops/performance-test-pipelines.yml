@@ -1,0 +1,61 @@
+# azure-pipelines.yml
+trigger: none
+
+parameters:
+  - name: "ENVIRONMENT"
+    displayName: "Environment"
+    type: string
+    values:
+      - "dev"
+      - "uat"
+    default: "uat"
+  - name: "TEST_TYPE"
+    displayName: "Test type"
+    type: string
+    values:
+      - "load"
+      - "spike"
+      - "stress"
+    default: "constant"
+  - name: "SCRIPT"
+    displayName: "Script name"
+    type: string
+    values:
+      - pdf_engine
+  - name: "DB_NAME"
+    displayName: "DB name"
+    type: string
+    values:
+      - pdf_enginek6
+  - name: "GENERATE_ZIPPED"
+    displayName: "Generate zipped"
+    type: boolean
+  - name: "TEMPLATE_FILE_NAME"
+    displayName: "Input template file name"
+    type: string
+    values:
+      - template
+    default: template
+
+variables:
+  ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
+    subscriptionKey: "$(DEV_SUBSCRIPTION_KEY)"
+    poolImage: 'pagopa-dev-loadtest-linux'
+  ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
+    subscriptionKey: "$(UAT_SUBSCRIPTION_KEY)"
+    poolImage: 'pagopa-uat-loadtest-linux'
+
+pool:
+  name: $(poolImage)
+
+steps:
+  - script: |
+      cd ./performance-test/src
+      docker pull grafana/k6
+    displayName: Pull k6 image
+  - script: |
+      cd ./performance-test
+      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} $SUBSCRIPTION_KEY ${{ parameters.GENERATE_ZIPPED }} ${{ parameters.TEMPLATE_FILE_NAME }}
+    displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
+    env:
+      SUBSCRIPTION_KEY: ${{ variables.subscriptionKey }}
