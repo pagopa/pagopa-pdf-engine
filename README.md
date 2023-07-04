@@ -42,10 +42,6 @@ See the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubuserc
 
 ## Start Project Locally 🚀
 
-> **Warning**
-> If you are running the project from macOS you must change the WRITE_FILE_BASE_PATH environment variable with an absolute
-> path, such as `/Users/<username>/<working-directory>` (the `<working-directory>` folder must exist)
-
 ### Run locally with Docker
 
 #### Prerequisites
@@ -68,7 +64,8 @@ See the [OpenApi 3 here.](https://editor.swagger.io/?url=https://raw.githubuserc
 
 ### Test
 ```
-curl --location 'http://localhost:54078/generate-pdf' \
+curl --location 'http://localhost:7071/generate-pdf' \
+--header 'Ocp-Apim-Subscription-Key;' \
 --form 'template=@"template.zip"' \
 --form 'data="{
 		\"transaction\": {
@@ -120,7 +117,8 @@ curl --location 'http://localhost:54078/generate-pdf' \
 		\"noticeCode\": \"noticeCodeTest\",
 		\"amount\": 100
 	}"' \
---form 'applySignature="false"'
+--form 'applySignature="false"' \
+--form 'generateZipped="false"'
 ``` 
 As you can see in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template
 file and other optional attachments, such as CSS files, that will be used to generate the PDF document.

@@ -18,8 +18,6 @@ package it.gov.pagopa.project;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
-import com.github.jknack.handlebars.io.FileTemplateLoader;
-import com.github.jknack.handlebars.io.TemplateLoader;
 import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
@@ -34,9 +32,17 @@ import it.gov.pagopa.project.service.GeneratePDFService;
 import it.gov.pagopa.project.service.ParseRequestBodyService;
 import it.gov.pagopa.project.service.impl.GeneratePDFServiceImpl;
 import it.gov.pagopa.project.service.impl.ParseRequestBodyServiceImpl;
+import org.apache.commons.io.FileUtils;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -53,9 +59,7 @@ public class HttpTriggerGeneratePDFFunction {
 
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
-
-    private final String writeFileBasePath = System.getenv().getOrDefault("WRITE_FILE_BASE_PATH", "/tmp");
-    private final String unzippedFilesFolder = System.getenv().getOrDefault("UNZIPPED_FILES_FOLDER", "/unzipped");
+    private static final String PATTERN_FORMAT = "yyyy.MM.dd.HH.mm.ss";
 
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
@@ -98,10 +102,31 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
+        Path workingDirPath;
+        try {
+            File workingDirectory = createWorkingDirectory();
+            workingDirPath = Files.createTempDirectory(
+                    workingDirectory.toPath(),
+                    DateTimeFormatter.ofPattern(PATTERN_FORMAT)
+                            .withZone(ZoneId.systemDefault())
+                            .format(Instant.now())
+            );
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, PDFE_908.getErrorMessage(), e);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(
+                            buildResponseBody(
+                                    INTERNAL_SERVER_ERROR,
+                                    PDFE_908,
+                                    "An error occurred on processing the request"))
+                    .build();
+        }
+
         byte[] requestBody = optionalRequestBody.get();
         GeneratePDFInput generatePDFInput;
         try {
-            generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders());
+            generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders(), workingDirPath);
         } catch (PDFEngineException e) {
             logger.log(Level.SEVERE, "Error retrieving input data from request body", e);
             HttpStatus status = getHttpStatus(e);
@@ -127,9 +152,15 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        ByteArrayOutputStream outputStream;
-        try {
-            outputStream = generatePDFService.generatePDF(generatePDFInput);
+        try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath)){
+            byte[] fileBytes = inputStream.readAllBytes();
+            return request
+                    .createResponseBuilder(HttpStatus.OK)
+                    .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
+                    .header("content-length", String.valueOf(fileBytes.length))
+                    .header("content-disposition", "attachment; ")
+                    .body(fileBytes)
+                    .build();
         } catch (PDFEngineException e) {
             logger.log(Level.SEVERE, "Error generating the PDF document", e);
             return request
@@ -140,15 +171,21 @@ public class HttpTriggerGeneratePDFFunction {
                                     e.getErrorCode(),
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error handling the generated stream", e);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(
+                            buildResponseBody(
+                                    INTERNAL_SERVER_ERROR,
+                                    PDFE_907,
+                                    ERROR_GENERATING_PDF_MESSAGE))
+                    .build();
+        } finally {
+            clearTempDirectory(workingDirPath, logger);
         }
 
-        return request
-                .createResponseBuilder(HttpStatus.OK)
-                .header("content-type", "application/pdf")
-                .header("content-length", String.valueOf(outputStream.size()))
-                .header("content-disposition", "attachment; ")
-                .body(outputStream.toByteArray())
-                .build();
+
     }
 
     private static HttpStatus getHttpStatus(PDFEngineException e) {
@@ -174,10 +211,25 @@ public class HttpTriggerGeneratePDFFunction {
     }
 
     private Handlebars buildHandlebars() {
-        TemplateLoader loader = new FileTemplateLoader(writeFileBasePath + unzippedFilesFolder, ".html");
-        return new Handlebars(loader)
+        return new Handlebars()
                 .registerHelper("eq", ConditionalHelpers.eq)
                 .registerHelper("not", ConditionalHelpers.not);
     }
 
+    private void clearTempDirectory(Path workingDirPath, Logger logger) {
+        try {
+            FileUtils.deleteDirectory(workingDirPath.toFile());
+        } catch (IOException e) {
+            String errMsg = String.format("Unable to clear working directory: %s", workingDirPath);
+            logger.log(Level.WARNING, errMsg, e);
+        }
+    }
+
+    private File createWorkingDirectory() throws IOException {
+        File workingDirectory = new File("temp");
+        if (!workingDirectory.exists()) {
+            Files.createDirectory(workingDirectory.toPath());
+        }
+        return workingDirectory;
+    }
 }

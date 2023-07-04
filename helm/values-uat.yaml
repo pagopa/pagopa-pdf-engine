@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
-    tag: "1.2.0"
+    tag: "1.3.0"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -63,9 +63,6 @@ microservice-chart:
   envConfig:
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
-    UNZIPPED_FILES_FOLDER: "/unzipped"
-    WRITE_FILE_BASE_PATH: "/tmp"
-    ZIP_FILE_NAME: "/input.zip"
     HTML_TEMPLATE_FILE_NAME: "template"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
@@ -98,7 +95,7 @@ microservice-chart:
       create: true
       image:
         repository: ghcr.io/pagopa/pagopa-pdf-engine
-        tag: "1.2.0"
+        tag: "1.3.0"
         pullPolicy: Always
       envConfig:
       envSecret:
