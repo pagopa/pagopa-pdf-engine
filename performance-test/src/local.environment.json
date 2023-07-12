@@ -1,0 +1,8 @@
+{
+  "environment": [
+    {
+      "env": "local",
+      "pdfEngineUri": "http://localhost:62703/generate-pdf"
+    }
+  ]
+}

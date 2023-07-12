@@ -1,0 +1,8 @@
+{
+  "environment": [
+    {
+      "env": "dev",
+      "pdfEngineUri": "https://api.dev.platform.pagopa.it/shared/pdf-engine/v1/generate-pdf"
+    }
+  ]
+}

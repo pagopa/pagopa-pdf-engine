@@ -123,7 +123,7 @@ curl --location 'http://localhost:7071/generate-pdf' \
 As you can see in the provided curl the first field `template` hold a zip file. The zip file contains the HTML template
 file and other optional attachments, such as CSS files, that will be used to generate the PDF document.
 
-> **Warning**
+> **Warning** \
 > The HTML template file must be named to match the value of the `HTML_TEMPLATE_FILE_NAME` environment variable 
 > (default is `template`) (example of HTML template file name: `template.html`)
 
