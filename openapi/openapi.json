@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "1.4.0"
+    "version": "1.4.1-feat_update_helm_resources"
   },
   "servers": [
     {

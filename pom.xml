@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1-feat_update_helm_resources</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
