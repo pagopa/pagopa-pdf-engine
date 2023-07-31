@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-functions-template
 description: Microservice description
 type: application
-version: 0.32.0
-appVersion: 1.4.3-PRDP-64-feat-add-elk-apm-configurations
+version: 0.33.0
+appVersion: 1.5.0-PRDP-64-feat-add-elk-apm-configurations
 dependencies:
   - name: microservice-chart
     version: 2.4.0
