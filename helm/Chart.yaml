@@ -2,13 +2,8 @@ apiVersion: v2
 name: pagopa-functions-template
 description: Microservice description
 type: application
-<<<<<<< HEAD
-version: 0.25.0
-appVersion: 1.4.3
-=======
-version: 0.30.0
-appVersion: 1.4.2
->>>>>>> bff2f31 ([PRDP-64] feat: Updated chart, refactored package, introducing agents download inside Docker file, updated values)
+version: 0.31.0
+appVersion: 1.4.2-1-PRDP-64-feat-add-elk-apm-configurations
 dependencies:
   - name: microservice-chart
     version: 2.4.0
