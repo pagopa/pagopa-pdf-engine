@@ -79,7 +79,7 @@ microservice-chart:
     ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.pdf.engine"
     ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
     ELASTIC_APM_LOG_SENDING: "true"
-    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent-1.36.0.jar"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent.jar"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
     ELASTIC_APM_SECRET_TOKEN: 'elastic-apm-secret-token'
