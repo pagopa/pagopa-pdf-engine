@@ -28,8 +28,6 @@ FROM mcr.microsoft.com/azure-functions/java:3.0-java$JAVA_VERSION
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
-ENV JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/opentelemetry-javaagent.jar"
-
 EXPOSE 80
 EXPOSE 12345
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]
