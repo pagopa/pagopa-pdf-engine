@@ -75,14 +75,14 @@ microservice-chart:
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     HTML_TEMPLATE_FILE_NAME: "template"
-    ELASTIC_APM_SERVICE_NAME: "pagopapdfengine"
-    ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.pdf.engine"
-    ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
-    ELASTIC_APM_LOG_SENDING: 'true'
-    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent.jar"
+    OTEL_RESOURCE_ATTRIBUTES: "service.name=pagopapdfengine,deployment.environment=dev"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.elastic-system.svc:4317"
+    OTEL_LOGS_EXPORTER: none
+    OTEL_TRACES_SAMPLER: "always_on"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/opentelemetry-javaagent.jar"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
-    ELASTIC_APM_SECRET_TOKEN: 'elastic-apm-secret-token'
+    OTEL_EXPORTER_OTLP_HEADERS: 'elastic-otel-token-header'
   keyvault:
     name: "pagopa-d-shared-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
