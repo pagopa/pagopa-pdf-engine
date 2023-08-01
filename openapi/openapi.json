@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "1.4.3"
+    "version": "1.5.0-PRDP-64-feat-add-elk-apm-configurations"
   },
   "servers": [
     {

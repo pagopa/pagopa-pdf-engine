@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
-    tag: "1.4.3"
+    tag: "1.5.0-PRDP-64-feat-add-elk-apm-configurations"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -23,14 +23,25 @@ microservice-chart:
     periodSeconds: 10
   deployment:
     create: true
-  service:
+  serviceMonitor:
     create: true
+    endpoints:
+      - interval: 10s #jmx-exporter
+        targetPort: 12345
+        path: /metrics
+  ports:
+    - 80 #http
+    - 12345 #jmx-exporter
+  service:
     type: ClusterIP
-    port: 80
+    ports:
+      - 80 #http
+      - 12345 #jmx-exporter
   ingress:
     create: true
     host: "weuprod.shared.internal.platform.pagopa.it"
     path: /pagopa-pdf-engine/(.*)
+    servicePort: 80
   serviceAccount:
     create: false
     annotations: {}
@@ -64,8 +75,14 @@ microservice-chart:
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     HTML_TEMPLATE_FILE_NAME: "template"
+    ELASTIC_APM_SERVICE_NAME: "pagopapdfengine"
+    ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.pdf.engine"
+    ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
+    ELASTIC_APM_LOG_SENDING: "true"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent-1.36.0.jar"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
+    ELASTIC_APM_SECRET_TOKEN: 'elastic-apm-secret-token'
   keyvault:
     name: "pagopa-p-shared-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
@@ -95,7 +112,7 @@ microservice-chart:
       create: true
       image:
         repository: ghcr.io/pagopa/pagopa-pdf-engine
-        tag: "1.4.3"
+        tag: "1.5.0-PRDP-64-feat-add-elk-apm-configurations"
         pullPolicy: Always
       envConfig:
       envSecret:

@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>1.4.3</version>
+    <version>1.5.0-PRDP-64-feat-add-elk-apm-configurations</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
