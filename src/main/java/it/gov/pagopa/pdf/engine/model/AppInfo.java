@@ -1,4 +1,4 @@
-package it.gov.pagopa.project.model;
+package it.gov.pagopa.pdf.engine.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
