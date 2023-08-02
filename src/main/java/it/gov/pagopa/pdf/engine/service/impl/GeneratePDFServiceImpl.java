@@ -33,6 +33,8 @@ import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import org.apache.commons.io.IOUtils;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -59,8 +61,23 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             throws CompileTemplateException, FillTemplateException, GeneratePDFException {
         handlebars.with(new FileTemplateLoader(workingDirPath + UNZIPPED_FILES_FOLDER, ".html"));
 
+        System.setProperty("webdriver.http.factory", "jdk-http-client");
+
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
+
+        System.setProperty("webdriver.chrome.driver", "C:/repos/chromedriver.exe");
+        ChromeOptions options = new ChromeOptions();
+        // Spin up the browser in "headless" mode, this way Selenium will not open up a graphical user interface.
+        options.addArguments("--headless");
+        ChromeDriver driver = new ChromeDriver(options);
+        // Open up the HTML file in our headless browser. This step will evaluate the JavaScript for us.
+        driver.navigate().to("data:text/html;charset=utf-8," + filledTemplate);
+        // Now all we have to do is extract the evaluated HTML syntax and convert it to a PDF using iText's HtmlConverter.
+        driver.executeScript("window.print();");
+        String evaluatedHtml = (String) driver.executeScript("return document.documentElement.innerHTML;");
+
+
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
         try (
                 FileOutputStream os = new FileOutputStream(pdfTempFile);
@@ -68,7 +85,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 PdfADocument pdf = getPdfADocument(pdfWriter)
         ) {
             pdf.setTagged();
-            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties(workingDirPath));
+            Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
             document.close();
 
             if (generatePDFInput.isGenerateZipped()) {
