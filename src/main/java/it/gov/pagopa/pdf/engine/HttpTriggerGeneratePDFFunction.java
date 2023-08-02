@@ -216,12 +216,12 @@ public class HttpTriggerGeneratePDFFunction {
     }
 
     private void clearTempDirectory(Path workingDirPath, Logger logger) {
-        try {
-            FileUtils.deleteDirectory(workingDirPath.toFile());
-        } catch (IOException e) {
-            String errMsg = String.format("Unable to clear working directory: %s", workingDirPath);
-            logger.log(Level.WARNING, errMsg, e);
-        }
+//        try {
+//            FileUtils.deleteDirectory(workingDirPath.toFile());
+//        } catch (IOException e) {
+//            String errMsg = String.format("Unable to clear working directory: %s", workingDirPath);
+//            logger.log(Level.WARNING, errMsg, e);
+//        }
     }
 
     private File createWorkingDirectory() throws IOException {

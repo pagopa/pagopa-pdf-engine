@@ -95,6 +95,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.ironsoftware</groupId>
+            <artifactId>ironpdf</artifactId>
+            <version>2023.7.2</version>
+        </dependency>
+
 
         <!-- jaxb -->
         <dependency>
@@ -183,6 +189,12 @@
             <artifactId>lombok</artifactId>
             <version>${lombok-version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.7</version>
         </dependency>
 
     </dependencies>

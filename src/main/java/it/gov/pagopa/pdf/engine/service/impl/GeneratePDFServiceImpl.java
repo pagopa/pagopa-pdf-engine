@@ -18,6 +18,11 @@ package it.gov.pagopa.pdf.engine.service.impl;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.io.FileTemplateLoader;
+import com.ironsoftware.ironpdf.License;
+import com.ironsoftware.ironpdf.PdfDocument;
+import com.ironsoftware.ironpdf.Settings;
+import com.ironsoftware.ironpdf.render.ChromePdfRenderOptions;
+import com.ironsoftware.ironpdf.render.PaperSize;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.PdfAConformanceLevel;
@@ -37,12 +42,14 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
 import static it.gov.pagopa.pdf.engine.util.Constants.UNZIPPED_FILES_FOLDER;
+import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
@@ -62,14 +69,20 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
-        try (
-                FileOutputStream os = new FileOutputStream(pdfTempFile);
-                PdfWriter pdfWriter = new PdfWriter(os);
-                PdfADocument pdf = getPdfADocument(pdfWriter)
-        ) {
-            pdf.setTagged();
-            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties(workingDirPath));
-            document.close();
+        try {
+
+            License.setLicenseKey("KEY");
+            Settings.setLogPath(Paths.get("C:/tmp/IronPdfEngine.log"));
+            ChromePdfRenderOptions renderOptions = new ChromePdfRenderOptions();
+            renderOptions.setPaperSize(PaperSize.A4);
+            renderOptions.setRenderDelay(500);
+
+            PdfDocument myPdf = PdfDocument.renderZipAsPdf(Paths.get(workingDirPath + ZIP_FILE_NAME), "template.html", new ChromePdfRenderOptions());
+            myPdf.saveAs(pdfTempFile.getPath());
+
+//            pdf.setTagged();
+//            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties(workingDirPath));
+//            document.close();
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(pdfTempFile, workingDirPath);
