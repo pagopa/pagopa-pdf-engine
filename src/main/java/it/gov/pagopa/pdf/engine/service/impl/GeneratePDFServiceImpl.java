@@ -39,6 +39,8 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -66,27 +68,27 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
 
-        System.setProperty("webdriver.chrome.driver", "C:/repos/chromedriver.exe");
-        ChromeOptions options = new ChromeOptions();
-        // Spin up the browser in "headless" mode, this way Selenium will not open up a graphical user interface.
-        options.addArguments("--headless");
-        ChromeDriver driver = new ChromeDriver(options);
-        // Open up the HTML file in our headless browser. This step will evaluate the JavaScript for us.
-        driver.navigate().to("data:text/html;charset=utf-8," + filledTemplate);
-        // Now all we have to do is extract the evaluated HTML syntax and convert it to a PDF using iText's HtmlConverter.
-        driver.executeScript("window.print();");
-        String evaluatedHtml = (String) driver.executeScript("return document.documentElement.innerHTML;");
+//        System.setProperty("webdriver.chrome.driver", "C:/repos/chromedriver.exe");
+//        ChromeOptions options = new ChromeOptions();
+//        // Spin up the browser in "headless" mode, this way Selenium will not open up a graphical user interface.
+//        options.addArguments("--headless");
+//        ChromeDriver driver = new ChromeDriver(options);
+//        // Open up the HTML file in our headless browser. This step will evaluate the JavaScript for us.
+//        driver.navigate().to("data:text/html;charset=utf-8," + filledTemplate);
+//        // Now all we have to do is extract the evaluated HTML syntax and convert it to a PDF using iText's HtmlConverter.
+//        driver.executeScript("window.print();");
+//        String evaluatedHtml = (String) driver.executeScript("return document.documentElement.innerHTML;");
+
+
 
 
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
-        try (
-                FileOutputStream os = new FileOutputStream(pdfTempFile);
-                PdfWriter pdfWriter = new PdfWriter(os);
-                PdfADocument pdf = getPdfADocument(pdfWriter)
-        ) {
-            pdf.setTagged();
-            Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
-            document.close();
+        try {
+            //(pdf.setTagged();
+            //Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
+            //document.close();){
+
+            seleniumPrintPdf(Paths.get(workingDirPath + UNZIPPED_FILES_FOLDER + "/template.html"),pdfTempFile.getParentFile().toPath());
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(pdfTempFile, workingDirPath);
@@ -95,6 +97,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -162,6 +166,41 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             return Files.createTempFile(workingDirPath, fileName, fileExtension).toFile();
         } catch (IOException e) {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
+        }
+    }
+
+    public void seleniumPrintPdf(Path inputPath, Path outputPath) throws Exception
+    {
+        try
+        {
+            System.setProperty("webdriver.chrome.driver", "C:/repos/chromedriver.exe");
+
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--headless", "--disable-gpu",
+                    "--run-all-compositor-stages-before-draw", "--remote-allow-origins=*");
+            ChromeDriver chromeDriver = new ChromeDriver(options);
+            chromeDriver.get(inputPath.toString());
+            Map<String, Object> params = new HashMap();
+
+            String command = "Page.printToPDF";
+            Map<String, Object> output = chromeDriver.executeCdpCommand(command, params);
+
+            try
+            {
+                FileOutputStream fileOutputStream = new FileOutputStream(outputPath.toString());
+                byte[] byteArray = java.util.Base64.getDecoder().decode((String) output.get("data"));
+                fileOutputStream.write(byteArray);
+                fileOutputStream.close();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace(System.err);
+            throw e;
         }
     }
 }
