@@ -18,7 +18,7 @@
         <functionAppName>com.microsoft.azure-20220215182005862</functionAppName>
         <resteasy.version>3.15.3.Final</resteasy.version>
         <itext.version>8.0.0</itext.version>
-        <itext.pdfhtml.version>5.0.0</itext.pdfhtml.version>
+        <itext.pdfhtml.version>5.0.1</itext.pdfhtml.version>
         <handlebars-version>4.3.1</handlebars-version>
         <lombok-version>1.18.20</lombok-version>
     </properties>
