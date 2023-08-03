@@ -26,6 +26,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.font.FontProvider;
 import com.itextpdf.pdfa.PdfADocument;
+import com.microsoft.playwright.*;
 import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
@@ -33,8 +34,10 @@ import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import org.apache.commons.io.IOUtils;
+import org.openqa.selenium.Pdf;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.print.PrintOptions;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -68,19 +71,6 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         Template template = getTemplate();
         String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
 
-//        System.setProperty("webdriver.chrome.driver", "C:/repos/chromedriver.exe");
-//        ChromeOptions options = new ChromeOptions();
-//        // Spin up the browser in "headless" mode, this way Selenium will not open up a graphical user interface.
-//        options.addArguments("--headless");
-//        ChromeDriver driver = new ChromeDriver(options);
-//        // Open up the HTML file in our headless browser. This step will evaluate the JavaScript for us.
-//        driver.navigate().to("data:text/html;charset=utf-8," + filledTemplate);
-//        // Now all we have to do is extract the evaluated HTML syntax and convert it to a PDF using iText's HtmlConverter.
-//        driver.executeScript("window.print();");
-//        String evaluatedHtml = (String) driver.executeScript("return document.documentElement.innerHTML;");
-
-
-
 
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
         try {
@@ -88,7 +78,15 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             //Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
             //document.close();){
 
-            seleniumPrintPdf(Paths.get(workingDirPath + UNZIPPED_FILES_FOLDER + "/template.html"),pdfTempFile.getParentFile().toPath());
+            try (Playwright playwright = Playwright.create()) {
+                BrowserType chromium = playwright.chromium();
+                Browser browser = chromium.launch();
+                BrowserContext context = browser.newContext();
+                Page page = context.newPage();
+                page.navigate("file:"+ workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/template.html");
+                page.pdf(new Page.PdfOptions().setPath(pdfTempFile.getAbsoluteFile().toPath()));
+                browser.close();
+            }
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(pdfTempFile, workingDirPath);
@@ -169,38 +167,4 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         }
     }
 
-    public void seleniumPrintPdf(Path inputPath, Path outputPath) throws Exception
-    {
-        try
-        {
-            System.setProperty("webdriver.chrome.driver", "C:/repos/chromedriver.exe");
-
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless", "--disable-gpu",
-                    "--run-all-compositor-stages-before-draw", "--remote-allow-origins=*");
-            ChromeDriver chromeDriver = new ChromeDriver(options);
-            chromeDriver.get(inputPath.toString());
-            Map<String, Object> params = new HashMap();
-
-            String command = "Page.printToPDF";
-            Map<String, Object> output = chromeDriver.executeCdpCommand(command, params);
-
-            try
-            {
-                FileOutputStream fileOutputStream = new FileOutputStream(outputPath.toString());
-                byte[] byteArray = java.util.Base64.getDecoder().decode((String) output.get("data"));
-                fileOutputStream.write(byteArray);
-                fileOutputStream.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-            throw e;
-        }
-    }
 }

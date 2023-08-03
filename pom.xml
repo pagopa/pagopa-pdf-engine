@@ -202,6 +202,12 @@
                 <version>31.0.1-jre</version>
             </dependency>
 
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.36.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>
