@@ -57,8 +57,16 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     private final Handlebars handlebars;
 
-    public GeneratePDFServiceImpl(Handlebars handlebars) {
+    private final Browser browser;
+
+    private final BrowserContext context;
+
+    public GeneratePDFServiceImpl(Handlebars handlebars) throws GeneratePDFException {
         this.handlebars = handlebars;
+        Playwright playwright = Playwright.create();
+        BrowserType chromium = playwright.chromium();
+        browser = chromium.launch();
+        context = browser.newContext();
     }
 
     @Override
@@ -66,10 +74,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             throws CompileTemplateException, FillTemplateException, GeneratePDFException {
         handlebars.with(new FileTemplateLoader(workingDirPath + UNZIPPED_FILES_FOLDER, ".html"));
 
-        System.setProperty("webdriver.http.factory", "jdk-http-client");
-
         Template template = getTemplate();
-        String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
+        //String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
 
 
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
@@ -78,15 +84,9 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             //Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
             //document.close();){
 
-            try (Playwright playwright = Playwright.create()) {
-                BrowserType chromium = playwright.chromium();
-                Browser browser = chromium.launch();
-                BrowserContext context = browser.newContext();
                 Page page = context.newPage();
                 page.navigate("file:"+ workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/template.html");
                 page.pdf(new Page.PdfOptions().setPath(pdfTempFile.getAbsoluteFile().toPath()));
-                browser.close();
-            }
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(pdfTempFile, workingDirPath);

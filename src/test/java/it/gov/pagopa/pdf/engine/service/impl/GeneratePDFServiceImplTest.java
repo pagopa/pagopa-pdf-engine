@@ -20,6 +20,7 @@ import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
 import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
 import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
@@ -51,7 +52,7 @@ class GeneratePDFServiceImplTest {
     private Path workingPath;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() throws IOException, GeneratePDFException {
 
         handlebarsMock = spy(buildHandlebars());
         sut = spy(new GeneratePDFServiceImpl(handlebarsMock));
