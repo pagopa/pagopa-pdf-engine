@@ -20,9 +20,7 @@ import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.io.FileTemplateLoader;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
-import com.itextpdf.kernel.pdf.PdfAConformanceLevel;
-import com.itextpdf.kernel.pdf.PdfOutputIntent;
-import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.font.FontProvider;
 import com.itextpdf.pdfa.PdfADocument;
@@ -79,6 +77,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
 
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
+        File convertedPdf = new File(pdfTempFile.getParentFile().getAbsolutePath().concat("/converted.pdf"));
         try {
             //(pdf.setTagged();
             //Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
@@ -88,10 +87,32 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 page.navigate("file:"+ workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/template.html");
                 page.pdf(new Page.PdfOptions().setPath(pdfTempFile.getAbsoluteFile().toPath()));
 
+            PdfReader reader = new PdfReader(pdfTempFile);
+            PdfWriter writer = new PdfWriter(new File(pdfTempFile.getParentFile().getAbsolutePath().concat("/converted.pdf")));
+            PdfADocument doc = new PdfADocument(writer, PdfAConformanceLevel.PDF_A_2A,new PdfOutputIntent(
+                    "Custom",
+                    "",
+                    "https://www.color.org",
+                    "sRGB IEC61966-2.1",
+                    this.getClass().getResourceAsStream("/sRGB_CS_profile.icm")
+            ));
+            PdfDocument pdfReader = new PdfDocument(reader);
+            doc.setTagged();
+            doc.addOutputIntent(new PdfOutputIntent(
+                    "Custom",
+                    "",
+                    "https://www.color.org",
+                    "sRGB IEC61966-2.1",
+                    this.getClass().getResourceAsStream("/sRGB_CS_profile.icm")
+            ));
+            doc.copyPagesTo(0,0,pdfReader);
+            doc.flushCopiedObjects(pdfReader);
+            doc.close();
+
             if (generatePDFInput.isGenerateZipped()) {
-                return zipPDFDocument(pdfTempFile, workingDirPath);
+                return zipPDFDocument(convertedPdf, workingDirPath);
             }
-            return new BufferedInputStream(new FileInputStream(pdfTempFile));
+            return new BufferedInputStream(new FileInputStream(convertedPdf));
 
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
@@ -165,6 +186,14 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         } catch (IOException e) {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
         }
+    }
+
+    public class CustomPdfaDocument extends PdfADocument {
+
+        public CustomPdfaDocument(PdfReader reader, PdfWriter writer, StampingProperties properties) {
+            super(reader, writer, properties);
+        }
+
     }
 
 }
