@@ -42,4 +42,3 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 EXPOSE 80
 EXPOSE 12345
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]
-COPY --from=installer-env ["/home/.cache/ms-playwright", "/home/.cache/ms-playwright"]
