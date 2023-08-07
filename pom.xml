@@ -23,6 +23,14 @@
         <lombok-version>1.18.20</lombok-version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>com.e-iceblue</id>
+            <name>e-iceblue</name>
+            <url>https://repo.e-iceblue.com/nexus/content/groups/public/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Start Azure -->
         <dependency>
@@ -185,17 +193,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-            <version>4.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-http-jdk-client</artifactId>
-            <version>4.5.0</version>
-        </dependency>
-
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -207,6 +204,12 @@
             <artifactId>playwright</artifactId>
             <version>1.36.0</version>
         </dependency>
+
+            <dependency>
+                <groupId>e-iceblue</groupId>
+                <artifactId>spire.pdf.free</artifactId>
+                <version>5.1.0</version>
+            </dependency>
 
     </dependencies>
 

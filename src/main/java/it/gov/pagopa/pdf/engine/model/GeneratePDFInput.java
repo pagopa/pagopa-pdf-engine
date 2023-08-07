@@ -30,4 +30,6 @@ public class GeneratePDFInput {
     private boolean applySignature;
     private boolean generateZipped;
 
+    private GeneratorType generatorType = GeneratorType.ITEXT;
+
 }

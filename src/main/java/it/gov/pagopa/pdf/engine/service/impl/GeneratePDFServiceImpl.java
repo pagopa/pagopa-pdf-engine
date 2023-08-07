@@ -20,28 +20,27 @@ import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.io.FileTemplateLoader;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
-import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.PdfAConformanceLevel;
+import com.itextpdf.kernel.pdf.PdfOutputIntent;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.font.FontProvider;
 import com.itextpdf.pdfa.PdfADocument;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.Media;
+import com.spire.pdf.conversion.PdfStandardsConverter;
 import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
-import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.openqa.selenium.Pdf;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.print.PrintOptions;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -63,56 +62,36 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         this.handlebars = handlebars;
         Playwright playwright = Playwright.create();
         BrowserType chromium = playwright.chromium();
-        browser = chromium.launch();
+        browser = chromium.launch(new BrowserType.LaunchOptions().setHeadless(true));
         context = browser.newContext();
     }
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
-            throws CompileTemplateException, FillTemplateException, GeneratePDFException {
+            throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException {
         handlebars.with(new FileTemplateLoader(workingDirPath + UNZIPPED_FILES_FOLDER, ".html"));
 
         Template template = getTemplate();
-        //String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
-
-
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
-        File convertedPdf = new File(pdfTempFile.getParentFile().getAbsolutePath().concat("/converted.pdf"));
+        String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
+
         try {
-            //(pdf.setTagged();
-            //Document document = HtmlConverter.convertToDocument(evaluatedHtml, pdf, buildConverterProperties(workingDirPath));
-            //document.close();){
 
-                Page page = context.newPage();
-                page.navigate("file:"+ workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/template.html");
-                page.pdf(new Page.PdfOptions().setPath(pdfTempFile.getAbsoluteFile().toPath()));
+            String fileToReturn;
 
-            PdfReader reader = new PdfReader(pdfTempFile);
-            PdfWriter writer = new PdfWriter(new File(pdfTempFile.getParentFile().getAbsolutePath().concat("/converted.pdf")));
-            PdfADocument doc = new PdfADocument(writer, PdfAConformanceLevel.PDF_A_2A,new PdfOutputIntent(
-                    "Custom",
-                    "",
-                    "https://www.color.org",
-                    "sRGB IEC61966-2.1",
-                    this.getClass().getResourceAsStream("/sRGB_CS_profile.icm")
-            ));
-            PdfDocument pdfReader = new PdfDocument(reader);
-            doc.setTagged();
-            doc.addOutputIntent(new PdfOutputIntent(
-                    "Custom",
-                    "",
-                    "https://www.color.org",
-                    "sRGB IEC61966-2.1",
-                    this.getClass().getResourceAsStream("/sRGB_CS_profile.icm")
-            ));
-            doc.copyPagesTo(0,0,pdfReader);
-            doc.flushCopiedObjects(pdfReader);
-            doc.close();
+            switch (generatePDFInput.getGeneratorType()) {
+                case PLAYWRIGHT:
+                    fileToReturn = createUsingPlaywright(workingDirPath, pdfTempFile, filledTemplate);
+                    break;
+                case ITEXT:
+                default:
+                    fileToReturn = createUsingItext(workingDirPath, pdfTempFile, filledTemplate);
+            }
 
             if (generatePDFInput.isGenerateZipped()) {
-                return zipPDFDocument(convertedPdf, workingDirPath);
+                return zipPDFDocument(new File(fileToReturn), workingDirPath);
             }
-            return new BufferedInputStream(new FileInputStream(convertedPdf));
+            return new BufferedInputStream(new FileInputStream(fileToReturn));
 
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
@@ -120,6 +99,22 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             throw new RuntimeException(e);
         }
     }
+
+    private String createUsingItext(Path workingDirPath, File pdfTempFile, String filledTemplate) throws IOException {
+        String fileToReturn;
+        try (
+                FileOutputStream os = new FileOutputStream(pdfTempFile);
+                PdfWriter pdfWriter = new PdfWriter(os);
+                PdfADocument pdf = getPdfADocument(pdfWriter)
+        ) {
+            pdf.setTagged();
+            Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties(workingDirPath));
+            document.close();
+            fileToReturn = pdfTempFile.getAbsolutePath();
+        }
+        return fileToReturn;
+    }
+
 
     private BufferedInputStream zipPDFDocument(File pdfTempFile, Path workingDirPath) throws GeneratePDFException {
         File zippedTempFile = createTempFile("zippedDocument", "zip", workingDirPath, PDFE_904);
@@ -188,12 +183,22 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         }
     }
 
-    public class CustomPdfaDocument extends PdfADocument {
+    private String createUsingPlaywright(Path workingDirPath, File pdfTempFile, String filledTemplate) throws IOException {
+        FileUtils.writeByteArrayToFile(new File(workingDirPath.toAbsolutePath()
+                + UNZIPPED_FILES_FOLDER + "/filledTemplate.html"), filledTemplate.getBytes());
 
-        public CustomPdfaDocument(PdfReader reader, PdfWriter writer, StampingProperties properties) {
-            super(reader, writer, properties);
-        }
+        Page page = context.newPage();
+        page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
+        page.navigate("file:"+ workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
+        page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
 
+        //Create a PdfStandardsConverter instance, passing in the input file as a parameter
+        PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
+
+        //Convert to PdfA2A
+        converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+
+        return pdfTempFile.getParent() + "/ToPdfA2A.pdf";
     }
 
 }
