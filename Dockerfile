@@ -10,7 +10,7 @@ RUN cd /src/java-function-app && \
     wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.19.0/jmx_prometheus_javaagent-0.19.0.jar && \
     curl -o 'opentelemetry-javaagent.jar' -L 'https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.25.1/opentelemetry-javaagent.jar' && \
     mkdir -p /home/site/wwwroot && \
-    mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install" && \
+    mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium" && \
     mvn clean package -Dmaven.test.skip=true && \
     cd ./target/azure-functions/ && \
     cd $(ls -d */|head -n 1) && \
@@ -42,3 +42,4 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 EXPOSE 80
 EXPOSE 12345
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]
+COPY --from=installer-env ["/root/.cache/ms-playwright", "/home/.cache/ms-playwright"]
