@@ -4,6 +4,7 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.playwright.*;
 import it.gov.pagopa.pdf.engine.model.AppInfo;
 import it.gov.pagopa.pdf.engine.util.HttpResponseMessageMock;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,4 +56,6 @@ class InfoTest {
         assertEquals("pdf-engine", responseBody.getName());
         assertEquals("azure-fn", responseBody.getEnvironment());
     }
+
+
 }

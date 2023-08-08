@@ -23,6 +23,9 @@ import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Playwright;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.ErrorMessage;
@@ -62,9 +65,13 @@ public class HttpTriggerGeneratePDFFunction {
 
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
+    private Playwright playwright;
 
-    public HttpTriggerGeneratePDFFunction() {
-        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
+    public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
+        playwright = Playwright.create();
+        BrowserType chromium = playwright.chromium();
+        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars(),
+            chromium.launch(new BrowserType.LaunchOptions().setHeadless(true)).newContext());
         this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
 
