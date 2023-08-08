@@ -27,6 +27,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.font.FontProvider;
 import com.itextpdf.pdfa.PdfADocument;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.Media;
 import com.spire.pdf.conversion.PdfStandardsConverter;
 import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
@@ -185,6 +186,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
             page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
             page.navigate("file:" + workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
+            page.waitForLoadState(LoadState.NETWORKIDLE);
             page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
 
             //Create a PdfStandardsConverter instance, passing in the input file as a parameter
