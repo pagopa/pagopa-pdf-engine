@@ -86,6 +86,28 @@ class ParseRequestBodyServiceImplTest {
 
     @Test
     @SneakyThrows
+    void retrieveInputDataWithGeneratorTypeSuccess() {
+        MultipartStream multipartStreamMock = mock(MultipartStream.class);
+
+        doReturn(multipartStreamMock).when(sut).getMultipartStream(any(), anyString());
+        doReturn(true).when(multipartStreamMock).skipPreamble();
+        doReturn(
+                String.format(HEADER_TEMPLATE, "applySignature"),
+                String.format(HEADER_TEMPLATE, "generateZipped"),
+                String.format(HEADER_TEMPLATE, "data"),
+                String.format(HEADER_TEMPLATE, "generatorType")
+        ).when(multipartStreamMock).readHeaders();
+        doReturn(Collections.singletonMap("ke1", "value1")).when(objectMapperMock).readValue(anyString(), any(TypeReference.class));
+        doReturn(true, true, false).when(multipartStreamMock).readBoundary();
+
+        GeneratePDFInput result = sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE), workingPath);
+
+        assertNotNull(result);
+        assertNotNull(result.getData());
+    }
+
+    @Test
+    @SneakyThrows
     void retrieveInputDataFailGetContentTypeHeaderIsNull() {
         RequestBodyParseException e = assertThrows(
                 RequestBodyParseException.class,
