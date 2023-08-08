@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "1.5.7"
+    "version": "1.6.0-PRDP-100-feat-add-playwright-engine"
   },
   "servers": [
     {
