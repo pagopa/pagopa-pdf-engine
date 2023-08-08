@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-functions-template
 description: Microservice description
 type: application
-version: 0.42.0
-appVersion: 1.6.1-PRDP-100-feat-add-playwright-engine
+version: 0.43.0
+appVersion: 1.7.0
 dependencies:
   - name: microservice-chart
     version: 2.4.0
