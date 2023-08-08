@@ -65,12 +65,13 @@ public class HttpTriggerGeneratePDFFunction {
 
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
+    private Playwright playwright;
 
     public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
-        Playwright playwright = Playwright.create();
+        playwright = Playwright.create();
         BrowserType chromium = playwright.chromium();
         this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars(),
-                chromium.launch(new BrowserType.LaunchOptions().setHeadless(true)).newContext());
+            chromium.launch(new BrowserType.LaunchOptions().setHeadless(true)).newContext());
         this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
 

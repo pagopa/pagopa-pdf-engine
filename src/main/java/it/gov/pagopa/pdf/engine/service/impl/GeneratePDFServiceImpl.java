@@ -181,18 +181,20 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         FileUtils.writeByteArrayToFile(new File(workingDirPath.toAbsolutePath()
                 + UNZIPPED_FILES_FOLDER + "/filledTemplate.html"), filledTemplate.getBytes());
 
-        Page page = context.newPage();
-        page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
-        page.navigate("file:"+ workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
-        page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
+        try (Page page = context.newPage()) {
 
-        //Create a PdfStandardsConverter instance, passing in the input file as a parameter
-        PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
+            page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
+            page.navigate("file:" + workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
+            page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
 
-        //Convert to PdfA2A
-        converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+            //Create a PdfStandardsConverter instance, passing in the input file as a parameter
+            PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
 
-        return pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+            //Convert to PdfA2A
+            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+
+            return pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+        }
     }
 
 }

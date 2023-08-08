@@ -117,9 +117,7 @@ class GeneratePDFServiceImplTest {
                     Path sourcePath = new File(this.getClass().getResource("/valid_pdf.pdf").getPath()).toPath();
                     try  {
                         FileUtils.copyFile(sourcePath.toFile(), targetPath.toFile());
-                    } catch (Exception e) {
-
-                    }
+                    } finally {}
                 }
             }
             return "".getBytes();
