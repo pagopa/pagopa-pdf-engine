@@ -53,17 +53,11 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     private final String htmlTemplateFileName = System.getenv().getOrDefault("HTML_TEMPLATE_FILE_NAME", "template");
 
     private final Handlebars handlebars;
-
-    private final Browser browser;
-
     private final BrowserContext context;
 
-    public GeneratePDFServiceImpl(Handlebars handlebars) throws GeneratePDFException {
+    public GeneratePDFServiceImpl(Handlebars handlebars, BrowserContext browserContext) throws GeneratePDFException {
         this.handlebars = handlebars;
-        Playwright playwright = Playwright.create();
-        BrowserType chromium = playwright.chromium();
-        browser = chromium.launch(new BrowserType.LaunchOptions().setHeadless(true));
-        context = browser.newContext();
+        this.context = browserContext;
     }
 
     @Override

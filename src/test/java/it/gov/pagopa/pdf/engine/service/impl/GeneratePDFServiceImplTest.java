@@ -18,11 +18,14 @@ package it.gov.pagopa.pdf.engine.service.impl;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
 import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
 import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
+import it.gov.pagopa.pdf.engine.model.GeneratorType;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -32,11 +35,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -47,6 +50,10 @@ class GeneratePDFServiceImplTest {
 
     private Handlebars handlebarsMock;
 
+    private BrowserContext browserContextMock;
+
+    private Page pageMock;
+
     private GeneratePDFService sut;
 
     private Path workingPath;
@@ -55,7 +62,10 @@ class GeneratePDFServiceImplTest {
     void setUp() throws IOException, GeneratePDFException {
 
         handlebarsMock = spy(buildHandlebars());
-        sut = spy(new GeneratePDFServiceImpl(handlebarsMock));
+        browserContextMock = mock(BrowserContext.class);
+        pageMock = mock(Page.class);
+
+        sut = spy(new GeneratePDFServiceImpl(handlebarsMock, browserContextMock));
         workingPath = Files.createTempDirectory("testDir");
     }
 
@@ -83,6 +93,46 @@ class GeneratePDFServiceImplTest {
         assertNotNull(output);
         output.close();
     }
+
+    @Test
+    @SneakyThrows
+    void generatePDFNotZippedWithSuccessWithPlaywright() {
+        GeneratePDFInput pdfInput = new GeneratePDFInput();
+        pdfInput.setData(Collections.singletonMap("a", "b"));
+        pdfInput.setApplySignature(false);
+        pdfInput.setGeneratorType(GeneratorType.PLAYWRIGHT);
+
+        Template template = handlebarsMock.compileInline(
+                IOUtils.toString(
+                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
+                        StandardCharsets.UTF_8));
+
+        doReturn(template).when(handlebarsMock).compile(anyString());
+        when(browserContextMock.newPage()).thenReturn(pageMock);
+        when(pageMock.pdf(any())).thenAnswer(invocation -> {
+            File[] files = workingPath.toFile().listFiles();
+            for (File file : files) {
+                if (file.getName().contains("document")) {
+                    Path targetPath = file.toPath();
+                    Path sourcePath = new File(this.getClass().getResource("/valid_pdf.pdf").getPath()).toPath();
+                    try  {
+                        FileUtils.copyFile(sourcePath.toFile(), targetPath.toFile());
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+            return "".getBytes();
+        });
+
+        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
+
+        workingPath.toAbsolutePath();
+
+        assertNotNull(output);
+        output.close();
+    }
+
 
     @Test
     @SneakyThrows

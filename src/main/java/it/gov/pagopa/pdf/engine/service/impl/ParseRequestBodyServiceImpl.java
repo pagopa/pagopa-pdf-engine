@@ -74,6 +74,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
                     break;
                 case "generatorType":
                     generatePDFInput.setGeneratorType(GeneratorType.valueOf(getStringField(multipartStream, PDFE_714)));
+                    break;
                 default: throw new UnexpectedRequestBodyFieldException(PDFE_896, "Unexpected field " + fieldName);
             }
 
