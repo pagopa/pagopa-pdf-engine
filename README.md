@@ -127,6 +127,17 @@ file and other optional attachments, such as CSS files, that will be used to gen
 > The HTML template file must be named to match the value of the `HTML_TEMPLATE_FILE_NAME` environment variable 
 > (default is `template`) (example of HTML template file name: `template.html`)
 
+### Playwright version
+
+In order to use the newly introduced engine you may use the parameter
+
+```
+...
+--form 'generatorType="PLAYWRIGHT"'
+``` 
+
+The two values available are PLAYWRIGHT and ITEXT (the value defaults to ITEXT currently)
+
 ---
 
 ## Develop Locally 💻

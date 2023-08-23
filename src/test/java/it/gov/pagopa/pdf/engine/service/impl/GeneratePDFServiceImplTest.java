@@ -65,7 +65,7 @@ class GeneratePDFServiceImplTest {
         browserContextMock = mock(BrowserContext.class);
         pageMock = mock(Page.class);
 
-        sut = spy(new GeneratePDFServiceImpl(handlebarsMock, browserContextMock));
+        sut = spy(new GeneratePDFServiceImpl(handlebarsMock));
         workingPath = Files.createTempDirectory("testDir");
     }
 
