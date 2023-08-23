@@ -18,6 +18,11 @@ package it.gov.pagopa.pdf.engine.service.impl;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.io.FileTemplateLoader;
+import com.ironsoftware.ironpdf.License;
+import com.ironsoftware.ironpdf.PdfDocument;
+import com.ironsoftware.ironpdf.Settings;
+import com.ironsoftware.ironpdf.render.ChromePdfRenderOptions;
+import com.ironsoftware.ironpdf.render.PaperSize;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.kernel.pdf.PdfAConformanceLevel;
@@ -42,6 +47,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -74,6 +80,9 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             switch (generatePDFInput.getGeneratorType()) {
                 case PLAYWRIGHT:
                     fileToReturn = createUsingPlaywright(workingDirPath, pdfTempFile, filledTemplate);
+                    break;
+                case IRONPDF:
+                    fileToReturn = createUsingIronPDF(workingDirPath, pdfTempFile, filledTemplate);
                     break;
                 case ITEXT:
                 default:
@@ -180,12 +189,14 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 + UNZIPPED_FILES_FOLDER + "/filledTemplate.html"), filledTemplate.getBytes());
 
 
-        try (Playwright playwright = Playwright.create()) {
+        try (Playwright playwright = Playwright.create(new Playwright.CreateOptions())) {
             BrowserType chromium = playwright.chromium();
 
-            try (BrowserContext context = chromium.launch(new BrowserType.LaunchOptions().setHeadless(true)).newContext();
+            try (BrowserContext context = chromium.launchPersistentContext(new File("/tmp/persistentChromium").toPath(),
+                    new BrowserType.LaunchPersistentContextOptions().setHeadless(true));
                  Page page = context.newPage()) {
-                page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
+                page.emulateMedia(new Page.EmulateMediaOptions()
+                        .setMedia(Media.SCREEN));
                 page.navigate("file:" + workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
                 page.waitForLoadState(LoadState.NETWORKIDLE);
                 page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
@@ -197,9 +208,36 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
 
                 return pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+
             }
 
         }
+
+    }
+
+    public String createUsingIronPDF(Path workingDirPath, File pdfTempFile, String filledTemplate) throws IOException {
+
+        FileUtils.writeByteArrayToFile(new File(workingDirPath.toAbsolutePath()
+                + UNZIPPED_FILES_FOLDER + "/filledTemplate.html"), filledTemplate.getBytes());
+
+        License.setLicenseKey("IRONSUITE.ALE.CIALINI.GMAIL.COM.17899-729821093F-BZ4IE-TK3Q47CCRIH2-VEZMXXHN5S3W-X5J335DAL5AY-Z7AWWX6BIERR-LBEEMSZELILT-APX2KQI5DCQR-OL5MUF-TBFB4T4KE52KEA-DEPLOYMENT.TRIAL-F7LQPZ.TRIAL.EXPIRES.01.SEP.2023");
+        Settings.setLogPath(Paths.get("C:/tmp/IronPdfEngine.log"));
+        ChromePdfRenderOptions renderOptions = new ChromePdfRenderOptions();
+        renderOptions.setPaperSize(PaperSize.A4);
+        renderOptions.setRenderDelay(500);
+
+        PdfDocument myPdf = PdfDocument.renderHtmlFileAsPdf(workingDirPath.toAbsolutePath()
+                + UNZIPPED_FILES_FOLDER + "/filledTemplate.html", new ChromePdfRenderOptions());
+        myPdf.saveAs(pdfTempFile.getPath());
+
+        //Create a PdfStandardsConverter instance, passing in the input file as a parameter
+        PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
+
+        //Convert to PdfA2A
+        converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+
+        return pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+
 
     }
 

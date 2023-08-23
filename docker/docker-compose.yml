@@ -6,7 +6,7 @@ services:
     image: ${image}
     platform: linux/amd64
     build:
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-java
       context: ../
     ports:
       - "60486:80"
