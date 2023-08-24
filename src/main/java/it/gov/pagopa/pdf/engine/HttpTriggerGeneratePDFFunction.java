@@ -68,10 +68,8 @@ public class HttpTriggerGeneratePDFFunction {
     private Playwright playwright;
 
     public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
-        playwright = Playwright.create();
-        BrowserType chromium = playwright.chromium();
-        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars(),
-            chromium.launch(new BrowserType.LaunchOptions().setHeadless(true)).newContext());
+
+        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
         this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
 

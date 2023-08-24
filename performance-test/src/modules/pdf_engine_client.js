@@ -4,7 +4,8 @@ export function generatePDF(pdfEngineUri, subKey, zipFile, inputData, generateZi
     const form = {
         data: inputData,
         template: http.file(zipFile, 'template.zip'),
-        generateZipped: generateZipped
+        generateZipped: generateZipped,
+        generatorType: "PLAYWRIGHT"
       };
 
       let headers = { 
