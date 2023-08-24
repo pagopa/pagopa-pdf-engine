@@ -220,7 +220,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         FileUtils.writeByteArrayToFile(new File(workingDirPath.toAbsolutePath()
                 + UNZIPPED_FILES_FOLDER + "/filledTemplate.html"), filledTemplate.getBytes());
 
-        License.setLicenseKey("IRONSUITE.ALE.CIALINI.GMAIL.COM.17899-729821093F-BZ4IE-TK3Q47CCRIH2-VEZMXXHN5S3W-X5J335DAL5AY-Z7AWWX6BIERR-LBEEMSZELILT-APX2KQI5DCQR-OL5MUF-TBFB4T4KE52KEA-DEPLOYMENT.TRIAL-F7LQPZ.TRIAL.EXPIRES.01.SEP.2023");
+        License.setLicenseKey("KEY");
         Settings.setLogPath(Paths.get("C:/tmp/IronPdfEngine.log"));
         ChromePdfRenderOptions renderOptions = new ChromePdfRenderOptions();
         renderOptions.setPaperSize(PaperSize.A4);
