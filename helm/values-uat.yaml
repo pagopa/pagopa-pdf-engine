@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
-    tag: "1.6.2-PRDP-100-feat-add-playwright-engine"
+    tag: "1.7.1"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -61,7 +61,7 @@ microservice-chart:
       cpu: "0.75"
   autoscaling:
     enable: true
-    minReplica: 3
+    minReplica: 1
     maxReplica: 7
     pollingInterval: 10 # seconds
     cooldownPeriod: 120 # seconds
@@ -75,7 +75,7 @@ microservice-chart:
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     HTML_TEMPLATE_FILE_NAME: "template"
-    OTEL_RESOURCE_ATTRIBUTES: "service.name=pagopapdfengine,deployment.environment=uat"
+    OTEL_RESOURCE_ATTRIBUTES: "service.name=pagopapdfengineotl,deployment.environment=uat"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.elastic-system.svc:4317"
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
@@ -112,7 +112,7 @@ microservice-chart:
       create: true
       image:
         repository: ghcr.io/pagopa/pagopa-pdf-engine
-        tag: "1.6.2-PRDP-100-feat-add-playwright-engine"
+        tag: "1.7.1"
         pullPolicy: Always
       envConfig:
       envSecret:
