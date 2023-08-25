@@ -5,7 +5,7 @@ export function generatePDF(pdfEngineUri, subKey, zipFile, inputData, generateZi
         data: inputData,
         template: http.file(zipFile, 'template.zip'),
         generateZipped: generateZipped,
-        generatorType: "PLAYWRIGHT"
+        generatorType: "IRONPDF"
       };
 
       let headers = { 

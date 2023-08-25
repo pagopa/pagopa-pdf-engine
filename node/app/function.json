@@ -5,7 +5,7 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "/generate-pdf",
+      "route": "generate-pdf",
       "methods": [
         "post"
       ]
