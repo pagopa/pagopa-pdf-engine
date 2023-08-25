@@ -12,5 +12,5 @@ export function generatePDF(pdfEngineUri, subKey, zipFile, inputData, generateZi
         'Ocp-Apim-Subscription-Key': subKey
     };
 
-    return http.post(pdfEngineUri, form, {headers});
+    return http.post(pdfEngineUri, form, {headers, responseType: "text"});
 }
