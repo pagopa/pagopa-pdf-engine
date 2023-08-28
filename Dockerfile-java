@@ -37,7 +37,7 @@ RUN apt-get install -y libglib2.0 libatk1.0-0 libnss3 libxcomposite-dev libasoun
 RUN apt-get install -y libatk-bridge2.0-0 libcups2-dev libdrm-dev libpango-1.0-0
 RUN apt-get install -y libxkbcommon-x11-0 libxdamage1 libxrandr2 libgbm-dev
 
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+#ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
 
 EXPOSE 80
 EXPOSE 12345

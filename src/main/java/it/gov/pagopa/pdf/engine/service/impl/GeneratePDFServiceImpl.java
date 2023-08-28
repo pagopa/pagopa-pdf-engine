@@ -48,12 +48,15 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
 import static it.gov.pagopa.pdf.engine.util.Constants.UNZIPPED_FILES_FOLDER;
+import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
@@ -193,19 +196,20 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             BrowserType chromium = playwright.chromium();
 
             try (BrowserContext context = chromium.launchPersistentContext(new File("/tmp/persistentChromium").toPath(),
-                    new BrowserType.LaunchPersistentContextOptions().setHeadless(true));
+                    new BrowserType.LaunchPersistentContextOptions().setHeadless(true).setArgs(new ArrayList<>(
+                            List.of(new String[]{"--headless","--no-sandbox","--use-angle=gl","--enable-gpu","--use-gl=gl"}))));
                  Page page = context.newPage()) {
                 page.emulateMedia(new Page.EmulateMediaOptions()
                         .setMedia(Media.SCREEN));
                 page.navigate("file:" + workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
                 page.waitForLoadState(LoadState.NETWORKIDLE);
                 page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
-//
-//                //Create a PdfStandardsConverter instance, passing in the input file as a parameter
-//                PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
-//
-//                //Convert to PdfA2A
-//                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+
+                //Create a PdfStandardsConverter instance, passing in the input file as a parameter
+                PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
+
+                //Convert to PdfA2A
+                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
 
                 return pdfTempFile.getAbsolutePath();
 
@@ -226,8 +230,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         renderOptions.setPaperSize(PaperSize.A4);
         renderOptions.setRenderDelay(500);
 
-        PdfDocument myPdf = PdfDocument.renderUrlAsPdf("file:" + workingDirPath.toAbsolutePath()
-                + UNZIPPED_FILES_FOLDER + "/filledTemplate.html", new ChromePdfRenderOptions());
+        PdfDocument myPdf = PdfDocument.renderZipAsPdf(new File(workingDirPath.toAbsolutePath() + ZIP_FILE_NAME).toPath(), "template.html");
         myPdf.saveAs(pdfTempFile.getPath());
 //
 //        //Create a PdfStandardsConverter instance, passing in the input file as a parameter

@@ -2,7 +2,7 @@
   "environment": [
     {
       "env": "local",
-      "pdfEngineUri": "http://localhost:7070/api/pdf-generate-puppetteer"
+      "pdfEngineUri": "http://localhost:9090/api/HttpExample"
     }
   ]
 }
