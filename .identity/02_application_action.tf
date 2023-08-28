@@ -71,3 +71,20 @@ resource "azurerm_key_vault_access_policy" "ad_group_policy" {
   storage_permissions     = []
   certificate_permissions = []
 }
+resource "azurerm_role_assignment" "environment_key_vault_domain" {
+  scope                = data.azurerm_key_vault.key_vault_domain.id
+  role_definition_name = "Reader"
+  principal_id         = module.github_runner_app.object_id
+}
+
+resource "azurerm_key_vault_access_policy" "ad_group_policy_domain" {
+  key_vault_id = data.azurerm_key_vault.key_vault_domain.id
+
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = module.github_runner_app.object_id
+
+  key_permissions         = ["Get", "List", "Import" ]
+  secret_permissions      = ["Get", "List"]
+  storage_permissions     = []
+  certificate_permissions = []
+}
