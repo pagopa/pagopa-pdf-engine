@@ -87,3 +87,11 @@ resource "github_actions_environment_variable" "github_environment_runner_variab
    secret_name      = "CUCUMBER_PUBLISH_TOKEN"
    plaintext_value  = data.azurerm_key_vault_secret.key_vault_cucumber_token.value
  }
+
+#tfsec:ignore:github-actions-no-plain-text-action-secrets # not real secret
+resource "github_actions_secret" "secret_slack_webhook" {
+
+  repository      = local.github.repository
+  secret_name     = "SLACK_WEBHOOK_URL"
+  plaintext_value = data.azurerm_key_vault_secret.key_vault_integration_test_webhook_slack.value
+}
