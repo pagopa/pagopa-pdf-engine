@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine",
-    "version": "1.8.1"
+    "version": "1.9.0"
   },
   "servers": [
     {
