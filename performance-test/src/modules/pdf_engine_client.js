@@ -4,12 +4,13 @@ export function generatePDF(pdfEngineUri, subKey, zipFile, inputData, generateZi
     const form = {
         data: inputData,
         template: http.file(zipFile, 'template.zip'),
-        generateZipped: generateZipped
+        generateZipped: generateZipped,
+        generatorType: "PLAYWRIGHT"
       };
 
       let headers = { 
         'Ocp-Apim-Subscription-Key': subKey
     };
 
-    return http.post(pdfEngineUri, form, {headers});
+    return http.post(pdfEngineUri, form, {headers, responseType: "text"});
 }

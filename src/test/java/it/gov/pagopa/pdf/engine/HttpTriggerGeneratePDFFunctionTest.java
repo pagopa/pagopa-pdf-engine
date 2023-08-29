@@ -24,6 +24,7 @@ import it.gov.pagopa.pdf.engine.exception.RequestBodyParseException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.ErrorResponse;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
+import it.gov.pagopa.pdf.engine.model.GeneratorType;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
 import it.gov.pagopa.pdf.engine.util.HttpResponseMessageMock;
@@ -74,6 +75,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
         generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setGeneratorType(GeneratorType.ITEXT);
 
         BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
 

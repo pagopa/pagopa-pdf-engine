@@ -38,6 +38,8 @@ public enum AppErrorCodeEnum {
     PDFE_712("PDFE_712", "Content-type header is not multipart/form-data"),
     PDFE_713("PDFE_713", "I/O error when reading generate zipped boolean from request and writing it to the output stream"),
 
+    PDFE_714("PDFE_708", "I/O error when reading generate type from request, and writing it to the output stream"),
+
     PDFE_896("PDFE_896", "Unexpected field in request body"),
     PDFE_897("PDFE_897", "Invalid HTML template, template not provided"),
     PDFE_898("PDFE_898", "Invalid document data"),

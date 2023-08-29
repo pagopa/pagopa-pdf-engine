@@ -18,6 +18,11 @@ data "azurerm_key_vault" "key_vault" {
   resource_group_name = "pagopa-${var.env_short}-sec-rg"
 }
 
+data "azurerm_key_vault" "key_vault_domain" {
+  name                = "pagopa-${var.env_short}-receipts-kv"
+  resource_group_name = "pagopa-${var.env_short}-receipts-sec-rg"
+}
+
 data "azurerm_key_vault_secret" "key_vault_sonar" {
 
   name = "sonar-token"
@@ -34,4 +39,9 @@ data "azurerm_key_vault_secret" "key_vault_cucumber_token" {
 
   name = "cucumber-token"
   key_vault_id = data.azurerm_key_vault.key_vault.id
+}
+
+data "azurerm_key_vault_secret" "key_vault_integration_test_subkey" {
+  name         = "apikey-pdf-engine"
+  key_vault_id = data.azurerm_key_vault.key_vault_domain.id
 }

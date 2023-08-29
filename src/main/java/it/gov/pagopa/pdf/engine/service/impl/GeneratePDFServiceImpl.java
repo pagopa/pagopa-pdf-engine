@@ -26,12 +26,17 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.font.FontProvider;
 import com.itextpdf.pdfa.PdfADocument;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.Media;
+import com.spire.pdf.conversion.PdfStandardsConverter;
 import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
-import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -49,19 +54,46 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
     private final String htmlTemplateFileName = System.getenv().getOrDefault("HTML_TEMPLATE_FILE_NAME", "template");
 
     private final Handlebars handlebars;
-
-    public GeneratePDFServiceImpl(Handlebars handlebars) {
+    public GeneratePDFServiceImpl(Handlebars handlebars) throws GeneratePDFException {
         this.handlebars = handlebars;
     }
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
-            throws CompileTemplateException, FillTemplateException, GeneratePDFException {
+            throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException {
         handlebars.with(new FileTemplateLoader(workingDirPath + UNZIPPED_FILES_FOLDER, ".html"));
 
         Template template = getTemplate();
-        String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
+        String filledTemplate = fillTemplate(generatePDFInput.getData(), template);
+
+        try {
+
+            String fileToReturn;
+
+            switch (generatePDFInput.getGeneratorType()) {
+                case PLAYWRIGHT:
+                    fileToReturn = createUsingPlaywright(workingDirPath, pdfTempFile, filledTemplate);
+                    break;
+                case ITEXT:
+                default:
+                    fileToReturn = createUsingItext(workingDirPath, pdfTempFile, filledTemplate);
+            }
+
+            if (generatePDFInput.isGenerateZipped()) {
+                return zipPDFDocument(new File(fileToReturn), workingDirPath);
+            }
+            return new BufferedInputStream(new FileInputStream(fileToReturn));
+
+        } catch (IOException e) {
+            throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String createUsingItext(Path workingDirPath, File pdfTempFile, String filledTemplate) throws IOException {
+        String fileToReturn;
         try (
                 FileOutputStream os = new FileOutputStream(pdfTempFile);
                 PdfWriter pdfWriter = new PdfWriter(os);
@@ -70,16 +102,11 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             pdf.setTagged();
             Document document = HtmlConverter.convertToDocument(filledTemplate, pdf, buildConverterProperties(workingDirPath));
             document.close();
-
-            if (generatePDFInput.isGenerateZipped()) {
-                return zipPDFDocument(pdfTempFile, workingDirPath);
-            }
-            return new BufferedInputStream(new FileInputStream(pdfTempFile));
-
-        } catch (IOException e) {
-            throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
+            fileToReturn = pdfTempFile.getAbsolutePath();
         }
+        return fileToReturn;
     }
+
 
     private BufferedInputStream zipPDFDocument(File pdfTempFile, Path workingDirPath) throws GeneratePDFException {
         File zippedTempFile = createTempFile("zippedDocument", "zip", workingDirPath, PDFE_904);
@@ -147,4 +174,33 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
         }
     }
+
+    private String createUsingPlaywright(Path workingDirPath, File pdfTempFile, String filledTemplate) throws IOException {
+        FileUtils.writeByteArrayToFile(new File(workingDirPath.toAbsolutePath()
+                + UNZIPPED_FILES_FOLDER + "/filledTemplate.html"), filledTemplate.getBytes());
+
+
+        try (Playwright playwright = Playwright.create()) {
+            BrowserType chromium = playwright.chromium();
+
+            try (BrowserContext context = chromium.launch(new BrowserType.LaunchOptions().setHeadless(true)).newContext();
+                 Page page = context.newPage()) {
+                page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.SCREEN));
+                page.navigate("file:" + workingDirPath.toAbsolutePath() + UNZIPPED_FILES_FOLDER + "/filledTemplate.html");
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+                page.pdf(new Page.PdfOptions().setFormat("A4").setPath(pdfTempFile.getAbsoluteFile().toPath()));
+
+                //Create a PdfStandardsConverter instance, passing in the input file as a parameter
+                PdfStandardsConverter converter = new PdfStandardsConverter(pdfTempFile.getAbsolutePath());
+
+                //Convert to PdfA2A
+                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+
+                return pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+            }
+
+        }
+
+    }
+
 }
