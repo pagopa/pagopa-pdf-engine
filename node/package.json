@@ -1,0 +1,20 @@
+{
+  "name": "pdf-engine",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {
+    "hbs-cli": "^1.4.1",
+    "puppeteer": "^18.0.2",
+    "@anzp/azure-function-multipart": "^3.1.0",
+    "unzipper": "",
+    "handlebars": "^4.7.7",
+    "handlebars-helpers": "^0.10.0"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.x"
+  }
+}
