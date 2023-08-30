@@ -6,9 +6,9 @@ const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
 const unzipper = require('unzipper');
-const getPage = require('./browserManager');
-const getBrowserSession = require('./browserManager');
-const buildResponseBody = require('./utils');
+const getPage = require('./utils/browserManager');
+const getBrowserSession = require('./utils/browserManager');
+const buildResponseBody = require('./utils/buildUtils');
 const { default: parseMultipartFormData } = require('@anzp/azure-function-multipart');
 var handlebars = require("handlebars");
 

@@ -40,4 +40,5 @@ obj/
 **/.terraform
 **/*.lock.hcl
 **/node_modules
+**/coverage
 yarn.lock
