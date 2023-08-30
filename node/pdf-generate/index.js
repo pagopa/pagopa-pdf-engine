@@ -42,12 +42,14 @@ const generateFunction =
 
             var data;
             try {
-                for (var field in fields) {
+                for (var fieldIndex in fields) {
+                    const field = fields[fieldIndex];
                     if (field.name == "data") {
                         data = JSON.parse(field.value);
                     }
                 }
             } catch (err) {
+                console.log(err);
                 context.res = {
                     statusCode: 400,
                     body: buildResponseBody(500, 'PDFE_707', "Error parsing PDF document input data from output stream")
@@ -69,6 +71,7 @@ const generateFunction =
                 var html = template(data);
                 await fs.writeFile(path.join(workingDir,"compiledTemplate.html"), html);
             } catch (err) {
+                console.log(err)
                 context.res = {
                     statusCode: 500,
                     body: buildResponseBody(400, 'PDFE_901', "Error compiling the HTML template")
@@ -85,6 +88,7 @@ const generateFunction =
                     printBackground: true,
                 });
             } catch (err) {
+                console.log(err);
                 context.res = {
                     statusCode: 500,
                     body: buildResponseBody(500, 'PDFE_902', "Error generating the PDF document")
