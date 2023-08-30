@@ -72,9 +72,6 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
                 case "generateZipped":
                     generatePDFInput.setGenerateZipped(getBooleanField(multipartStream, PDFE_713));
                     break;
-                case "generatorType":
-                    generatePDFInput.setGeneratorType(GeneratorType.valueOf(getStringField(multipartStream, PDFE_714)));
-                    break;
                 default: throw new UnexpectedRequestBodyFieldException(PDFE_896, "Unexpected field " + fieldName);
             }
 
@@ -156,12 +153,6 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
             throw new RequestBodyParseException(PDFE_703, PDFE_703.getErrorMessage(), e);
         } catch (IOException e) {
             throw new RequestBodyParseException(PDFE_704, PDFE_704.getErrorMessage(), e);
-        }
-        try (ZipFile zipFile = new ZipFile(workingDirPath + ZIP_FILE_NAME))
-        {
-            zipFile.extractAll(workingDirPath + UNZIPPED_FILES_FOLDER);
-        } catch (IOException e) {
-            throw new RequestBodyParseException(PDFE_705, PDFE_705.getErrorMessage(), e);
         }
         return true;
     }
