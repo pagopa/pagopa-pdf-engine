@@ -82,6 +82,11 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
+      - name: Run on Java folder
+        shell: bash
+        id: run_on_java_folder
+        run: |
+          cd ./java
       - name: Make Release
         id: release
         uses: pagopa/github-actions-template/maven-release@v1.5.2
