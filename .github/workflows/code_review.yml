@@ -35,11 +35,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Run on Java folder
-        shell: bash
-        id: run_on_java_folder
-        run: |
-          cd ./java
       - name: Code Review
         uses: pagopa/github-actions-template/maven-code-review@v1.4.2
         with:
