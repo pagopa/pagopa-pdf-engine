@@ -67,8 +67,7 @@ public class HttpTriggerGeneratePDFFunction {
     private Playwright playwright;
 
     public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
-
-        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
+        this.generatePDFService = new GeneratePDFServiceImpl();
         this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
 
@@ -211,12 +210,6 @@ public class HttpTriggerGeneratePDFFunction {
                                 .build()
                 )
         );
-    }
-
-    private Handlebars buildHandlebars() {
-        return new Handlebars()
-                .registerHelper("eq", ConditionalHelpers.eq)
-                .registerHelper("not", ConditionalHelpers.not);
     }
 
     private void clearTempDirectory(Path workingDirPath, Logger logger) {

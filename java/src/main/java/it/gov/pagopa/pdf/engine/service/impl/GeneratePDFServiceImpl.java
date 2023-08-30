@@ -42,8 +42,7 @@ import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
 
-    public GeneratePDFServiceImpl(Handlebars handlebars) throws GeneratePDFException {
-    }
+    public GeneratePDFServiceImpl() {}
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
