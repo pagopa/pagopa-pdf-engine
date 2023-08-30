@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "start": "func start",
-    "test": "echo \"No tests yet...\""
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "hbs-cli": "^1.4.1",
@@ -12,9 +13,13 @@
     "@anzp/azure-function-multipart": "^3.1.0",
     "unzipper": "",
     "handlebars": "^4.7.7",
-    "handlebars-helpers": "^0.10.0"
+    "handlebars-helpers": "^0.10.0",
+    "applicationinsights": "^1.7.4"
   },
   "devDependencies": {
-    "azure-functions-core-tools": "^4.x"
+    "azure-functions-core-tools": "^4.x",
+    "@types/jest": "^24.0.15",
+    "@types/semver": "^7.3.10",
+    "jest": "^24.8.0"
   }
 }
