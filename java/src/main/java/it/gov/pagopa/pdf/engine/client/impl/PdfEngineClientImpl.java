@@ -1,6 +1,7 @@
 package it.gov.pagopa.pdf.engine.client.impl;
 
 import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
+import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
@@ -9,6 +10,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -32,6 +34,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private static PdfEngineClientImpl instance = null;
 
     private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GEN_ENDPOINT", "http://localhost:9091/api/pdf-generate");
+    private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:9091/api/pdf-generate");
+
     private static final String ZIP_FILE_NAME = "template.zip";
     private static final String TEMPLATE_KEY = "template";
     private static final String DATA_KEY = "data";
@@ -91,6 +95,21 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     }
 
     /**
+     * Method to contact the underlying service info endpoint
+     * @return boolean to determine if the service is available or otherwise
+     */
+    public boolean info() {
+
+        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
+            HttpGet request = new HttpGet(pdfEngineEndpoint);
+            return handleInfoResponse(client, request);
+        } catch (IOException e) {
+           return false;
+        }
+
+    }
+
+    /**
      * Calls the PDF Engine and handles its response, updating the PdfEngineResponse accordingly
      *
      * @param client  The previously generated client
@@ -123,6 +142,15 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         return pdfEngineResponse;
     }
 
+    private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
+        try (CloseableHttpResponse response = client.execute(request)) {
+            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Saves pdf as temporary file
      *
@@ -153,6 +181,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private static void handleExceptionErrorMessage(PdfEngineResponse pdfEngineResponse, Exception e) {
         pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         pdfEngineResponse.setErrorMessage(String.format("Exception thrown during pdf generation process: %s", e));
+        pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
     }
 
     /**
@@ -188,6 +217,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                         !errorResponse.getErrors().isEmpty() &&
                         errorResponse.getErrors().get(0) != null
                 ) {
+                    pdfEngineResponse.setErrorCode(errorResponse.getAppStatusCode());
                     pdfEngineResponse.setErrorMessage(errorResponse.getErrors().get(0).getMessage());
                 }
             }

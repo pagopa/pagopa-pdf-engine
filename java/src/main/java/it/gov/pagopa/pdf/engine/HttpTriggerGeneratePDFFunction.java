@@ -16,8 +16,6 @@ If not, see https://www.gnu.org/licenses/.
 package it.gov.pagopa.pdf.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.helper.ConditionalHelpers;
 import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;

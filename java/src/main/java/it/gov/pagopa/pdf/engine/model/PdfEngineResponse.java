@@ -16,5 +16,6 @@ public class PdfEngineResponse {
     String tempPdfPath;
     int statusCode;
     String errorMessage;
+    String errorCode;
 
 }

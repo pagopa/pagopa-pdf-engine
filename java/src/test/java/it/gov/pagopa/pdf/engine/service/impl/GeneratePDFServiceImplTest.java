@@ -15,10 +15,12 @@ If not, see https://www.gnu.org/licenses/.
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
+import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
+import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
+import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -26,15 +28,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 class GeneratePDFServiceImplTest {
 
@@ -44,7 +50,7 @@ class GeneratePDFServiceImplTest {
 
     @BeforeEach
     void setUp() throws IOException, GeneratePDFException {
-
+        sut = spy(new GeneratePDFServiceImpl());
         workingPath = Files.createTempDirectory("testDir");
     }
 
@@ -59,6 +65,15 @@ class GeneratePDFServiceImplTest {
         GeneratePDFInput pdfInput = new GeneratePDFInput();
         pdfInput.setData(Collections.singletonMap("a", "b"));
         pdfInput.setApplySignature(false);
+
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(200);
+        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).getPath());
+
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
+        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
 
@@ -75,6 +90,14 @@ class GeneratePDFServiceImplTest {
         pdfInput.setApplySignature(false);
         pdfInput.setGenerateZipped(true);
 
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(200);
+        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).toURI().normalize().getPath().replaceFirst("\\\\",""));
+
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
+        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
 
@@ -84,12 +107,30 @@ class GeneratePDFServiceImplTest {
 
     @Test
     @SneakyThrows
-    void generatePDFCompileTemplateException() {
+    void generatePDFCallException() {
         GeneratePDFInput pdfInput = new GeneratePDFInput();
 
-        CompileTemplateException e = assertThrows(CompileTemplateException.class, () -> sut.generatePDF(pdfInput, workingPath));
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(400);
+        pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
 
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_901, e.getErrorCode());
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
+        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+
+        GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath));
+
+        Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, e.getErrorCode());
+    }
+
+    private static <T> void setMock(Class<T> classToMock, T mock) {
+        try {
+            Field instance = classToMock.getDeclaredField("instance");
+            instance.setAccessible(true);
+            instance.set(instance, mock);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

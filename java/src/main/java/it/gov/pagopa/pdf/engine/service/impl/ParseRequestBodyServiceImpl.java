@@ -23,9 +23,7 @@ import it.gov.pagopa.pdf.engine.exception.RequestBodyParseException;
 import it.gov.pagopa.pdf.engine.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
-import it.gov.pagopa.pdf.engine.model.GeneratorType;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
-import net.lingala.zip4j.ZipFile;
 import org.apache.commons.fileupload.FileUploadBase.FileUploadIOException;
 import org.apache.commons.fileupload.MultipartStream;
 
@@ -34,7 +32,6 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
-import static it.gov.pagopa.pdf.engine.util.Constants.UNZIPPED_FILES_FOLDER;
 import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
@@ -89,16 +86,6 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         } catch (MultipartStream.MalformedStreamException e) {
             throw new RequestBodyParseException(PDFE_710, PDFE_710.getErrorMessage(), e);
         }
-    }
-
-    private String getStringField(MultipartStream multipartStream, AppErrorCodeEnum errorCode) throws RequestBodyParseException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            multipartStream.readBodyData(outputStream);
-        } catch (IOException e) {
-            throw new RequestBodyParseException(errorCode, errorCode.getErrorMessage(), e);
-        }
-        return outputStream.toString();
     }
 
 

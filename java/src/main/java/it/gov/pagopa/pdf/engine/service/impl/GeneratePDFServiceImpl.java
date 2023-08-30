@@ -15,17 +15,13 @@ If not, see https://www.gnu.org/licenses/.
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.jknack.handlebars.Handlebars;
 import com.spire.pdf.conversion.PdfStandardsConverter;
-import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
-import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
-import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
+import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.IOUtils;
@@ -46,28 +42,28 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
-            throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException {
+            throws GeneratePDFException {
 
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
 
         try {
 
             PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
-
             PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
             pdfEngineRequest.setTemplate(
                     new File(workingDirPath.toFile().getAbsolutePath().concat("/").concat(ZIP_FILE_NAME))
-                    .toURI().toURL());
+                            .toURI().toURL());
             pdfEngineRequest.setData(ObjectMapperUtils.writeValueAsString(generatePDFInput.getData()));
 
-            String fileToReturn = pdfEngineClient.generatePDF(pdfEngineRequest).getTempPdfPath();
+            PdfEngineResponse response = pdfEngineClient.generatePDF(pdfEngineRequest);
+            if (response.getStatusCode() != 200 || response.getTempPdfPath() == null) {
+                throw new GeneratePDFException(AppErrorCodeEnum.valueOf(
+                        response.getErrorCode()),response.getErrorMessage());
+            }
 
-            //Create a PdfStandardsConverter instance, passing in the input file as a parameter
+            String fileToReturn = response.getTempPdfPath();
             PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-
-            //Convert to PdfA2A
             converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-
             fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
 
             if (generatePDFInput.isGenerateZipped()) {
@@ -75,6 +71,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             }
             return new BufferedInputStream(new FileInputStream(fileToReturn));
 
+        } catch (GeneratePDFException e) {
+            throw e;
         } catch (IOException e) {
             throw new GeneratePDFException(PDFE_902, "An error occurred on generating the pdf", e);
         } catch (Exception e) {
@@ -103,7 +101,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         }
     }
 
-    private File createTempFile(String fileName, String fileExtension, Path workingDirPath, AppErrorCodeEnum error) throws GeneratePDFException {
+    private File createTempFile(String fileName, String fileExtension, Path workingDirPath, AppErrorCodeEnum error)
+            throws GeneratePDFException {
         try {
             return Files.createTempFile(workingDirPath, fileName, fileExtension).toFile();
         } catch (IOException e) {

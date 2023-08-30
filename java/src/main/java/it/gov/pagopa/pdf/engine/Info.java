@@ -4,6 +4,7 @@ import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.model.AppInfo;
 
 
@@ -19,7 +20,8 @@ import java.util.logging.Logger;
 public class Info {
 
 	/**
-	 * This function will be invoked when a Http Trigger occurs
+	 * This function will be invoked when a Http Trigger occurs, it will check if the underlying service does provide
+	 * a response
 	 * @return {@link HttpResponseMessage} with {@link HttpStatus#OK}
 	 */
 	@FunctionName("Info")
@@ -30,10 +32,17 @@ public class Info {
 			authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
 			final ExecutionContext context) {
 
-		return request.createResponseBuilder(HttpStatus.OK)
+		PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
+		return request.createResponseBuilder(pdfEngineClient.info() ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE)
 				.body(getInfo(context.getLogger()))
 				.build();
 	}
+
+	/**
+	 * Method to produce a json containing the App Infos
+	 * @param logger
+	 * @return
+	 */
 	public synchronized AppInfo getInfo(Logger logger) {
 		String version = null;
 		String name = null;
