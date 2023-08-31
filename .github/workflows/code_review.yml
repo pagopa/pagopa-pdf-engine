@@ -47,7 +47,7 @@ jobs:
           project_key: ${{env.PROJECT_KEY}}
           coverage_exclusions: "**/config/*,**/*Mock*,**/model/**,**/entity/*"
           cpd_exclusions: "**/model/**,**/entity/*"
-          pom_path: "./java"
+          pom_path: "java"
 
   smoke-test:
     name: Smoke Test

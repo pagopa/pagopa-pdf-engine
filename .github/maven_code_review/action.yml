@@ -38,7 +38,7 @@ inputs:
     required: true
     type: string
     description: path where pom.xml is
-    default: java
+    default: .
 
 runs:
   using: "composite"
