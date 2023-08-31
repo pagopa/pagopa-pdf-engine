@@ -21,7 +21,6 @@ import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import com.microsoft.playwright.Playwright;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -62,7 +61,6 @@ public class HttpTriggerGeneratePDFFunction {
 
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
-    private Playwright playwright;
 
     public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
         this.generatePDFService = new GeneratePDFServiceImpl();
