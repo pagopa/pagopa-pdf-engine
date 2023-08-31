@@ -6,6 +6,17 @@ microservice-chart:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
     tag: "1.9.0"
     pullPolicy: Always
+  sidecars:
+    - name: azurite
+      securityContext:
+        allowPrivilegeEscalation: false
+      image: mcr.microsoft.com/azure-storage/azurite:3.18.0@sha256:fbd99a4aa4259827081ff9e5cd133a531f20fa2d1d010891fd474d5798f15d7a
+      ports:
+        - containerPort: 10000
+      resources:
+        limits:
+          memory: 100Mi
+          cpu: 100m    
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
     httpGet:
