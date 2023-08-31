@@ -47,7 +47,7 @@ runs:
 
     - name: Move to pom path
       shell: bash
-      run: echo "Move to pom path" && ls && ${{ inputs.pom_path }}
+      run: echo "Move to pom path" && ls && cd ${{ inputs.pom_path }}
 
     - name: Set up JDK
       uses: actions/setup-java@v1
