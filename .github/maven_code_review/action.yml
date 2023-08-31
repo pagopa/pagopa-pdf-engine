@@ -38,7 +38,7 @@ inputs:
     required: true
     type: string
     description: path where pom.xml is
-    default: .
+    default: java
 
 runs:
   using: "composite"
@@ -47,7 +47,7 @@ runs:
 
     - name: Move to pom path
       shell: bash
-      run: cd ${{ inputs.pom_path }}
+      run: echo "Move to pom path" && ls && ${{ inputs.pom_path }}
 
     - name: Set up JDK
       uses: actions/setup-java@v1
