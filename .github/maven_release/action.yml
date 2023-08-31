@@ -54,7 +54,7 @@ runs:
 
     - name: Move to pom path d1
       shell: bash
-      run: echo "ls1" && ls
+      run: echo "ls1" && ls && cd java && ls
 
     - name: Move to pom path
       shell: bash
