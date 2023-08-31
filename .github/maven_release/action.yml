@@ -49,21 +49,12 @@ runs:
       shell: bash
 
     - uses: actions/checkout@v3
-      working-directory: ./java
       with:
         token: ${{ inputs.github_token }}
 
-    - name: Move to pom path d1
-      shell: bash
-      run: echo "ls1" && ls && cd java && ls
-
-    - name: Move to pom path
-      shell: bash
-      run: cd ${{ inputs.pom_path }}
-
-    - name: Move to pom path d2
-      shell: bash
-      run: echo "ls2" && ls
+    # - name: Move to pom path
+    #   shell: bash
+    #   run: cd ${{ inputs.pom_path }}
 
     - name: Update Semantic Version
       id: semver
@@ -84,15 +75,15 @@ runs:
         git commit -m "Bump to version ${{ steps.semver.outputs.version }} ${{ (inputs.skip_ci && '[skip ci]') || '' }}" || exit 0
         git push origin ${{ github.ref_name}}
 
-    - name: Create Release
-      if: ${{ inputs.semver != 'skip' }}
-      uses: ncipollo/release-action@v1.12.0
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-      with:
-        commit: ${{ github.ref_name }}
-        tag: ${{ steps.semver.outputs.version }}
-        name: Release ${{ steps.semver.outputs.version }}
-        makeLatest: latest
-        generateReleaseNotes: true
-        prerelease: ${{ (inputs.semver == 'buildNumber' && 'true') || 'false' }}
+    # - name: Create Release
+    #   if: ${{ inputs.semver != 'skip' }}
+    #   uses: ncipollo/release-action@v1.12.0
+    #   env:
+    #     GITHUB_TOKEN: ${{ inputs.github_token }}
+    #   with:
+    #     commit: ${{ github.ref_name }}
+    #     tag: ${{ steps.semver.outputs.version }}
+    #     name: Release ${{ steps.semver.outputs.version }}
+    #     makeLatest: latest
+    #     generateReleaseNotes: true
+    #     prerelease: ${{ (inputs.semver == 'buildNumber' && 'true') || 'false' }}
