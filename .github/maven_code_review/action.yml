@@ -45,9 +45,13 @@ runs:
   steps:
     - uses: actions/checkout@v2
 
-    - name: Move to pom path
-      shell: bash
-      run: echo "Move to pom path" && ls && cd ${{ inputs.pom_path }}
+    # - name: Move to pom path
+    #   shell: bash
+    #   run: echo "Move to pom path" && ls && cd ${{ inputs.pom_path }}
+
+    # - name: Debu to pom path
+    #   shell: bash
+    #   run: echo "Move to pom path" && ls && cd ${{ inputs.pom_path }}
 
     - name: Set up JDK
       uses: actions/setup-java@v1
@@ -59,24 +63,24 @@ runs:
       with:
         maven-version: ${{ inputs.maven_version }}
 
-    # - name: Cache Maven packages
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ~/.m2
-    #     key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-    #     restore-keys: ${{ runner.os }}-m2
+    - name: Cache Maven packages
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
 
-    # - name: Cache SonarCloud packages
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ~/.sonar-project.properties/cache
-    #     key: ${{ runner.os }}-sonar-project.properties
-    #     restore-keys: ${{ runner.os }}-sonar-project.properties
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v1
+      with:
+        path: ~/.sonar-project.properties/cache
+        key: ${{ runner.os }}-sonar-project.properties
+        restore-keys: ${{ runner.os }}-sonar-project.properties
 
     - name: Build and analyze on Pull Requests
       if: ${{ github.event_name == 'pull_request' }}
       shell: bash
-      run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+      run: cd ${{ inputs.pom_path }} && mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
         -Dsonar.organization=pagopa
         -Dsonar.projectKey=${{ env.PROJECT_KEY }}
         -Dsonar.coverage.jacoco.xmlReportPaths=./target/jacoco-report/jacoco.xml
@@ -99,7 +103,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         SONAR_TOKEN: ${{ inputs.sonar_token }}
-      run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+      run: cd ${{ inputs.pom_path }} && mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
         -Dsonar.organization=pagopa
         -Dsonar.projectKey=${{ env.PROJECT_KEY }}
         -Dsonar.coverage.jacoco.xmlReportPaths=./target/site/jacoco/jacoco.xml
