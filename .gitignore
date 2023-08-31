@@ -42,3 +42,4 @@ obj/
 **/node_modules
 **/coverage
 yarn.lock
+**/docker/.env
