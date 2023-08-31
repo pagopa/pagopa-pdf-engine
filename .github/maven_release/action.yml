@@ -49,6 +49,7 @@ runs:
       shell: bash
 
     - uses: actions/checkout@v3
+      working-directory: ./java
       with:
         token: ${{ inputs.github_token }}
 
