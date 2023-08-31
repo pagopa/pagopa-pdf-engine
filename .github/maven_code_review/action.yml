@@ -59,19 +59,19 @@ runs:
       with:
         maven-version: ${{ inputs.maven_version }}
 
-    - name: Cache Maven packages
-      uses: actions/cache@v1
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+    # - name: Cache Maven packages
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/.m2
+    #     key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    #     restore-keys: ${{ runner.os }}-m2
 
-    - name: Cache SonarCloud packages
-      uses: actions/cache@v1
-      with:
-        path: ~/.sonar-project.properties/cache
-        key: ${{ runner.os }}-sonar-project.properties
-        restore-keys: ${{ runner.os }}-sonar-project.properties
+    # - name: Cache SonarCloud packages
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/.sonar-project.properties/cache
+    #     key: ${{ runner.os }}-sonar-project.properties
+    #     restore-keys: ${{ runner.os }}-sonar-project.properties
 
     - name: Build and analyze on Pull Requests
       if: ${{ github.event_name == 'pull_request' }}
