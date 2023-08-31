@@ -126,7 +126,7 @@ jobs:
 
   deploy_aks:
     name: Deploy on AKS
-    needs: [ setup, release, image ]
+    needs: [ setup, release, java-image, node-image ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     strategy:
       matrix:
