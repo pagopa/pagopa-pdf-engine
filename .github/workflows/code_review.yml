@@ -35,6 +35,10 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+
+      - name: checkout repo
+        uses: actions/checkout@v2
+      
       - name: Code Review
         uses: ./.github/maven_code_review
         with:
