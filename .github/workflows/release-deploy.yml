@@ -82,6 +82,9 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+
       - name: Make Release
         id: release
         uses: ./.github/maven_release
@@ -90,7 +93,7 @@ jobs:
           github_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           beta: ${{ inputs.beta }}
           skip_ci: ${{ inputs.beta }}
-          pom_path: "./java"
+          pom_path: "java"
 
   java-image:
     needs: [ setup, release ]
