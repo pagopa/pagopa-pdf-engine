@@ -46,27 +46,6 @@
 
         <!-- End Azure -->
 
-        <!-- add all iText modules -->
-        <dependency>
-            <groupId>com.itextpdf</groupId>
-            <artifactId>itext7-core</artifactId>
-            <version>${itext.version}</version>
-            <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>com.itextpdf</groupId>
-            <artifactId>html2pdf</artifactId>
-            <version>${itext.pdfhtml.version}</version>
-        </dependency>
-
-        <!-- Handlebars -->
-        <dependency>
-            <groupId>com.github.jknack</groupId>
-            <artifactId>handlebars</artifactId>
-            <version>${handlebars-version}</version>
-        </dependency>
-
         <dependency>
             <groupId>commons-fileupload</groupId>
             <artifactId>commons-fileupload</artifactId>
@@ -198,12 +177,6 @@
                 <artifactId>guava</artifactId>
                 <version>31.0.1-jre</version>
             </dependency>
-
-        <dependency>
-            <groupId>com.microsoft.playwright</groupId>
-            <artifactId>playwright</artifactId>
-            <version>1.36.0</version>
-        </dependency>
 
             <dependency>
                 <groupId>e-iceblue</groupId>

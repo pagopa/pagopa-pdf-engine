@@ -84,14 +84,15 @@ jobs:
     steps:
       - name: Make Release
         id: release
-        uses: pagopa/github-actions-template/maven-release@v1.5.2
+        uses: ./.github/maven_release
         with:
           semver: ${{ needs.setup.outputs.semver }}
           github_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           beta: ${{ inputs.beta }}
           skip_ci: ${{ inputs.beta }}
+          pom_path: "./java"
 
-  image:
+  java-image:
     needs: [ setup, release ]
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -104,6 +105,24 @@ jobs:
           branch: ${{ github.ref_name}}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.release.outputs.version }}
+          context_path: "./java"
+          image_suffix: "-java"
+
+  node-image:
+    needs: [ setup, release ]
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    if: ${{ inputs.semver != 'skip' }}
+    steps:
+      - name: Build and Push
+        id: semver
+        uses: pagopa/github-actions-template/ghcr-build-push@v1.5.4
+        with:
+          branch: ${{ github.ref_name}}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.release.outputs.version }}
+          context_path: "./node"
+          image_suffix: "-node"
 
   deploy_aks:
     name: Deploy on AKS

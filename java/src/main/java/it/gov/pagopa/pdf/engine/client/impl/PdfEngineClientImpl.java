@@ -33,8 +33,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static PdfEngineClientImpl instance = null;
 
-    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GEN_ENDPOINT", "http://localhost:9091/api/pdf-generate");
-    private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:9091/api/pdf-generate");
+    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GEN_ENDPOINT", "http://pagopa-pdf-engine-node/api/pdf-generate");
+    private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://pagopa-pdf-engine-node/api/pdf-generate");
 
     private static final String ZIP_FILE_NAME = "template.zip";
     private static final String TEMPLATE_KEY = "template";
