@@ -52,9 +52,17 @@ runs:
       with:
         token: ${{ inputs.github_token }}
 
+    - name: Move to pom path d1
+      shell: bash
+      run: echo "ls1" && ls
+
     - name: Move to pom path
       shell: bash
-      run: cd ${{ inputs.pom_path }}
+      run: echo "Move to pom path" && cd ${{ inputs.pom_path }}
+
+    - name: Move to pom path d2
+      shell: bash
+      run: echo "ls2" && ls
 
     - name: Update Semantic Version
       id: semver
