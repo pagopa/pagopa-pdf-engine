@@ -103,6 +103,7 @@ jobs:
     steps:
       - id: output
         name: Set Output Build and Push
+        shell: bash
         run: |
           ls
 
