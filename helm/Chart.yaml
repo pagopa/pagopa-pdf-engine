@@ -1,5 +1,5 @@
 apiVersion: v2
-name: pagopa-functions-template
+name: pagopa-pdf-engine
 description: Microservice description
 type: application
 version: 0.48.0
