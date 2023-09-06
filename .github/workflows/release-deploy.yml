@@ -97,7 +97,7 @@ jobs:
 
   java-image:
     needs: [ setup, release ]
-    name: Build and Push Docker Image
+    name: Build and Push Docker Image Java
     runs-on: ubuntu-latest
     if: ${{ inputs.semver != 'skip' }}
     steps:
@@ -108,12 +108,12 @@ jobs:
           branch: ${{ github.ref_name}}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.release.outputs.version }}
-          context_path: "./java"
+          context_path: "./java/Dockerfile"
           image_suffix: "-java"
 
   node-image:
     needs: [ setup, release ]
-    name: Build and Push Docker Image
+    name: Build and Push Docker Image Node
     runs-on: ubuntu-latest
     if: ${{ inputs.semver != 'skip' }}
     steps:
