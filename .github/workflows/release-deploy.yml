@@ -101,6 +101,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.semver != 'skip' }}
     steps:
+      - name: checkout repo
+        uses: actions/checkout@v2
+
       - id: output
         name: Set Output Build and Push
         shell: bash
