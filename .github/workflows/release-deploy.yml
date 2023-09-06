@@ -104,7 +104,7 @@ jobs:
       - id: output
         name: Set Output Build and Push
         run: |
-          ls $PWD
+          ls
 
       - name: Build and Push
         id: semver
