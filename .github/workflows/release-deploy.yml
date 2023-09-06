@@ -101,6 +101,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.semver != 'skip' }}
     steps:
+      - id: output
+        name: Set Output Build and Push
+        run: |
+          ls $PWD
+
       - name: Build and Push
         id: semver
         uses: ./.github/ghcr_build_push
