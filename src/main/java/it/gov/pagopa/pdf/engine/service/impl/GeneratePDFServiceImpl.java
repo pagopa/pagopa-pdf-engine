@@ -15,7 +15,7 @@ If not, see https://www.gnu.org/licenses/.
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-//import com.spire.pdf.conversion.PdfStandardsConverter;
+import com.spire.pdf.conversion.PdfStandardsConverter;
 import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -62,9 +62,9 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             }
 
             String fileToReturn = response.getTempPdfPath();
-//            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-//            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-//            fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+            fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(new File(fileToReturn), workingDirPath);
