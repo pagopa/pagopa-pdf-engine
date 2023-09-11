@@ -149,7 +149,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && node --version \
   && npm --version \
   && cd /home/site/wwwroot/node \
-  && npm install
+  && npm install \
   && cd /home/site/wwwroot/node/node_modules/puppeteer \
   && npm install
 
