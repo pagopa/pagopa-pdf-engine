@@ -183,4 +183,6 @@ RUN apt-get install -y xvfb gconf-service libasound2 libatk1.0-0 libc6 libcairo2
 
 USER root
 
+RUN chmod 777 /home/site/wwwroot/start.sh
+
 CMD ["/home/site/wwwroot/start.sh"]
