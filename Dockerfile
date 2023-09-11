@@ -152,6 +152,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && npm install \
   && cd /home/site/wwwroot/node/node_modules/puppeteer \
   && npm install
+  && cd /
 
 ENV YARN_VERSION 1.22.19
 
