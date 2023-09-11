@@ -9,11 +9,35 @@ const unzipper = require('unzipper');
 const getPage = require('./utils/browserManager');
 const getBrowserSession = require('./utils/browserManager');
 const buildResponseBody = require('./utils/buildUtils');
-const { default: parseMultipartFormData } = require('@anzp/azure-function-multipart');
+const multer = require('multer');
+const express = require('express');
 var handlebars = require("handlebars");
+const packageJson = require("../package.json");
 
-const generateFunction =
-    async function (context, request) {
+
+var app = express();
+
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
+
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.json({'errors': {
+    message: err.message,
+    error: {}
+  }});
+});
+
+app.get('/info', async function (req, res, next) {
+
+    res.send({
+        name: packageJson.name,
+        version: packageJson.version
+    });
+
+})
+
+app.post('/pdf-generate', upload.single('template'), async function (req, res, next) {
 
         var workingDir;
         var page;
@@ -23,16 +47,13 @@ const generateFunction =
             try {
                 workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pdfenginetmp-'));
             } catch (err) {
-                context.res = {
-                    statusCode: 500,
-                    body: buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request")
-                }
+                res.status(500);
+                res.body(buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request"));
+
                 return;
             }
 
-            const { fields, files } = await parseMultipartFormData(request);
-
-            await fs.writeFile(path.join(workingDir,"zippedFile.zip"), files[0].bufferFile,  "binary");
+            await fs.writeFile(path.join(workingDir,"zippedFile.zip"), req.file.buffer,  "binary");
 
             createReadStream(path.join(workingDir, "zippedFile.zip"))
                 .pipe(unzipper.Extract({ path: workingDir }));
@@ -40,28 +61,12 @@ const generateFunction =
             const browser = await getBrowserSession();
             page = await browser.newPage();
 
-            var data;
-            try {
-                for (var fieldIndex in fields) {
-                    const field = fields[fieldIndex];
-                    if (field.name == "data") {
-                        data = JSON.parse(field.value);
-                    }
-                }
-            } catch (err) {
-                console.log(err);
-                context.res = {
-                    statusCode: 400,
-                    body: buildResponseBody(500, 'PDFE_707', "Error parsing PDF document input data from output stream")
-                }
-                return;
-            }
+            var data = req.body.data;
 
             if (data == undefined) {
-                context.res = {
-                    statusCode: 400,
-                    body: buildResponseBody(400, 'PDFE_898', "Invalid request")
-                }
+                res.status(400);
+                res.json(buildResponseBody(400, 'PDFE_898', "Invalid request"));
+
                 return;
             }
 
@@ -72,10 +77,9 @@ const generateFunction =
                 await fs.writeFile(path.join(workingDir,"compiledTemplate.html"), html);
             } catch (err) {
                 console.log(err)
-                context.res = {
-                    statusCode: 500,
-                    body: buildResponseBody(400, 'PDFE_901', "Error compiling the HTML template")
-                }
+                res.status(500);
+                res.json(buildResponseBody(400, 'PDFE_901', "Error compiling the HTML template"));
+
                 return;
             }
 
@@ -89,16 +93,15 @@ const generateFunction =
                 });
             } catch (err) {
                 console.log(err);
-                context.res = {
-                    statusCode: 500,
-                    body: buildResponseBody(500, 'PDFE_902', "Error generating the PDF document")
-                }
+                res.status(500);
+                res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
+
                 return;
             }
 
             var content = readFileSync(path.join(workingDir,"pagopa-receipt.pdf"));
 
-            context.res = { body: content };
+           res.send(content);
 
         } finally {
             if (workingDir) {
@@ -109,6 +112,8 @@ const generateFunction =
             }
         }
 
-    };
+});
 
-module.exports = generateFunction;
+var server = app.listen( process.env.PORT || 3000, function(){
+  console.log('Listening on port ' + server.address().port);
+});

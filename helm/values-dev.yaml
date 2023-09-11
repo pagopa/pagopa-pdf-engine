@@ -3,25 +3,9 @@ microservice-chart:
   nameOverride: ""
   fullnameOverride: ""
   image:
-    repository: ghcr.io/pagopa/pagopa-pdf-engine-java
+    repository: ghcr.io/pagopa/pagopa-pdf-engine
     tag: "1.9.0"
     pullPolicy: Always
-
-  sidecars:
-    - name: pagopa-pdf-engine-node
-      securityContext:
-        allowPrivilegeEscalation: false
-      image: ghcr.io/pagopa/pagopa-pdf-engine-node:latest
-      ports:
-        - containerPort: 80
-      resources:
-        requests:
-          memory: "1024Mi"
-          cpu: "0.75"
-        limits:
-          memory: "1024Mi"
-          cpu: "0.75"
-
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
     httpGet:

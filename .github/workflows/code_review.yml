@@ -35,19 +35,14 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-
-      - name: checkout repo
-        uses: actions/checkout@v2
-      
       - name: Code Review
-        uses: ./.github/maven_code_review
+        uses: pagopa/github-actions-template/maven-code-review@v1.4.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           sonar_token: ${{ secrets.SONAR_TOKEN }}
           project_key: ${{env.PROJECT_KEY}}
           coverage_exclusions: "**/config/*,**/*Mock*,**/model/**,**/entity/*"
           cpd_exclusions: "**/model/**,**/entity/*"
-          pom_path: "java"
 
   smoke-test:
     name: Smoke Test

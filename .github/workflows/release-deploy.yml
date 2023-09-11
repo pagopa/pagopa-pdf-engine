@@ -82,20 +82,16 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
-      - name: checkout repo
-        uses: actions/checkout@v2
-
       - name: Make Release
         id: release
-        uses: ./.github/maven_release
+        uses: pagopa/github-actions-template/maven-release@v1.5.2
         with:
           semver: ${{ needs.setup.outputs.semver }}
           github_token: ${{ secrets.BOT_TOKEN_GITHUB }}
           beta: ${{ inputs.beta }}
           skip_ci: ${{ inputs.beta }}
-          pom_path: "java"
 
-  java-image:
+  image:
     needs: [ setup, release ]
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -103,33 +99,15 @@ jobs:
     steps:
       - name: Build and Push
         id: semver
-        uses: ./.github/ghcr_build_push
+        uses: pagopa/github-actions-template/ghcr-build-push@v1.5.4
         with:
           branch: ${{ github.ref_name}}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.release.outputs.version }}
-          context_path: "./java"
-          image_suffix: "-java"
-
-  node-image:
-    needs: [ setup, release ]
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    if: ${{ inputs.semver != 'skip' }}
-    steps:
-      - name: Build and Push
-        id: semver
-        uses: ./.github/ghcr_build_push
-        with:
-          branch: ${{ github.ref_name}}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ needs.release.outputs.version }}
-          context_path: "./node"
-          image_suffix: "-node"
 
   deploy_aks:
     name: Deploy on AKS
-    needs: [ setup, release, java-image, node-image ]
+    needs: [ setup, release, image ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     strategy:
       matrix:

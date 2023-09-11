@@ -46,14 +46,8 @@ done
 
 
 stack_name=$(cd .. && basename "$PWD")
-
-echo "Node srv ..."
-docker build -t pagopa-pdf-engine-node ../node/
-docker run -d -p 60487:80 --name="${stack_name}-node" pagopa-pdf-engine-node
-
-echo "Java srv ..."
-docker build -t pagopa-pdf-engine-java ../java/
-docker run -d -p 60486:80 --name="${stack_name}-java" pagopa-pdf-engine-java -e PDF_ENGINE_NODE_GEN_ENDPOINT="http://${stack_name}-node/api/pdf-generate" -e PDF_ENGINE_NODE_INFO_ENDPOINT="http://${stack_name}-node/api/info"
+docker build -t pagopa-pdf-engine ../
+docker run -d -p 60486:80 --name="${stack_name}" pagopa-pdf-engine
 
 # waiting the containers
 printf 'Waiting for the service'
