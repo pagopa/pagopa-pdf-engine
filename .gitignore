@@ -32,7 +32,7 @@ hs_err_pid*
 .DS_Store
 
 # Azure Functions
-local.settings.json
+java/local.settings.json
 bin/
 obj/
 
@@ -40,4 +40,6 @@ obj/
 **/.terraform
 **/*.lock.hcl
 **/node_modules
+**/coverage
 yarn.lock
+**/docker/.env

@@ -12,15 +12,15 @@ const {generatePDF} = require('./pdf_engine_client');
 });
 
 When('an Http POST request is sent to the PDF Engine with a zip file and the key-values', async function () {
-  this.response = await generatePDF(this.zipFile, this.inputData, "ITEXT");
+  this.response = await generatePDF(this.zipFile, this.inputData);
 });
 
 When('an Http POST request is sent to the PDF Engine with a zip file and without key-values', async function () {
-  this.response = await generatePDF(this.zipFile, null, "ITEXT");
+  this.response = await generatePDF(this.zipFile, null);
 });
 
 When('an Http POST request is sent to the PDF Engine with key-values and without a zip file', async function () {
-  this.response = await generatePDF(null, this.inputData, "ITEXT");
+  this.response = await generatePDF(null, this.inputData);
 });
 
 Then('response has a {int} Http status', function (expectedStatus) {
@@ -29,12 +29,4 @@ Then('response has a {int} Http status', function (expectedStatus) {
 
 Then('application error code is {string}', function (expectedAppErrorCode) {
   assert.strictEqual(this.response.data.appErrorCode, expectedAppErrorCode);
-});
-
- Given('a zip file, that contains a valid HTML template to use in Playwright', function () {
-  this.zipFile = readZipFile("template.zip");
-});
-
-When('an Http POST request is sent to the PDF Engine with a zip file and the key-values and with Playwright Engine', async function () {
-  this.response = await generatePDF(this.zipFile, this.inputData, "PLAYWRIGHT");
 });

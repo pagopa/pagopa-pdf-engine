@@ -15,44 +15,34 @@ If not, see https://www.gnu.org/licenses/.
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Template;
-import com.github.jknack.handlebars.helper.ConditionalHelpers;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Page;
-import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
-import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
+import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
-import it.gov.pagopa.pdf.engine.model.GeneratorType;
+import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
+import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class GeneratePDFServiceImplTest {
-
-    private Handlebars handlebarsMock;
-
-    private BrowserContext browserContextMock;
-
-    private Page pageMock;
 
     private GeneratePDFService sut;
 
@@ -60,12 +50,7 @@ class GeneratePDFServiceImplTest {
 
     @BeforeEach
     void setUp() throws IOException, GeneratePDFException {
-
-        handlebarsMock = spy(buildHandlebars());
-        browserContextMock = mock(BrowserContext.class);
-        pageMock = mock(Page.class);
-
-        sut = spy(new GeneratePDFServiceImpl(handlebarsMock));
+        sut = spy(new GeneratePDFServiceImpl());
         workingPath = Files.createTempDirectory("testDir");
     }
 
@@ -81,51 +66,16 @@ class GeneratePDFServiceImplTest {
         pdfInput.setData(Collections.singletonMap("a", "b"));
         pdfInput.setApplySignature(false);
 
-        Template template = handlebarsMock.compileInline(
-                IOUtils.toString(
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
-                        StandardCharsets.UTF_8));
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(200);
+        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).getPath());
 
-        doReturn(template).when(handlebarsMock).compile(anyString());
-
-        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
-
-        assertNotNull(output);
-        output.close();
-    }
-
-    @Test
-    @SneakyThrows
-    void generatePDFNotZippedWithSuccessWithPlaywright() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.singletonMap("a", "b"));
-        pdfInput.setApplySignature(false);
-        pdfInput.setGeneratorType(GeneratorType.PLAYWRIGHT);
-
-        Template template = handlebarsMock.compileInline(
-                IOUtils.toString(
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
-                        StandardCharsets.UTF_8));
-
-        doReturn(template).when(handlebarsMock).compile(anyString());
-        when(browserContextMock.newPage()).thenReturn(pageMock);
-        when(pageMock.pdf(any())).thenAnswer(invocation -> {
-            File[] files = workingPath.toFile().listFiles();
-            for (File file : files) {
-                if (file.getName().contains("document")) {
-                    Path targetPath = file.toPath();
-                    Path sourcePath = new File(this.getClass().getResource("/valid_pdf.pdf").getPath()).toPath();
-                    try  {
-                        FileUtils.copyFile(sourcePath.toFile(), targetPath.toFile());
-                    } finally {}
-                }
-            }
-            return "".getBytes();
-        });
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
+        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
-
-        workingPath.toAbsolutePath();
 
         assertNotNull(output);
         output.close();
@@ -140,12 +90,14 @@ class GeneratePDFServiceImplTest {
         pdfInput.setApplySignature(false);
         pdfInput.setGenerateZipped(true);
 
-        Template template = handlebarsMock.compileInline(
-                IOUtils.toString(
-                        Objects.requireNonNull(this.getClass().getResourceAsStream("/valid_template.html")),
-                        StandardCharsets.UTF_8));
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(200);
+        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).toURI().normalize().getPath().replaceFirst("\\\\",""));
 
-        doReturn(template).when(handlebarsMock).compile(anyString());
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
+        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
 
@@ -155,35 +107,31 @@ class GeneratePDFServiceImplTest {
 
     @Test
     @SneakyThrows
-    void generatePDFCompileTemplateException() {
+    void generatePDFCallException() {
         GeneratePDFInput pdfInput = new GeneratePDFInput();
 
-        doThrow(IOException.class).when(handlebarsMock).compile(anyString());
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(400);
+        pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
 
-        CompileTemplateException e = assertThrows(CompileTemplateException.class, () -> sut.generatePDF(pdfInput, workingPath));
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
+        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_901, e.getErrorCode());
+        GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath));
+
+        Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, e.getErrorCode());
     }
 
-    @Test
-    @SneakyThrows
-    void generatePDFFillTemplateException() {
-        Template templateMock = mock(Template.class);
-
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.EMPTY_MAP);
-
-        doReturn(templateMock).when(handlebarsMock).compile(anyString());
-        doThrow(IOException.class).when(templateMock).apply(anyMap());
-
-        FillTemplateException e = assertThrows(FillTemplateException.class, () -> sut.generatePDF(pdfInput, workingPath));
-
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_900, e.getErrorCode());
+    private static <T> void setMock(Class<T> classToMock, T mock) {
+        try {
+            Field instance = classToMock.getDeclaredField("instance");
+            instance.setAccessible(true);
+            instance.set(instance, mock);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private Handlebars buildHandlebars() {
-        return new Handlebars()
-                .registerHelper("eq", ConditionalHelpers.eq)
-                .registerHelper("not", ConditionalHelpers.not);
-    }
+
 }

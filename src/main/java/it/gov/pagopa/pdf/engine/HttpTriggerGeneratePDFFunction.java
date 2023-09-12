@@ -16,15 +16,11 @@ If not, see https://www.gnu.org/licenses/.
 package it.gov.pagopa.pdf.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.helper.ConditionalHelpers;
 import com.google.common.annotations.VisibleForTesting;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Playwright;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -65,11 +61,9 @@ public class HttpTriggerGeneratePDFFunction {
 
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
-    private Playwright playwright;
 
     public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
-
-        this.generatePDFService = new GeneratePDFServiceImpl(buildHandlebars());
+        this.generatePDFService = new GeneratePDFServiceImpl();
         this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
 
@@ -212,12 +206,6 @@ public class HttpTriggerGeneratePDFFunction {
                                 .build()
                 )
         );
-    }
-
-    private Handlebars buildHandlebars() {
-        return new Handlebars()
-                .registerHelper("eq", ConditionalHelpers.eq)
-                .registerHelper("not", ConditionalHelpers.not);
     }
 
     private void clearTempDirectory(Path workingDirPath, Logger logger) {

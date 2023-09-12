@@ -214,9 +214,6 @@
           },
           "generateZipped": {
             "type": "boolean"
-          },
-          "generatorType": {
-            "type": "string"
           }
         }
       }
