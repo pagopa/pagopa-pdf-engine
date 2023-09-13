@@ -58,7 +58,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: yarn add node
+        run: yarn --cwd ./node install
 
       - name: run tests
         run: yarn --cwd ./node run test:coverage
@@ -74,7 +74,7 @@ jobs:
           args: >
             -Dsonar.organization=pagopa
             -Dsonar.projectKey=${{ env.PROJECT_KEY }}
-            -Dsonar.coverage.jacoco.xmlReportPaths=./node/coverage/lcov-report/lcov.info
+            -Dsonar.javascript.lcov.reportPaths=./node/coverage/lcov-report/lcov.info
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.login=${{ inputs.sonar_token }}
             -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
@@ -92,7 +92,7 @@ jobs:
           args: >
             -Dsonar.organization=pagopa
             -Dsonar.projectKey=${{ env.PROJECT_KEY }}
-            -Dsonar.coverage.jacoco.xmlReportPaths=./node/coverage/lcov-report/lcov.info
+            -Dsonar.javascript.lcov.reportPaths=./node/coverage/lcov-report/lcov.info
             -Dsonar.branch.name=${{ github.head_ref }}
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.login=${{ inputs.sonar_token }}
