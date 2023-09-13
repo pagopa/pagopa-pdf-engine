@@ -14,7 +14,9 @@ import java.net.URL;
 @NoArgsConstructor
 public class PdfEngineRequest {
 
-    URL template;
-    String data;
+  String data;
+
+    String workingDirPath;
+
 
 }

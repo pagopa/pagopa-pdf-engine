@@ -10,7 +10,7 @@ const getBrowserSession = async () => {
 
   browser = await puppeteer.launch({
     headless: true,
-    args: ["--headless","--no-sandbox"]
+    args: ["--headless","--no-sandbox", "--font-render-hinting=none"]
   });
 
   return browser;

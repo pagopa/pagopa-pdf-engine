@@ -29,7 +29,7 @@ permissions:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   code-review-java:
-    name: Code Review
+    name: Code Review Java
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -43,6 +43,61 @@ jobs:
           project_key: ${{env.PROJECT_KEY}}
           coverage_exclusions: "**/config/*,**/*Mock*,**/model/**,**/entity/*"
           cpd_exclusions: "**/model/**,**/entity/*"
+
+  code-review-node:
+    name: Code Review Node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: yarn --cwd ./node install
+
+      - name: run tests
+        run: yarn --cwd ./node run test:coverage
+
+      - name: SonarQube Scan
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          GITHUB_TOKEN: ${{ inputs.github_token }}
+        with:
+          projectBaseDir: ./node
+          args: >
+            -Dsonar.organization=pagopa
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.javascript.lcov.reportPaths=./node/coverage/lcov-report/lcov.info
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.login=${{ inputs.sonar_token }}
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+            -Dsonar.pullrequest.branch=${{ github.head_ref }}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
+
+      - name: SonarQube Scan
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          GITHUB_TOKEN: ${{ inputs.github_token }}
+        with:
+          projectBaseDir: ./node
+          args: >
+            -Dsonar.organization=pagopa
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.javascript.lcov.reportPaths=./node/coverage/lcov-report/lcov.info
+            -Dsonar.branch.name=${{ github.head_ref }}
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.login=${{ inputs.sonar_token }}
 
   smoke-test:
     name: Smoke Test

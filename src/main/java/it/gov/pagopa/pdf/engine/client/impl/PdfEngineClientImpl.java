@@ -5,6 +5,7 @@ import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
+import it.gov.pagopa.pdf.engine.util.Constants;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
@@ -40,6 +41,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private static final String TEMPLATE_KEY = "template";
     private static final String DATA_KEY = "data";
 
+    private static final String WORKING_DIR_KEY = "workingDir";
+
     private final HttpClientBuilder httpClientBuilder;
 
     private PdfEngineClientImpl() {
@@ -69,17 +72,19 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
         //Generate client
-        try (CloseableHttpClient client = this.httpClientBuilder.build();
-             InputStream is = pdfEngineRequest.getTemplate().openStream()) {
+        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
             //Encode template and data
 
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
+            StringBody workingDirBody = new StringBody(pdfEngineRequest.getWorkingDirPath().concat(Constants.UNZIPPED_FILES_FOLDER), ContentType.TEXT_PLAIN);
+
 
             //Build the multipart request
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-            builder.addBinaryBody(TEMPLATE_KEY, is.readAllBytes(), ContentType.create("application/zip"), ZIP_FILE_NAME);
             builder.addPart(DATA_KEY, dataBody);
+            builder.addPart(WORKING_DIR_KEY, workingDirBody);
+
             HttpEntity entity = builder.build();
 
             //Set endpoint and auth key
