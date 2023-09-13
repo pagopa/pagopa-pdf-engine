@@ -42,7 +42,7 @@ class PdfEngineClientImplTest {
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            pdfEngineRequest.setTemplate(targetFile.toURI().toURL());
+            pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
             pdfEngineRequest.setData(new String(template));
         } finally {
             targetFile.deleteOnExit();
@@ -87,7 +87,7 @@ class PdfEngineClientImplTest {
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            pdfEngineRequest.setTemplate(targetFile.toURI().toURL());
+            pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
             pdfEngineRequest.setData(new String(template));
         } finally {
             targetFile.deleteOnExit();
@@ -129,7 +129,7 @@ class PdfEngineClientImplTest {
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
-            pdfEngineRequest.setTemplate(targetFile.toURI().toURL());
+            pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
             pdfEngineRequest.setData(new String(template));
         } finally {
             targetFile.deleteOnExit();

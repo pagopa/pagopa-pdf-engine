@@ -13,8 +13,8 @@ import java.net.URL;
 @Setter
 @NoArgsConstructor
 public class PdfEngineRequest {
-
-    URL template;
     String data;
+
+    String workingDirPath;
 
 }

@@ -24,6 +24,7 @@ import it.gov.pagopa.pdf.engine.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
+import net.lingala.zip4j.ZipFile;
 import org.apache.commons.fileupload.FileUploadBase.FileUploadIOException;
 import org.apache.commons.fileupload.MultipartStream;
 
@@ -32,6 +33,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
+import static it.gov.pagopa.pdf.engine.util.Constants.UNZIPPED_FILES_FOLDER;
 import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
@@ -140,6 +142,13 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
             throw new RequestBodyParseException(PDFE_703, PDFE_703.getErrorMessage(), e);
         } catch (IOException e) {
             throw new RequestBodyParseException(PDFE_704, PDFE_704.getErrorMessage(), e);
+        }
+        try (ZipFile zipFile = new ZipFile(workingDirPath + ZIP_FILE_NAME))
+        {
+            zipFile.extractAll(workingDirPath + UNZIPPED_FILES_FOLDER);
+            System.out.println("Test AAA: " + workingDirPath + ", " + new File(workingDirPath + UNZIPPED_FILES_FOLDER).exists());
+        } catch (IOException e) {
+            throw new RequestBodyParseException(PDFE_705, PDFE_705.getErrorMessage(), e);
         }
         return true;
     }
