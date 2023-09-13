@@ -21,7 +21,6 @@ import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.ErrorMessage;
@@ -32,6 +31,8 @@ import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
 import it.gov.pagopa.pdf.engine.service.impl.GeneratePDFServiceImpl;
 import it.gov.pagopa.pdf.engine.service.impl.ParseRequestBodyServiceImpl;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -44,8 +45,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -55,6 +54,8 @@ import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
  */
 public class HttpTriggerGeneratePDFFunction {
 
+    private final Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
     private static final String PATTERN_FORMAT = "yyyy.MM.dd.HH.mm.ss";
@@ -62,7 +63,7 @@ public class HttpTriggerGeneratePDFFunction {
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
 
-    public HttpTriggerGeneratePDFFunction() throws GeneratePDFException {
+    public HttpTriggerGeneratePDFFunction() {
         this.generatePDFService = new GeneratePDFServiceImpl();
         this.parseRequestBodyService = new ParseRequestBodyServiceImpl(new ObjectMapper());
     }
@@ -86,14 +87,12 @@ public class HttpTriggerGeneratePDFFunction {
                     authLevel = AuthorizationLevel.ANONYMOUS)
                     HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
-        Logger logger = context.getLogger();
 
-        String message = String.format("Generate PDF function called at %s", LocalDateTime.now());
-        logger.info(message);
+        logger.info("Generate PDF function called at {}", LocalDateTime.now());
 
         Optional<byte[]> optionalRequestBody = request.getBody();
         if (optionalRequestBody.isEmpty()) {
-            logger.severe("Invalid request the payload is null");
+            logger.error("Invalid request the payload is null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
                     .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_899, INVALID_REQUEST_MESSAGE))
@@ -110,7 +109,7 @@ public class HttpTriggerGeneratePDFFunction {
                             .format(Instant.now())
             );
         } catch (IOException e) {
-            logger.log(Level.SEVERE, AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
+            logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(
@@ -126,7 +125,7 @@ public class HttpTriggerGeneratePDFFunction {
         try {
             generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders(), workingDirPath);
         } catch (PDFEngineException e) {
-            logger.log(Level.SEVERE, "Error retrieving input data from request body", e);
+            logger.error("Error retrieving input data from request body", e);
             HttpStatus status = getHttpStatus(e);
             return request
                     .createResponseBuilder(status)
@@ -135,7 +134,7 @@ public class HttpTriggerGeneratePDFFunction {
         }
 
         if (!generatePDFInput.isTemplateSavedOnFileSystem()) {
-            logger.severe("Invalid request, template HTML not provided");
+            logger.error("Invalid request, template HTML not provided");
             return request
                     .createResponseBuilder(BAD_REQUEST)
                     .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_897, INVALID_REQUEST_MESSAGE))
@@ -143,7 +142,7 @@ public class HttpTriggerGeneratePDFFunction {
         }
 
         if (generatePDFInput.getData() == null) {
-            logger.severe("Invalid request the PDF document input data are null");
+            logger.error("Invalid request the PDF document input data are null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
                     .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE))
@@ -160,7 +159,7 @@ public class HttpTriggerGeneratePDFFunction {
                     .body(fileBytes)
                     .build();
         } catch (PDFEngineException e) {
-            logger.log(Level.SEVERE, "Error generating the PDF document", e);
+            logger.error("Error generating the PDF document", e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(
@@ -170,7 +169,7 @@ public class HttpTriggerGeneratePDFFunction {
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error handling the generated stream", e);
+            logger.error("Error handling the generated stream", e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(
@@ -180,7 +179,7 @@ public class HttpTriggerGeneratePDFFunction {
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
         } finally {
-            clearTempDirectory(workingDirPath, logger);
+            clearTempDirectory(workingDirPath);
         }
 
 
@@ -208,12 +207,11 @@ public class HttpTriggerGeneratePDFFunction {
         );
     }
 
-    private void clearTempDirectory(Path workingDirPath, Logger logger) {
+    private void clearTempDirectory(Path workingDirPath) {
         try {
             FileUtils.deleteDirectory(workingDirPath.toFile());
         } catch (IOException e) {
-            String errMsg = String.format("Unable to clear working directory: %s", workingDirPath);
-            logger.log(Level.WARNING, errMsg, e);
+            logger.warn("Unable to clear working directory: {}", workingDirPath, e);
         }
     }
 

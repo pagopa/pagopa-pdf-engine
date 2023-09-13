@@ -58,7 +58,7 @@ class InfoTest {
         assertNotNull(responseBody.getName());
         assertNotNull(responseBody.getVersion());
         assertNotNull(responseBody.getEnvironment());
-        assertEquals("pdf-engine", responseBody.getName());
+        assertEquals("pagopa-pdf-engine", responseBody.getName());
         assertEquals("azure-fn", responseBody.getEnvironment());
     }
 
