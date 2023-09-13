@@ -43,7 +43,6 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static final String WORKING_DIR_KEY = "workingDir";
 
-
     private final HttpClientBuilder httpClientBuilder;
 
     private PdfEngineClientImpl() {
@@ -85,6 +84,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
             builder.addPart(DATA_KEY, dataBody);
             builder.addPart(WORKING_DIR_KEY, workingDirBody);
+
             HttpEntity entity = builder.build();
 
             //Set endpoint and auth key

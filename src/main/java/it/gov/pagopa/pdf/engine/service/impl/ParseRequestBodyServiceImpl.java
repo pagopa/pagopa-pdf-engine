@@ -24,7 +24,6 @@ import it.gov.pagopa.pdf.engine.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
-import net.lingala.zip4j.ZipFile;
 import org.apache.commons.fileupload.FileUploadBase.FileUploadIOException;
 import org.apache.commons.fileupload.MultipartStream;
 
@@ -33,7 +32,6 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
-import static it.gov.pagopa.pdf.engine.util.Constants.UNZIPPED_FILES_FOLDER;
 import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
