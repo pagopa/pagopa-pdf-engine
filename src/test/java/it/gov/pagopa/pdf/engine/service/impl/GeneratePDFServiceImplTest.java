@@ -19,7 +19,6 @@ import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
-import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import lombok.SneakyThrows;
@@ -49,7 +48,7 @@ class GeneratePDFServiceImplTest {
     private Path workingPath;
 
     @BeforeEach
-    void setUp() throws IOException, GeneratePDFException {
+    void setUp() throws IOException {
         sut = spy(new GeneratePDFServiceImpl());
         workingPath = Files.createTempDirectory("testDir");
     }

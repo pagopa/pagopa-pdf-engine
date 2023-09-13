@@ -37,9 +37,6 @@ import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
-
-    public GeneratePDFServiceImpl() {}
-
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
             throws GeneratePDFException {
@@ -107,5 +104,4 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
         }
     }
-
 }
