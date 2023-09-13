@@ -84,4 +84,4 @@ const generatePdf = async function (req, res, next) {
 
 }
 
-//setTimeout(() => { process.exit(0) }, 20000)
+module.exports = { info, generatePdf };
