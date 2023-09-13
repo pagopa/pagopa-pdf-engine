@@ -3,6 +3,7 @@ const express = require('express');
 const getBrowserSession = require('./utils/browserManager');
 const { info, generatePdf } = require('./handlers')
 
+
 var app = express();
 
 const storage = multer.memoryStorage()

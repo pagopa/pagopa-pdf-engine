@@ -86,7 +86,6 @@ class PdfEngineClientImplTest {
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
-
             pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
             pdfEngineRequest.setData(new String(template));
         } finally {
