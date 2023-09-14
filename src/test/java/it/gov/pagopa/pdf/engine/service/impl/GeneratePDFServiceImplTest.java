@@ -1,17 +1,3 @@
-/*
-Copyright (C)
-
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public
-License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
-details.
-
-You should have received a copy of the GNU Affero General Public License along with this program.
-If not, see https://www.gnu.org/licenses/.
-*/
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
@@ -19,7 +5,6 @@ import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
-import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import lombok.SneakyThrows;
@@ -49,7 +34,7 @@ class GeneratePDFServiceImplTest {
     private Path workingPath;
 
     @BeforeEach
-    void setUp() throws IOException, GeneratePDFException {
+    void setUp() throws IOException {
         sut = spy(new GeneratePDFServiceImpl());
         workingPath = Files.createTempDirectory("testDir");
     }
