@@ -18,9 +18,13 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -34,7 +38,11 @@ import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(SystemStubsExtension.class)
 class HttpTriggerGeneratePDFFunctionTest {
+
+    @SystemStub
+    private EnvironmentVariables environmentVariables;
 
     private HttpTriggerGeneratePDFFunction function;
 
@@ -44,6 +52,8 @@ class HttpTriggerGeneratePDFFunctionTest {
 
     @BeforeEach
     void setUp() {
+        environmentVariables.set("WORKING_DIRECTORY_PATH", "temp");
+
         generatePDFServiceMock = mock(GeneratePDFService.class);
         parseRequestBodyServiceMock = mock(ParseRequestBodyService.class);
         executionContextMock = mock(ExecutionContext.class);

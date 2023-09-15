@@ -42,6 +42,8 @@ public class HttpTriggerGeneratePDFFunction {
 
     private final Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
 
+    private final String workingDirectoryPath = System.getenv().getOrDefault("WORKING_DIRECTORY_PATH", "");
+
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
     private static final String PATTERN_FORMAT = "yyyy.MM.dd.HH.mm.ss";
@@ -202,7 +204,7 @@ public class HttpTriggerGeneratePDFFunction {
     }
 
     private File createWorkingDirectory() throws IOException {
-        File workingDirectory = new File("temp");
+        File workingDirectory = new File(workingDirectoryPath);
         if (!workingDirectory.exists()) {
             Files.createDirectory(workingDirectory.toPath());
         }
