@@ -43,7 +43,7 @@ public class Info {
 	 * Method to produce a json containing the App Infos
 	 * @return
 	 */
-	public synchronized AppInfo getInfo() {
+	public AppInfo getInfo() {
 		String version = null;
 		String name = null;
 		try (InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("application.properties")) {
@@ -57,5 +57,6 @@ public class Info {
 			logger.error("Impossible to retrieve information from pom.properties file.", e);
 		}
 		return AppInfo.builder().version(version).environment("azure-fn").name(name).build();
+
 	}
 }
