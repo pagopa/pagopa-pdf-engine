@@ -132,7 +132,6 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         try (ZipFile zipFile = new ZipFile(workingDirPath + ZIP_FILE_NAME))
         {
             zipFile.extractAll(workingDirPath + UNZIPPED_FILES_FOLDER);
-            System.out.println("Test AAA: " + workingDirPath + ", " + new File(workingDirPath + UNZIPPED_FILES_FOLDER).exists());
         } catch (IOException e) {
             throw new RequestBodyParseException(PDFE_705, PDFE_705.getErrorMessage(), e);
         }

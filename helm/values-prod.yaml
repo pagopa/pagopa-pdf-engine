@@ -72,9 +72,11 @@ microservice-chart:
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "75"
   envConfig:
+    ENV: "prod"
     WEBSITE_SITE_NAME: "pagopapdfengine" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     HTML_TEMPLATE_FILE_NAME: "template"
+    WORKING_DIRECTORY_PATH: "/temp"
     ENABLE_ECS_CONSOLE: "true"
     CONSOLE_LOG_THRESHOLD: "DEBUG"
     CONSOLE_LOG_PATTERN: "%d{HH:mm:ss.SSS}[%thread]%-5level%logger{36}-%msg%n"

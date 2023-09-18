@@ -41,7 +41,7 @@ public class Info {
 
 	/**
 	 * Method to produce a json containing the App Infos
-	 * @return
+	 * @return the application's info
 	 */
 	public AppInfo getInfo() {
 		String version = null;
