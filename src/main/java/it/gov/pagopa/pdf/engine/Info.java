@@ -41,9 +41,9 @@ public class Info {
 
 	/**
 	 * Method to produce a json containing the App Infos
-	 * @return
+	 * @return the application's info
 	 */
-	public synchronized AppInfo getInfo() {
+	public AppInfo getInfo() {
 		String version = null;
 		String name = null;
 		try (InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("application.properties")) {
