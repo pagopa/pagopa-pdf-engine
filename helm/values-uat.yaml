@@ -54,14 +54,14 @@ microservice-chart:
     allowPrivilegeEscalation: false
   resources:
     requests:
-      memory: "1024Mi"
-      cpu: "0.75"
+      memory: "1512Mi"
+      cpu: "2.00"
     limits:
-      memory: "1024Mi"
-      cpu: "0.75"
+      memory: "1512Mi"
+      cpu: "2.00"
   autoscaling:
     enable: true
-    minReplica: 1
+    minReplica: 3
     maxReplica: 3
     pollingInterval: 10 # seconds
     cooldownPeriod: 120 # seconds
@@ -93,16 +93,20 @@ microservice-chart:
     name: "pagopa-u-shared-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   nodeSelector: {}
-  tolerations: []
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-              - key: node_type
+              - key: pdf
                 operator: In
                 values:
-                  - user
+                  - 'true'  
+  tolerations:
+          - key: pdf
+            operator: Equal
+            value: "true"
+            effect: NoSchedule  
   canaryDelivery:
     create: false
     ingress:
