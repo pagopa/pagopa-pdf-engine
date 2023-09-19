@@ -33,8 +33,8 @@ public class Info {
 			authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
 			final ExecutionContext context) {
 
-		PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
-		return request.createResponseBuilder(pdfEngineClient.info() ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE)
+		//PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
+		return request.createResponseBuilder(HttpStatus.OK)
 				.body(getInfo())
 				.build();
 	}
