@@ -12,9 +12,12 @@ import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.IOUtils;
 
+import org.slf4j.Logger;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -24,7 +27,7 @@ import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     @Override
-    public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
+    public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath, Logger logger)
             throws GeneratePDFException {
 
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
@@ -36,16 +39,20 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             pdfEngineRequest.setWorkingDirPath(workingDirPath.toFile().getAbsolutePath());
             pdfEngineRequest.setData(ObjectMapperUtils.writeValueAsString(generatePDFInput.getData()));
 
+            logger.info("PdfEngineClient called at {}", LocalDateTime.now());
             PdfEngineResponse response = pdfEngineClient.generatePDF(pdfEngineRequest);
             if (response.getStatusCode() != 200 || response.getTempPdfPath() == null) {
                 throw new GeneratePDFException(AppErrorCodeEnum.valueOf(
                         response.getErrorCode()),response.getErrorMessage());
             }
+            logger.info("PdfEngineClient responded at {}", LocalDateTime.now());
 
             String fileToReturn = response.getTempPdfPath();
+            logger.info("Starting pdf conversion at {}", LocalDateTime.now());
             PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
             converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
             fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+            logger.info("Completed pdf conversion at {}", LocalDateTime.now());
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(new File(fileToReturn), workingDirPath);
