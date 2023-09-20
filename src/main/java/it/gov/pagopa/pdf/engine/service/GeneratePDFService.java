@@ -7,6 +7,8 @@ import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 
+import org.slf4j.Logger;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,6 +29,6 @@ public interface GeneratePDFService {
      * @throws FillTemplateException    thrown for error when filling the template with the provided data
      * @throws GeneratePDFException     thrown for error when generating the PDFA/2a document
      */
-    BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath)
+    BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath, Logger logger)
             throws CompileTemplateException, FillTemplateException, GeneratePDFException, IOException;
 }

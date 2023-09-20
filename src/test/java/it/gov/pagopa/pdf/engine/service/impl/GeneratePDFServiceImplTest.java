@@ -1,6 +1,7 @@
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
+import it.gov.pagopa.pdf.engine.HttpTriggerGeneratePDFFunction;
 import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -60,7 +63,9 @@ class GeneratePDFServiceImplTest {
         when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
         GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
-        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
+        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+
+        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
 
         assertNotNull(output);
         output.close();
@@ -84,7 +89,9 @@ class GeneratePDFServiceImplTest {
         when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
         GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
-        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath);
+        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+
+        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
 
         assertNotNull(output);
         output.close();
@@ -103,7 +110,9 @@ class GeneratePDFServiceImplTest {
         when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
         GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
-        GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath));
+        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+
+        GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath, logger));
 
         Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, e.getErrorCode());
     }

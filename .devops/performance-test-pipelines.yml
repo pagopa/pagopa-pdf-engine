@@ -14,6 +14,7 @@ parameters:
     type: string
     values:
       - "constant"
+      - "constant_minor"
       - "load"
       - "spike"
       - "stress"
