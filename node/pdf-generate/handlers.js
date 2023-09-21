@@ -4,8 +4,7 @@ const fs = require('fs').promises;
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
-const getPage = require('./utils/browserManager');
-const getBrowserSession = require('./utils/browserManager');
+const {getBrowserSession, getPage} = require('./utils/browserManager');
 const buildResponseBody = require('./utils/buildUtils');
 const multer = require('multer');
 const express = require('express');
@@ -38,7 +37,7 @@ const generatePdf = async function (req, res, next) {
 
         console.timeLog(timestampLog, "At initiating browser new page");
         console.time("browserPage-"+timestampLog);
-        page = await browser.newPage();
+        page = await getPage();
         console.timeEnd("browserPage-"+timestampLog, "TIME to initiate browser page");
 
         let data = req.body.data;
@@ -49,6 +48,8 @@ const generatePdf = async function (req, res, next) {
 
             return;
         }
+
+        let html;
 
         try {
             console.timeLog(timestampLog, "At reading template from memory after");
@@ -63,7 +64,7 @@ const generatePdf = async function (req, res, next) {
 
             console.timeLog(timestampLog, "At filling template with json data");
             console.time("templateData-"+timestampLog);
-            let html = template(data);
+            html = template(data);
             console.timeEnd("templateData-"+timestampLog, "TIME to fill template with json data");
 
             console.timeLog(timestampLog, "At writing compiled template to memory");
@@ -81,7 +82,7 @@ const generatePdf = async function (req, res, next) {
         try {
             console.timeLog(timestampLog, "At opening html with browser page")
             console.time("htmlOpen-"+timestampLog);
-            await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"));
+            await page.setContent(html);
             console.timeEnd("htmlOpen-"+timestampLog, "TIME to open html with browser page");
 
             console.timeLog(timestampLog, "At generating pdf through browser page");
