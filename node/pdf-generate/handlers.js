@@ -31,15 +31,15 @@ const generatePdf = async function (req, res, next) {
     let page;
 
     try {
-        console.info(`Initiating browser session after ${console.timeLog(timestampLog)}`);
+        console.timeLog(timestampLog, "At initiating browser session");
         console.time("browserSession-"+timestampLog);
         const browser = await getBrowserSession();
-        console.info(`TIME to initiate browser session: ${console.timeEnd("browserSession-"+timestampLog)}`);
+        console.timeEnd("browserSession-"+timestampLog, "TIME to initiate browser session");
 
-        console.info(`Initiating browser new page after ${console.timeLog(timestampLog)}`);
+        console.timeLog(timestampLog, "At initiating browser new page");
         console.time("browserPage-"+timestampLog);
         page = await browser.newPage();
-        console.info(`TIME to initiate browser page: ${console.timeEnd("browserPage-"+timestampLog)}`);
+        onsole.timeEnd("browserPage-"+timestampLog, "TIME to initiate browser page");
 
         let data = req.body.data;
 
@@ -51,25 +51,25 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
-            console.info(`Reading template from memory after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At reading template from memory after");
             console.time("templateRead-"+timestampLog);
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
-            console.info(`TIME to read template from memory: ${console.timeEnd("templateRead-"+timestampLog)}`);
+            console.timeEnd("templateRead-"+timestampLog, "TIME to read template from memory");
 
-            console.info(`Compiling template with handlebars after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At compiling template with handlebars");
             console.time("templateHandlebars-"+timestampLog);
             let template = handlebars.compile(templateFile);
-            console.info(`TIME to compile template with handlebars: ${console.timeEnd("templateHandlebars-"+timestampLog)}`);
+            console.timeEnd("templateHandlebars-"+timestampLog, "TIME to compile template with handlebars");
 
-            console.info(`Filling template with json data after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At filling template with json data");
             console.time("templateData-"+timestampLog);
             let html = template(data);
-            console.info(`TIME to fill template with json data: ${console.timeEnd("templateData-"+timestampLog)}`);
+            console.timeEnd("templateData-"+timestampLog, "TIME to fill template with json data");
 
-            console.info(`Writing compiled template to memory after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At writing compiled template to memory");
             console.time("templateWrite-"+timestampLog);
             await fs.writeFile(path.join(workingDir, "compiledTemplate.html"), html);
-            console.info(`TIME to write compiled template to memory: ${console.timeEnd("templateWrite-"+timestampLog)}`);
+            console.timeEnd("templateWrite-"+timestampLog, "TIME to write compiled template to memory");
         } catch (err) {
             console.log(err)
             res.status(500);
@@ -79,12 +79,12 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
-            console.info(`Opening html with browser page after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At opening html with browser page")
             console.time("htmlOpen-"+timestampLog);
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"));
-            console.info(`TIME to open html with browser page: ${console.timeEnd("htmlOpen-"+timestampLog)}`);
+            console.timeEnd("htmlOpen-"+timestampLog, "TIME to open html with browser page");
 
-            console.info(`Generating pdf through browser page after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At generating pdf through browser page");
             console.time("pdfGenerate-"+timestampLog);
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
@@ -92,7 +92,7 @@ const generatePdf = async function (req, res, next) {
                 landscape: false,
                 printBackground: true,
             });
-            console.info(`TIME to generate pdf through browser page: ${console.timeEnd("pdfGenerate-"+timestampLog)}`);
+            console.timeEnd("pdfGenerate-"+timestampLog, "TIME to generate pdf through browser page");
         } catch (err) {
             console.log(err);
             res.status(500);
@@ -101,28 +101,28 @@ const generatePdf = async function (req, res, next) {
             return;
         }
 
-        console.info(`Reading pdf from memory after ${console.timeLog(timestampLog)}`);
+        console.timeLog(timestampLog, "At reading pdf from memory");
         console.time("pdfRead-"+timestampLog);
         let content = readFileSync(path.join(workingDir, "pagopa-receipt.pdf"));
-        console.info(`TIME to read pdf from memory: ${console.timeEnd("pdfRead-"+timestampLog)}`);
+        console.timeEnd("pdfRead-"+timestampLog, "TIME to read pdf from memory");
 
-        console.info(`Sending pdf as response after ${console.timeLog(timestampLog)}`);
+        console.timeLog(timestampLog, "At sending pdf as response");
         console.time("pdfSend-"+timestampLog);
         res.send(content);
-        console.info(`TIME to send pdf as response: ${console.timeEnd("pdfSend-"+timestampLog)}`);
+        console.timeEnd("pdfSend-"+timestampLog, "TIME to send pdf as response");
 
     } catch (err) {
         res.status(500);
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {
         if (page) {
-            console.info(`Closing browser page after ${console.timeLog(timestampLog)}`);
+            console.timeLog(timestampLog, "At closing browser page");
             console.time("pageClose-"+timestampLog);
             await page.close();
-            console.info(`TIME to close browser page: ${console.timeEnd("pageClose-"+timestampLog)}`);
+            console.timeEnd("pageClose-"+timestampLog, "TIME to close browser page");
         }
 
-        console.info(`Ending generate pdf nodejs function after ${console.timeEnd(timestampLog)}`);
+        console.timeEnd(timestampLog, "At ending generate pdf nodejs function");
     }
 
 }
