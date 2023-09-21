@@ -39,7 +39,6 @@ const generatePdf = async function (req, res, next) {
         console.time("browserPage-"+timestampLog);
         page = await getPage();
         console.timeEnd("browserPage-"+timestampLog, "TIME to initiate browser page");
-        console.timeEnd("browserPage-"+timestampLog, "TIME to initiate browser page");
 
         let data = req.body.data;
 
@@ -84,10 +83,6 @@ const generatePdf = async function (req, res, next) {
             console.timeLog(timestampLog, "At opening html with browser page")
             console.time("htmlOpen-"+timestampLog);
             await page.setContent(html);
-            console.timeEnd("htmlOpen-"+timestampLog, "TIME to open html with browser page");
-
-            console.timeLog(timestampLog, "At generating pdf through browser page");
-            console.time("pdfGenerate-"+timestampLog);
             console.timeEnd("htmlOpen-"+timestampLog, "TIME to open html with browser page");
 
             console.timeLog(timestampLog, "At generating pdf through browser page");
