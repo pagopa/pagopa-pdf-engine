@@ -31,7 +31,6 @@ const generatePdf = async function (req, res, next) {
     let page;
 
     try {
-
         console.info(`Initiating browser session after ${console.timeLog(timestampLog)}`);
         console.time("browserSession-"+timestampLog);
         const browser = await getBrowserSession();
@@ -101,7 +100,6 @@ const generatePdf = async function (req, res, next) {
 
             return;
         }
-
 
         console.info(`Reading pdf from memory after ${console.timeLog(timestampLog)}`);
         console.time("pdfRead-"+timestampLog);
