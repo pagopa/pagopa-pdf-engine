@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
-    tag: "2.3.2"
+    tag: "2.4.2"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -54,15 +54,15 @@ microservice-chart:
     allowPrivilegeEscalation: false
   resources:
     requests:
-      memory: "1512Mi"
-      cpu: "2.00"
+      memory: "8Gi"
+      cpu: "6.00"
     limits:
-      memory: "1512Mi"
-      cpu: "2.00"
+      memory: "8Gi"
+      cpu: "6.00"
   autoscaling:
     enable: true
-    minReplica: 3
-    maxReplica: 3
+    minReplica: 1
+    maxReplica: 1
     pollingInterval: 10 # seconds
     cooldownPeriod: 120 # seconds
     triggers:
