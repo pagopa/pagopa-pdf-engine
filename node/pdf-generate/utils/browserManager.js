@@ -16,4 +16,18 @@ const getBrowserSession = async () => {
   return browser;
 };
 
-module.exports = getBrowserSession;
+let page;
+
+const getPage = async () => {
+  if (page) return page;
+
+  const browser = await puppeteer.launch({
+    headless: true,
+  });
+
+  page = await browser.newPage();
+
+  return page;
+};
+
+module.exports = {getBrowserSession, getPage};
