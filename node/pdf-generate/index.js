@@ -1,5 +1,6 @@
 const multer = require('multer');
 const express = require('express');
+const getBrowserSession = require('./utils/browserManager');
 const { info, generatePdf } = require('./handlers')
 
 
@@ -7,6 +8,8 @@ var app = express();
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
+
+const browser = getBrowserSession();
 
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
