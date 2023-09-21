@@ -39,7 +39,7 @@ const generatePdf = async function (req, res, next) {
         console.timeLog(timestampLog, "At initiating browser new page");
         console.time("browserPage-"+timestampLog);
         page = await browser.newPage();
-        onsole.timeEnd("browserPage-"+timestampLog, "TIME to initiate browser page");
+        console.timeEnd("browserPage-"+timestampLog, "TIME to initiate browser page");
 
         let data = req.body.data;
 
