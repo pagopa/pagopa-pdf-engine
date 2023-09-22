@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 const createReadStream = require('fs').createReadStream
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
@@ -13,6 +13,8 @@ const multer = require('multer');
 const express = require('express');
 var handlebars = require("handlebars");
 const packageJson = require("../package.json");
+const AdmZip = require("adm-zip");
+
 
 
 var app = express();
@@ -45,7 +47,7 @@ app.post('/pdf-generate', upload.single('template'), async function (req, res, n
         try {
 
             try {
-                workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pdfenginetmp-'));
+                workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
             } catch (err) {
                 res.status(500);
                 res.body(buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request"));
@@ -53,10 +55,10 @@ app.post('/pdf-generate', upload.single('template'), async function (req, res, n
                 return;
             }
 
-            await fs.writeFile(path.join(workingDir,"zippedFile.zip"), req.file.buffer,  "binary");
+            fs.writeFileSync(path.join(workingDir,"zippedFile.zip"), req.file.buffer,  "binary");
 
-            createReadStream(path.join(workingDir, "zippedFile.zip"))
-                .pipe(unzipper.Extract({ path: workingDir }));
+            const zip = new AdmZip(path.join(workingDir, "zippedFile.zip"));
+            zip.extractAllTo(workingDir);
 
             const browser = await getBrowserSession();
             page = await browser.newPage();
@@ -74,7 +76,7 @@ app.post('/pdf-generate', upload.single('template'), async function (req, res, n
                 var templateFile = readFileSync(path.join(workingDir,"template.html")).toString();
                 var template = handlebars.compile( templateFile );
                 var html = template(data);
-                await fs.writeFile(path.join(workingDir,"compiledTemplate.html"), html);
+                fs.writeFileSync(path.join(workingDir,"compiledTemplate.html"), html);
             } catch (err) {
                 console.log(err)
                 res.status(500);
