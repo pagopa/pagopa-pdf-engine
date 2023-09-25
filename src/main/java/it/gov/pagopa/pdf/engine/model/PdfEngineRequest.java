@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.net.URL;
+import net.lingala.zip4j.ZipFile;
 
 /**
  * Model class for PDF engine request
@@ -17,6 +18,7 @@ public class PdfEngineRequest {
   String data;
 
     String workingDirPath;
+    ZipFile template;
 
 
 }

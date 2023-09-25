@@ -38,6 +38,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
             pdfEngineRequest.setWorkingDirPath(workingDirPath.toFile().getAbsolutePath());
             pdfEngineRequest.setData(ObjectMapperUtils.writeValueAsString(generatePDFInput.getData()));
+            pdfEngineRequest.setTemplate(generatePDFInput.getTemplateZip());
 
             logger.info("PdfEngineClient called at {}", LocalDateTime.now());
             PdfEngineResponse response = pdfEngineClient.generatePDF(pdfEngineRequest);
