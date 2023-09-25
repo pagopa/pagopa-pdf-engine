@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@anzp/azure-function-multipart": "^3.1.0",
+    "adm-zip": "^0.5.10",
     "applicationinsights": "^1.7.4",
     "axios": "^1.5.0",
     "express": "^4.18.2",
+    "fs-extra": "^11.1.1",
     "handlebars": "^4.7.7",
     "handlebars-helpers": "^0.10.0",
     "hbs-cli": "^1.4.1",
