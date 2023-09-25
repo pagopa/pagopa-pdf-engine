@@ -62,7 +62,7 @@ const generatePdf = async function (req, res, next) {
 
             console.timeLog(timestampLog, "At filling template with json data");
             console.time("templateData-"+timestampLog);
-            let html = template(data);
+            let html = template(JSON.parse(data));
             console.timeEnd("templateData-"+timestampLog, "TIME to fill template with json data");
 
             console.timeLog(timestampLog, "At writing compiled template to memory");
