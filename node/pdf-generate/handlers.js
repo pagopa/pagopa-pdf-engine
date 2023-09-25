@@ -10,6 +10,8 @@ const multer = require('multer');
 const express = require('express');
 let handlebars = require("handlebars");
 const packageJson = require("../package.json");
+var AdmZip = require("adm-zip");
+const fse = require('fs-extra');
 
 const info = async function (req, res, next) {
 
@@ -27,8 +29,22 @@ const generatePdf = async function (req, res, next) {
     console.info(`Starting generate pdf nodejs function`);
 
     let workingDir = req.body.workingDir;
-    let page;
+    var zip = new AdmZip(req.files[0].buffer);
+    var zipEntries = zip.getEntries();
 
+    for(const zipEntry of zipEntries){
+        if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
+            fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
+                if(err) {
+                  console.log(err);
+                } else {
+                  console.log('The file has been saved!');
+                }
+              });
+        }
+    }
+
+    let page;
     try {
         console.timeLog(timestampLog, "At initiating browser session");
         console.time("browserSession-"+timestampLog);

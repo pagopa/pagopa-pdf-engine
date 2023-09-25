@@ -21,7 +21,7 @@ app.use(function(err, req, res, next) {
 
 app.get('/info', info);
 
-app.post('/pdf-generate', upload.none(), generatePdf);
+app.post('/pdf-generate', upload.any(), generatePdf);
 
 var server = app.listen( process.env.PORT || 3000, function(){
   console.log('Listening on port ' + server.address().port);
