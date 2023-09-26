@@ -8,8 +8,7 @@ WORKDIR /usr/src/build
 
 COPY . /usr/src/build
 
-RUN yarn install --ignore-scripts --frozen-lockfile\
-  && yarn build
+RUN yarn install --ignore-scripts --frozen-lockfile
 
 FROM node:$NODE_VERSION-alpine
 LABEL maintainer="https://pagopa.it"
