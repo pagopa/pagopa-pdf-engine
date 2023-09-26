@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
@@ -96,7 +96,7 @@ const generatePdf = async function (req, res, next) {
 
             console.timeLog(timestampLog, "At writing compiled template to memory");
             console.time("templateWrite-"+timestampLog);
-            await fs.writeFile(path.join(workingDir, "compiledTemplate.html"), html);
+            fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
             console.timeEnd("templateWrite-"+timestampLog, "TIME to write compiled template to memory");
         } catch (err) {
             console.log(err)
