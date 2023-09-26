@@ -38,7 +38,7 @@ RUN cd /usr/src/app/node_modules/puppeteer && npm install
 
 # USER nonroot
 
-EXPOSE 9090
-ENV PORT 9090
+EXPOSE 3000
+# ENV PORT 9090
 ENTRYPOINT ["node", "/usr/src/app/pdf-generate/index.js"]
 
