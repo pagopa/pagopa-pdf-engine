@@ -25,29 +25,40 @@ const info = async function (req, res, next) {
 }
 
 const generatePdf = async function (req, res, next) {
+
+    var workingDir;
+    var page;
+
     let timestampLog = `${Date.now()}`;
 
     console.time(timestampLog);
     console.info(`Starting generate pdf nodejs function`);
 
-    let workingDir = req.body.workingDir;
-    var zip = new AdmZip(req.files[0].buffer);
-    var zipEntries = zip.getEntries();
-
-    for(const zipEntry of zipEntries){
-        if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
-            fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
-                if(err) {
-                  console.log(err);
-                } else {
-                  console.log('The file has been saved!');
-                }
-              });
-        }
-    }
-
-    let page;
     try {
+
+        try {
+            workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
+        } catch (err) {
+            res.status(500);
+            res.body(buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request"));
+            return;
+        }
+
+        var zip = new AdmZip(req.file.buffer);
+        var zipEntries = zip.getEntries();
+
+        for(const zipEntry of zipEntries){
+            if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
+                fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
+                    if(err) {
+                      console.log(err);
+                    } else {
+                      console.log('The file has been saved!');
+                    }
+                });
+            }
+        }
+
         console.timeLog(timestampLog, "At initiating browser session");
         console.time("browserSession-"+timestampLog);
         const browser = await getBrowserSession();
@@ -137,6 +148,10 @@ const generatePdf = async function (req, res, next) {
             console.time("pageClose-"+timestampLog);
             await page.close();
             console.timeEnd("pageClose-"+timestampLog, "TIME to close browser page");
+        }
+
+        if (workingDir) {
+            rmSync(workingDir, { recursive: true, force: true });
         }
 
         console.timeEnd(timestampLog, "At ending generate pdf nodejs function");
