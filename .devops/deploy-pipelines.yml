@@ -53,6 +53,8 @@ variables:
   sha: ""
   tag: ""
 
+  IMAGE_REPOSITORY: $(image_repository_name)
+
 # Only manual triggers
 trigger: none
 pr: none
