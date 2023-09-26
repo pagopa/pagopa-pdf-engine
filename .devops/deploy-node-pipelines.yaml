@@ -61,67 +61,8 @@ pool:
   vmImage: 'ubuntu-22.04'
 
 stages:
-
-  # Create a release on GitHub
-  - stage: release_service
-    # if SEMVER is not 'skip'
-    condition: ne('${{ parameters.SEMVER }}', 'skip')
-    jobs:
-      - job: releaseService
-        steps:
-          - checkout: self
-            clean: true
-            persistCredentials: true
-
-          - script: |
-              git checkout $(SOURCE_BRANCH)
-
-          - script: |
-              git config --global user.name "$(GIT_USERNAME)"
-              git config --global user.email "$(GIT_EMAIL)"
-            displayName: Set Git global config
-
-          - bash: |
-              cd node
-              echo "current folder: $(pwd)"
-            displayName: 'Move to project folder'
-
-          # bump version
-          - script: |
-              npm version ${{ parameters.SEMVER }} -m "Bump version to %s [skip ci]"
-              NEXT_VERSION=$(node -p "require('./package.json').version")
-              RELEASE_TAG="v$NEXT_VERSION-RELEASE"
-              git tag $RELEASE_TAG
-            displayName: 'Version bump and tag'
-          - script: |
-              NEXT_VERSION=$(node -p "require('./package.json').version")
-              HEAD_SHA=$(git rev-parse HEAD)
-              TITLE="Release $NEXT_VERSION"
-              TAG="v$NEXT_VERSION-RELEASE"
-              echo "##vso[task.setvariable variable=title]$TITLE"
-              echo "##vso[task.setvariable variable=sha]$HEAD_SHA"
-              echo "##vso[task.setvariable variable=tag]$TAG"
-            displayName: 'Set release variables'
-
-          - script: |
-              git push origin $(SOURCE_BRANCH) && git push --tags
-            displayName: 'Push to the release branch'
-
-          # create new release
-          - task: GitHubRelease@0
-            inputs:
-              gitHubConnection: $(GITHUB_CONNECTION)
-              repositoryName: $(Build.Repository.Name)
-              action: create
-              target: $(sha)
-              tagSource: manual
-              tag: $(tag)
-              title: $(title)
-              addChangelog: true
-
   # Deploy on Azure
   - stage: deploy
-    condition: not(failed('releaseService'))
     jobs:
       - job: deployNode
         steps:
@@ -129,7 +70,6 @@ stages:
           - script: |
               echo ${{variables['Build.SourceBranchName']}}        
               echo $(SOURCE_BRANCH)
-              echo $(TEST)
 
           - checkout: self
             clean: true
@@ -148,7 +88,6 @@ stages:
               tags: |
                 $(Build.BuildId)
                 latest
-                $(NEXT_VERSION)
 
           - task: AzureRMWebAppDeployment@4
             displayName: Azure App Service Deploy [DEV]
