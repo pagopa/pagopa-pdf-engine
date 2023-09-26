@@ -107,6 +107,7 @@ jobs:
 
   deploy_app_service:
     name: Deploy on App Service
+    runs-on: ubuntu-latest
     needs: [ setup, release, image ]
     strategy:
       matrix:
