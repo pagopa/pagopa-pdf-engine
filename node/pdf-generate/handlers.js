@@ -15,6 +15,8 @@ const fse = require('fs-extra');
 
 const info = async function (req, res, next) {
 
+    console.log(`INFO : name ${packageJson.name} version ${packageJson.version}`);
+
     res.send({
         name: packageJson.name,
         version: packageJson.version
