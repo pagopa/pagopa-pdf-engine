@@ -20,7 +20,7 @@ RUN addgroup -S nonroot \
 WORKDIR /usr/src/app
 
 COPY /package.json /usr/src/app/package.json
-COPY --from=builder /usr/src/build/src /usr/src/app/src
+COPY --from=builder /usr/src/build/pdf-generate /usr/src/app/pdf-generate
 COPY --from=builder /usr/src/build/dist /usr/src/app/dist
 COPY --from=builder /usr/src/build/node_modules /usr/src/app/node_modules
 
@@ -36,4 +36,4 @@ RUN apt-get install -y xvfb gconf-service libasound2 libatk1.0-0 libc6 libcairo2
 USER nonroot
 
 EXPOSE 9090
-ENTRYPOINT ["node", "dist/src/server.js"]
+ENTRYPOINT ["node", "dist/pdf-generate/index.js"]
