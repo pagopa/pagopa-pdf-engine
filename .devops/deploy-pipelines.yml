@@ -86,7 +86,7 @@ stages:
             inputs:
               containerRegistry: '$(dockerRegistryServiceConnection)'
               repository: '$(IMAGE_REPOSITORY)'
-              Dockerfile: 'node/Dockerfile' 
+              Dockerfile: './node/Dockerfile' 
               command: 'buildAndPush'
               tags: |
                 $(Build.BuildId)
