@@ -48,7 +48,7 @@ done
 stack_name=$(cd .. && basename "$PWD")
 docker build -t pagopa-pdf-engine-node ../node
 docker build -t pagopa-pdf-engine ../
-docker run -d -p 3000:3000 --name="${stack_name}" --network=host pagopa-pdf-engine-node
+docker run -d -p 3000:3000 --name="${stack_name}-node" --network=host pagopa-pdf-engine-node
 docker run -d -p 60486:80 --name="${stack_name}" --network=host pagopa-pdf-engine
 
 # waiting the containers
