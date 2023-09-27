@@ -1,8 +1,5 @@
-const fs = require('fs').promises;
-const server = require('../index');
-const path = require('path');
-const os = require('os');
 const axios = require('axios');
+const readFileSync = require('fs').readFileSync
 
 
 afterEach(() => {
@@ -10,14 +7,12 @@ afterEach(() => {
 });
 
 const url = 'http://127.0.0.1:3000';
+const testTemplatePath = "/Users/svariant/Work/PagoPa/ReceiptGenPDF/pagopa-pdf-engine/node/pdf-generate/__tests__/resources/test_template.zip";
+const template = new Blob([readFileSync(testTemplatePath)], {type: "octet/stream"});
 
 describe("generatePdf", () => {
 
   it("should return a pdf when passing valid data", async () => {
-
-    workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pdfenginetmp-'));
-    await fs.writeFile(path.join(workingDir,"template.html"), "<html></html>");
-
     const formData = new FormData();
     formData.append('data', '{\n' +
         '\t\t"transaction": {\n' +
@@ -66,11 +61,11 @@ describe("generatePdf", () => {
         '\t\t\t}],\n' +
         '\t\t\t"amountPartial": 300.00\n' +
         '\t\t},\n' +
-        '\t\t"noticeCode": "noticeCodeTest",\n' +
+        '\t\t"noticeCode": "noticeCodeTest"\n' +
    '\t}');
-    formData.append('workingDir', workingDir);
+    formData.append('template', template, "template.zip");
 
-    const res = await axios.post(url+"/pdf-generate", formData,
+    const res = await axios.post(url+"/generate-pdf", formData,
         {
             headers: {'Content-Type': 'multipart/form-data'}
         })
@@ -91,13 +86,10 @@ describe("generatePdf", () => {
 
   it("should return an error when passing invalid data", async () => {
 
-    workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pdfenginetmp-'));
-    await fs.writeFile(path.join(workingDir,"template.html"), "<html></html>");
-
     const formData = new FormData();
-    formData.append('workingDir', workingDir);
+    formData.append('template', template, "template.zip");
 
-    const res = await axios.post(url+"/pdf-generate", formData,
+    await axios.post(url+"/generate-pdf", formData,
         {
             headers: {'Content-Type': 'multipart/form-data'}
         }).catch(function (error) {
