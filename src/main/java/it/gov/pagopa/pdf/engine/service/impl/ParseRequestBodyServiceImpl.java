@@ -130,12 +130,6 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         } catch (IOException e) {
             throw new RequestBodyParseException(PDFE_704, PDFE_704.getErrorMessage(), e);
         }
-        try (ZipFile zipFile = new ZipFile(workingDirPath + ZIP_FILE_NAME))
-        {
-            zipFile.extractAll(workingDirPath + UNZIPPED_FILES_FOLDER);
-        } catch (IOException e) {
-            throw new RequestBodyParseException(PDFE_705, PDFE_705.getErrorMessage(), e);
-        }
         return true;
     }
 
