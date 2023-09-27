@@ -11,6 +11,10 @@ const upload = multer({ storage: storage })
 
 const browser = getBrowserSession();
 
+var server = app.listen( process.env.PORT || 3000, function(){
+  console.log('Listening on port ' + server.address().port);
+});
+
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.json({'errors': {
@@ -21,15 +25,8 @@ app.use(function(err, req, res, next) {
 
 app.get('/info', info);
 
-app.get('/shutdown', function(err, req, res, next) {
-    app.close();
-    return;
-});
+app.get('/shutdown', function(req, res) { shutdown(req, res, server)});
 
 app.post('/generate-pdf', upload.single('template'), generatePdf);
-
-var server = app.listen( process.env.PORT || 3000, function(){
-  console.log('Listening on port ' + server.address().port);
-});
 
 module.exports = server;

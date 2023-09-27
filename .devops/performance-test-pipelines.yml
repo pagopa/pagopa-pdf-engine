@@ -9,7 +9,7 @@ parameters:
       - "dev"
       - "uat_java"
       - "uat_node"
-    default: "uat"
+    default: "uat_java"
   - name: "TEST_TYPE"
     displayName: "Test type"
     type: string

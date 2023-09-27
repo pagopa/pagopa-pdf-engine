@@ -12,7 +12,6 @@ import net.lingala.zip4j.ZipFile;
 @Data
 public class GeneratePDFInput {
 
-    private boolean templateSavedOnFileSystem;
     private Map<String, Object> data;
     private boolean applySignature;
     private boolean generateZipped;

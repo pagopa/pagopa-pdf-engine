@@ -122,7 +122,7 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        if (!generatePDFInput.isTemplateSavedOnFileSystem()) {
+        if (generatePDFInput.getTemplateZip() == null) {
             logger.error("Invalid request, template HTML not provided");
             return request
                     .createResponseBuilder(BAD_REQUEST)

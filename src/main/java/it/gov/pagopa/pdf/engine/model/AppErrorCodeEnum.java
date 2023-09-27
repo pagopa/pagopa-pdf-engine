@@ -14,7 +14,7 @@ public enum AppErrorCodeEnum {
     PDFE_702("PDFE_702", "I/O error reading request headers"),
     PDFE_703("PDFE_703", "Error accessing the destination for the zip file, file does not exist, cannot be created or cannot be opened"),
     PDFE_704("PDFE_704", "I/O error when reading zip file from request and writing it to the destination"),
-    PDFE_705("PDFE_705", "Error unzipping the file"),
+    PDFE_705("PDFE_705", "Error returning zip file"),
     PDFE_706("PDFE_706", "I/O error when reading PDF document input data from request and writing it to the output stream"),
     PDFE_707("PDFE_707", "Error parsing PDF document input data from output stream"),
     PDFE_708("PDFE_708", "I/O error when reading apply signature boolean from request and writing it to the output stream"),

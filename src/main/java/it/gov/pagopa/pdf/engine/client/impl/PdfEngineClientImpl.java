@@ -36,7 +36,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static PdfEngineClientImpl instance = null;
 
-    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GENERATE_ENDPOINT", "http://localhost:3000/pdf-generate");
+    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GENERATE_ENDPOINT", "http://localhost:3000/generate-pdf");
     private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
 
     private static final String DATA_KEY = "data";

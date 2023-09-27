@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
-import static it.gov.pagopa.pdf.engine.util.Constants.UNZIPPED_FILES_FOLDER;
 import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
 
 public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
@@ -46,8 +45,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
             String fieldName = header.split(";")[1].split("=")[1].split("\"")[1];
             switch (fieldName) {
                 case "template":
-                    generatePDFInput.setTemplateSavedOnFileSystem(unzipTemplateFolderAndWriteToFileSystem(multipartStream, workingDirPath));
-                    generatePDFInput.setTemplateZip(new ZipFile(workingDirPath + ZIP_FILE_NAME));
+                    generatePDFInput.setTemplateZip(getTemplateZip(multipartStream, workingDirPath));
                     break;
                 case "data":
                     generatePDFInput.setData(getDocumentInputData(multipartStream));
@@ -122,7 +120,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
     }
 
-    private boolean unzipTemplateFolderAndWriteToFileSystem(MultipartStream multipartStream, Path workingDirPath) throws RequestBodyParseException {
+    private ZipFile getTemplateZip(MultipartStream multipartStream, Path workingDirPath) throws RequestBodyParseException {
         try (FileOutputStream fos = new FileOutputStream(workingDirPath + ZIP_FILE_NAME)) {
             multipartStream.readBodyData(fos);
         } catch (FileNotFoundException e) {
@@ -132,11 +130,10 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
         try (ZipFile zipFile = new ZipFile(workingDirPath + ZIP_FILE_NAME))
         {
-            zipFile.extractAll(workingDirPath + UNZIPPED_FILES_FOLDER);
+            return zipFile;
         } catch (IOException e) {
             throw new RequestBodyParseException(PDFE_705, PDFE_705.getErrorMessage(), e);
         }
-        return true;
     }
 
     @VisibleForTesting

@@ -15,6 +15,7 @@ import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
 import it.gov.pagopa.pdf.engine.util.HttpResponseMessageMock;
 import lombok.SneakyThrows;
+import net.lingala.zip4j.ZipFile;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setTemplateZip(new ZipFile(""));
         generatePDFInput.setGeneratorType(GeneratorType.ITEXT);
 
         BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
@@ -102,7 +103,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setTemplateZip(new ZipFile(""));
         generatePDFInput.setGenerateZipped(true);
 
         BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
@@ -227,7 +228,6 @@ class HttpTriggerGeneratePDFFunctionTest {
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setTemplateSavedOnFileSystem(false);
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
@@ -253,7 +253,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setTemplateZip(new ZipFile(""));
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
@@ -281,7 +281,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setTemplateZip(new ZipFile(""));
 
         doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
         doReturn(Optional.of(new byte[2])).when(request).getBody();
@@ -310,7 +310,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         generatePDFInput.setData(Collections.singletonMap("a", "b"));
         generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateSavedOnFileSystem(true);
+        generatePDFInput.setTemplateZip(new ZipFile(""));
 
         BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
 
