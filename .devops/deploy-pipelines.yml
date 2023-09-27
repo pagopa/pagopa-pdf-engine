@@ -1,0 +1,156 @@
+parameters:
+  - name: ENV
+    displayName: Target Environment
+    type: string
+    default: dev
+    values:
+      - dev
+      - uat
+      - prod
+  - name: SEMVER
+    displayName: "When packing a release, define the version bump to apply. Use only buildNumber or skip for manual deployment"
+    type: string
+    values:
+      - major
+      - minor
+      - patch
+      - buildNumber
+      - skip
+    default: skip
+  - name: TEST
+    displayName: Run tests
+    type: boolean
+    default: false
+
+variables:
+  ${{ if eq(parameters['ENV'], 'dev') }}:
+    AZURE_SUBSCRIPTION: $(DEV_AZURE_SUBSCRIPTION)
+    RESOURCE_GROUP: $(DEV_WEB_APP_RESOURCE_GROUP_NAME)
+    APP_NAME: $(DEV_WEB_APP_NAME)
+    STAGE: "d"
+    dockerRegistryServiceConnection: $(DEV_CONTAINER_REGISTRY_SERVICE_CONN)
+    dockerNamespace: $(DEV_CONTAINER_NAMESPACE)
+  ${{ if eq(parameters['ENV'], 'uat') }}:
+    AZURE_SUBSCRIPTION: $(UAT_AZURE_SUBSCRIPTION)
+    RESOURCE_GROUP: $(UAT_WEB_APP_RESOURCE_GROUP_NAME)
+    APP_NAME: $(UAT_WEB_APP_NAME)
+    STAGE: "u"
+    dockerRegistryServiceConnection: $(UAT_CONTAINER_REGISTRY_SERVICE_CONN)
+    dockerNamespace: $(UAT_CONTAINER_NAMESPACE)
+  ${{ if eq(parameters['ENV'], 'prod') }}:
+    AZURE_SUBSCRIPTION: $(PROD_AZURE_SUBSCRIPTION)
+    RESOURCE_GROUP: $(PROD_WEB_APP_RESOURCE_GROUP_NAME)
+    APP_NAME: $(PROD_WEB_APP_NAME)
+    STAGE: "p"
+    dockerRegistryServiceConnection: $(PROD_CONTAINER_REGISTRY_SERVICE_CONN)
+    dockerNamespace: $(PROD_CONTAINER_NAMESPACE)
+  ${{ if eq(variables['Build.SourceBranchName'], 'merge') }}:
+    SOURCE_BRANCH: "main" # force to main branch
+  ${{ if ne(variables['Build.SourceBranchName'], 'merge') }}:
+    SOURCE_BRANCH: ${{ variables['Build.SourceBranchName'] }}
+
+  title: ""
+  sha: ""
+  tag: ""
+
+  IMAGE_REPOSITORY: $(image_repository_name)
+
+# Only manual triggers
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'ubuntu-22.04'
+
+stages:
+  # Deploy on Azure
+  - stage: deploy
+    jobs:
+      - job: deployNode
+        steps:
+
+          - script: |
+              echo ${{variables['Build.SourceBranchName']}}        
+              echo $(SOURCE_BRANCH)
+
+          - checkout: self
+            clean: true
+            persistCredentials: true
+            submodules: true
+
+          - script: |
+              git checkout $(SOURCE_BRANCH)
+
+          - task: Docker@2
+            displayName: Build and push image to container registry
+            inputs:
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              repository: '$(IMAGE_REPOSITORY)'
+              Dockerfile: 'node/Dockerfile' 
+              buildContext: '.'
+              command: 'buildAndPush'
+              tags: |
+                $(Build.BuildId)
+                latest
+
+          - task: AzureRMWebAppDeployment@4
+            displayName: Azure App Service Deploy DEV
+            # condition: in('${{ parameters.ENV }}', 'dev', 'uat')
+            condition: in('${{ parameters.ENV }}', 'dev')
+            inputs:
+              appType: webAppContainer
+              ConnectedServiceName: '$(AZURE_SUBSCRIPTION)'
+              WebAppName: '$(APP_NAME)'
+              DockerNamespace: '$(dockerNamespace)'
+              DockerRepository: '$(IMAGE_REPOSITORY)'
+              DockerImageTag: '$(Build.BuildId)'
+          - task: AzureRMWebAppDeployment@4
+            displayName: Azure App Service Deploy ${{ parameters.ENV }}
+            # condition: eq('${{ parameters.ENV }}', 'prod')
+            condition: in('${{ parameters.ENV }}', 'prod', 'uat')
+            inputs:
+              appType: webAppContainer
+              ConnectedServiceName: '$(AZURE_SUBSCRIPTION)'
+              WebAppName: '$(APP_NAME)'
+              DockerNamespace: '$(dockerNamespace)'
+              DockerRepository: '$(IMAGE_REPOSITORY)'
+              DockerImageTag: '$(Build.BuildId)'
+              deployToSlotOrASE: true
+              slotName: staging
+              resourceGroupName: $(RESOURCE_GROUP)
+          - script: |
+              echo "##vso[task.setvariable variable=version;isOutput=true]$(pomversion.next)"
+            name: dockerTag
+  # Prod deploy
+  - stage: deployApproval_PROD_UAT
+    # condition: eq('${{ parameters.ENV }}', 'prod')
+    condition: in('${{ parameters.ENV }}', 'prod', 'uat')
+    dependsOn: deploy
+    pool:
+      vmImage: "ubuntu-latest"
+    jobs:
+      - job: waitForApproval
+        displayName: waiting for approval
+        pool: server
+        timeoutInMinutes: 4320 # 3 days
+        steps:
+          - task: ManualValidation@0
+            displayName: Manual Approval
+            inputs:
+              onTimeout: "reject"
+
+      - job: completeProdDeploy
+        condition: succeeded('waitForApproval')
+        displayName: complete ${{ parameters.ENV }} deploy
+        dependsOn: waitForApproval
+        steps:
+          # deploy swap
+          - task: AzureAppServiceManage@0
+            displayName: Swapping App Service Deploy
+            inputs:
+              ConnectedServiceName: $(AZURE_SUBSCRIPTION)
+              WebAppName: '$(APP_NAME)'
+              ResourceGroupName: $(RESOURCE_GROUP)
+              SourceSlot: staging
+              SwapWithProduction: true
+              Slot: production

@@ -47,6 +47,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
             switch (fieldName) {
                 case "template":
                     generatePDFInput.setTemplateSavedOnFileSystem(unzipTemplateFolderAndWriteToFileSystem(multipartStream, workingDirPath));
+                    generatePDFInput.setTemplateZip(new ZipFile(workingDirPath + ZIP_FILE_NAME));
                     break;
                 case "data":
                     generatePDFInput.setData(getDocumentInputData(multipartStream));

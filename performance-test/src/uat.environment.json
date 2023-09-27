@@ -2,7 +2,7 @@
   "environment": [
     {
       "env": "uat",
-      "pdfEngineUri": "https://api.uat.platform.pagopa.it/shared/pdf-engine/v1/generate-pdf"
+      "pdfEngineUri": "https://api.uat.platform.pagopa.it/shared/pdf-engine-node/v1/generate-pdf"
     }
   ]
 }

@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
@@ -10,8 +10,12 @@ const multer = require('multer');
 const express = require('express');
 let handlebars = require("handlebars");
 const packageJson = require("../package.json");
+var AdmZip = require("adm-zip");
+const fse = require('fs-extra');
 
 const info = async function (req, res, next) {
+
+    console.log(`INFO : name ${packageJson.name} version ${packageJson.version}`);
 
     res.send({
         name: packageJson.name,
@@ -21,15 +25,40 @@ const info = async function (req, res, next) {
 }
 
 const generatePdf = async function (req, res, next) {
+
+    var workingDir;
+    var page;
+
     let timestampLog = `${Date.now()}`;
 
     console.time(timestampLog);
     console.info(`Starting generate pdf nodejs function`);
 
-    let workingDir = req.body.workingDir;
-    let page;
-
     try {
+
+        try {
+            workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
+        } catch (err) {
+            res.status(500);
+            res.body(buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request"));
+            return;
+        }
+
+        var zip = new AdmZip(req.file.buffer);
+        var zipEntries = zip.getEntries();
+
+        for(const zipEntry of zipEntries){
+            if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
+                fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
+                    if(err) {
+                      console.log(err);
+                    } else {
+                      console.log('The file has been saved!');
+                    }
+                });
+            }
+        }
+
         console.timeLog(timestampLog, "At initiating browser session");
         console.time("browserSession-"+timestampLog);
         const browser = await getBrowserSession();
@@ -67,7 +96,7 @@ const generatePdf = async function (req, res, next) {
 
             console.timeLog(timestampLog, "At writing compiled template to memory");
             console.time("templateWrite-"+timestampLog);
-            await fs.writeFile(path.join(workingDir, "compiledTemplate.html"), html);
+            fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
             console.timeEnd("templateWrite-"+timestampLog, "TIME to write compiled template to memory");
         } catch (err) {
             console.log(err)
@@ -119,6 +148,10 @@ const generatePdf = async function (req, res, next) {
             console.time("pageClose-"+timestampLog);
             await page.close();
             console.timeEnd("pageClose-"+timestampLog, "TIME to close browser page");
+        }
+
+        if (workingDir) {
+            rmSync(workingDir, { recursive: true, force: true });
         }
 
         console.timeEnd(timestampLog, "At ending generate pdf nodejs function");

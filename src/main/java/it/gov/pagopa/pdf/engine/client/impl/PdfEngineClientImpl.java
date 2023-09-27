@@ -16,6 +16,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -34,7 +35,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static PdfEngineClientImpl instance = null;
 
-    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GEN_ENDPOINT", "http://localhost:3000/pdf-generate");
+    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GENERATE_ENDPOINT", "http://localhost:3000/pdf-generate");
     private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
 
     private static final String ZIP_FILE_NAME = "template.zip";
@@ -76,14 +77,13 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             //Encode template and data
 
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
-            StringBody workingDirBody = new StringBody(pdfEngineRequest.getWorkingDirPath().concat(Constants.UNZIPPED_FILES_FOLDER), ContentType.TEXT_PLAIN);
-
+            FileBody templateBody = new FileBody(pdfEngineRequest.getTemplate().getFile(), ContentType.DEFAULT_BINARY);
 
             //Build the multipart request
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
             builder.addPart(DATA_KEY, dataBody);
-            builder.addPart(WORKING_DIR_KEY, workingDirBody);
+            builder.addPart("template", templateBody);
 
             HttpEntity entity = builder.build();
 
