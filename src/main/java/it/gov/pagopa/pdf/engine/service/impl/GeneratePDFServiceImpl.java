@@ -22,8 +22,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
-import static it.gov.pagopa.pdf.engine.util.Constants.ZIP_FILE_NAME;
-
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
     @Override
