@@ -9,7 +9,6 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@anzp/azure-function-multipart": "^3.1.0",
     "adm-zip": "^0.5.10",
     "applicationinsights": "^1.7.4",
     "axios": "^1.5.0",
@@ -25,7 +24,6 @@
   "devDependencies": {
     "@types/jest": "^24.0.15",
     "@types/semver": "^7.3.10",
-    "azure-functions-core-tools": "^4.x",
     "jest": "^29.6.4"
   }
 }

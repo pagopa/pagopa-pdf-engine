@@ -4,7 +4,7 @@ const fs = require('fs');
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
-const getBrowserSession = require('./utils/browserManager');
+const { getBrowserSession, closeBrowserSession } = require('./utils/browserManager');
 const buildResponseBody = require('./utils/buildUtils');
 const multer = require('multer');
 const express = require('express');
@@ -24,6 +24,11 @@ const info = async function (req, res, next) {
 
 }
 
+const shutdown = async function (req, res, next) {
+    await closeBrowserSession();
+    res.send('OK');
+}
+
 const generatePdf = async function (req, res, next) {
 
     var workingDir;
@@ -36,6 +41,8 @@ const generatePdf = async function (req, res, next) {
 
     try {
 
+        console.log('starting!')
+
         try {
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
         } catch (err) {
@@ -44,8 +51,11 @@ const generatePdf = async function (req, res, next) {
             return;
         }
 
+        console.log(req.file)
+
         var zip = new AdmZip(req.file.buffer);
         var zipEntries = zip.getEntries();
+
 
         for(const zipEntry of zipEntries){
             if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
@@ -159,4 +169,4 @@ const generatePdf = async function (req, res, next) {
 
 }
 
-module.exports = { info, generatePdf };
+module.exports = { info, generatePdf, shutdown };
