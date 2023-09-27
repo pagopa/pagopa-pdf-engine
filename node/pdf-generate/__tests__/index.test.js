@@ -98,7 +98,10 @@ describe("generatePdf", () => {
 
   });
 
+  it("should return ok when calling shutdown", async () => {
+
+    axios.get(url+"/shutdown");
+
+  });
+
 });
-
-setTimeout(() => { process.exit(0) }, 5000)
-

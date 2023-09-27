@@ -6,9 +6,9 @@ FROM node:$NODE_VERSION as builder
 
 WORKDIR /usr/src/build
 
-COPY ./node /usr/src/build
+COPY . /usr/src/build
 
-RUN yarn install --ignore-scripts --frozen-lockfile
+RUN npm install
 
 FROM node:$NODE_VERSION
 LABEL maintainer="https://pagopa.it"
@@ -19,7 +19,7 @@ LABEL org.opencontainers.image.source https://github.com/$OWNER/$REPO
 
 WORKDIR /usr/src/app
 
-COPY ./node/package.json /usr/src/app/package.json
+COPY ./package.json /usr/src/app/package.json
 COPY --from=builder /usr/src/build/pdf-generate /usr/src/app/pdf-generate
 COPY --from=builder /usr/src/build/node_modules /usr/src/app/node_modules
 

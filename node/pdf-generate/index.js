@@ -1,7 +1,7 @@
 const multer = require('multer');
 const express = require('express');
-const getBrowserSession = require('./utils/browserManager');
-const { info, generatePdf } = require('./handlers')
+const {getBrowserSession} = require('./utils/browserManager');
+const { info, shutdown, generatePdf } = require('./handlers')
 
 
 var app = express();
@@ -20,6 +20,11 @@ app.use(function(err, req, res, next) {
 });
 
 app.get('/info', info);
+
+app.get('/shutdown', function(err, req, res, next) {
+    app.close();
+    return;
+});
 
 app.post('/generate-pdf', upload.single('template'), generatePdf);
 
