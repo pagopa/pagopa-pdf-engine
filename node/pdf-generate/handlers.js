@@ -24,9 +24,9 @@ const info = async function (req, res, next) {
 
 }
 
-const shutdown = async function (req, res, next) {
-    await closeBrowserSession();
-    res.send('OK');
+const shutdown = async function (req, res, server) {
+    res.send("Shutdown");
+    process.exit(0);
 }
 
 const generatePdf = async function (req, res, next) {
