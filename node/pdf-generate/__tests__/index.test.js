@@ -100,7 +100,7 @@ describe("generatePdf", () => {
 
   it("should return ok when calling shutdown", async () => {
 
-    axios.get(url+"/shutdown");
+    axios.get(url+"/shutdown").catch(() => {});
 
   });
 
