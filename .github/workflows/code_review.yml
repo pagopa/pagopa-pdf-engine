@@ -60,7 +60,10 @@ jobs:
       - name: Install dependencies
         run: yarn --cwd ./node install
 
-      - name: run tests
+      - name: Start Node Server
+        run: yarn --cwd ./node run start
+
+      - name: Run tests
         run: yarn --cwd ./node run test:coverage
 
       - name: SonarQube Scan
