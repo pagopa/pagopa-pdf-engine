@@ -45,10 +45,10 @@ variables:
     subscriptionKey: "$(DEV_SUBSCRIPTION_KEY)"
     poolImage: 'pagopa-dev-loadtest-linux'
   ${{ if eq(parameters['ENVIRONMENT'], 'uat_java') }}:
-    subscriptionKey: "$(UAT_SUBSCRIPTION_KEY)"
+    subscriptionKey: "$(UAT_JAVA_SUBSCRIPTION_KEY)"
     poolImage: 'pagopa-uat-loadtest-linux'
   ${{ if eq(parameters['ENVIRONMENT'], 'uat_node') }}:
-    subscriptionKey: "$(UAT_SUBSCRIPTION_KEY)"
+    subscriptionKey: "$(UAT_NODE_SUBSCRIPTION_KEY)"
     poolImage: 'pagopa-uat-loadtest-linux'
 
 pool:
