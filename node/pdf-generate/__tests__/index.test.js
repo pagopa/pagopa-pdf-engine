@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 const url = 'http://127.0.0.1:3000';
-const testTemplatePath = "/Users/svariant/Work/PagoPa/ReceiptGenPDF/pagopa-pdf-engine/node/pdf-generate/__tests__/resources/test_template.zip";
+const testTemplatePath = __dirname+"/resources/test_template.zip";
 const template = new Blob([readFileSync(testTemplatePath)], {type: "octet/stream"});
 
 describe("generatePdf", () => {
