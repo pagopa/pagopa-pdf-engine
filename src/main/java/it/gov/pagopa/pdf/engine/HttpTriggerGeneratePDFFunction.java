@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -65,7 +66,7 @@ public class HttpTriggerGeneratePDFFunction {
     /**
      * This function will be invoked when a Http Trigger occurs.
      * This function listens at endpoint "/api/generate-pdf". To invoke it using "curl" command in bash:
-     *  curl -d "HTTP Body" {your host}/api/generate-pdf
+     * curl -d "HTTP Body" {your host}/api/generate-pdf
      */
     @FunctionName("generate-pdf")
     public HttpResponseMessage run(
@@ -73,7 +74,7 @@ public class HttpTriggerGeneratePDFFunction {
                     name = "req",
                     methods = {HttpMethod.POST},
                     authLevel = AuthorizationLevel.ANONYMOUS)
-                    HttpRequestMessage<Optional<byte[]>> request,
+            HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
 
         logger.info("Generate PDF function called at {}", LocalDateTime.now());
@@ -178,7 +179,7 @@ public class HttpTriggerGeneratePDFFunction {
     private static HttpStatus getHttpStatus(PDFEngineException e) {
         HttpStatus status;
         if (e.getErrorCode().equals(AppErrorCodeEnum.PDFE_703) || e.getErrorCode().equals(AppErrorCodeEnum.PDFE_704) || e.getErrorCode().equals(AppErrorCodeEnum.PDFE_705)) {
-           status = INTERNAL_SERVER_ERROR;
+            status = INTERNAL_SERVER_ERROR;
         } else {
             status = BAD_REQUEST;
         }
@@ -206,10 +207,14 @@ public class HttpTriggerGeneratePDFFunction {
     }
 
     private File createWorkingDirectory() throws IOException {
+
         File workingDirectory = new File(workingDirectoryPath);
         if (!workingDirectory.exists()) {
-            Files.createDirectory(workingDirectory.toPath());
+            try {
+                Files.createDirectory(workingDirectory.toPath());
+            } catch (FileAlreadyExistsException e) {}
         }
         return workingDirectory;
     }
+
 }

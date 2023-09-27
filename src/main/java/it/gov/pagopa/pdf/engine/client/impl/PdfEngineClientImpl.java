@@ -5,9 +5,9 @@ import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
-import it.gov.pagopa.pdf.engine.util.Constants;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -20,6 +20,7 @@ import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 
 import java.io.File;
@@ -38,11 +39,9 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GENERATE_ENDPOINT", "http://localhost:3000/pdf-generate");
     private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
 
-    private static final String ZIP_FILE_NAME = "template.zip";
-    private static final String TEMPLATE_KEY = "template";
     private static final String DATA_KEY = "data";
 
-    private static final String WORKING_DIR_KEY = "workingDir";
+    private final Header subKeyHeader = new BasicHeader("Ocp-Apim-Subscription-Key", System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
 
     private final HttpClientBuilder httpClientBuilder;
 
@@ -89,6 +88,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
             //Set endpoint and auth key
             HttpPost request = new HttpPost(pdfEngineEndpoint);
+            request.setHeader(subKeyHeader);
             request.setEntity(entity);
 
             pdfEngineResponse = handlePdfEngineResponse(client, request);
@@ -107,6 +107,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
         try (CloseableHttpClient client = this.httpClientBuilder.build()) {
             HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
+            request.setHeader(subKeyHeader);
             return handleInfoResponse(client, request);
         } catch (IOException e) {
            return false;

@@ -3,6 +3,7 @@ package it.gov.pagopa.pdf.engine.client;
 import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
+import net.lingala.zip4j.ZipFile;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -35,6 +36,7 @@ class PdfEngineClientImplTest {
         }
 
         File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
+        ZipFile zipFile = new ZipFile(targetFile);
 
 
         byte[] template;
@@ -42,7 +44,7 @@ class PdfEngineClientImplTest {
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
+            pdfEngineRequest.setTemplate(zipFile);
             pdfEngineRequest.setData(new String(template));
         } finally {
             targetFile.deleteOnExit();
@@ -81,12 +83,14 @@ class PdfEngineClientImplTest {
         }
 
         File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
+        ZipFile zipFile = new ZipFile(targetFile);
 
         byte[] template;
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
-            pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
+
+            pdfEngineRequest.setTemplate(zipFile);
             pdfEngineRequest.setData(new String(template));
         } finally {
             targetFile.deleteOnExit();
@@ -123,12 +127,14 @@ class PdfEngineClientImplTest {
             Files.createDirectory(tempDirectory.toPath());
         }
 
+
         File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
+        ZipFile zipFile = new ZipFile(targetFile);
         byte[] template;
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
-            pdfEngineRequest.setWorkingDirPath(tempDirectory.getAbsolutePath());
+            pdfEngineRequest.setTemplate(zipFile);
             pdfEngineRequest.setData(new String(template));
         } finally {
             targetFile.deleteOnExit();

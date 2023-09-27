@@ -39,8 +39,8 @@ class InfoTest {
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.info()).thenReturn(true);
         InfoTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+        Mockito.lenient().doAnswer(invocation -> true).when(pdfEngineClient).info();
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];

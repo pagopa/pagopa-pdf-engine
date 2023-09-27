@@ -16,4 +16,11 @@ const getBrowserSession = async () => {
   return browser;
 };
 
-module.exports = getBrowserSession;
+const closeBrowserSession = async () => {
+    if (browser) {
+        browser.close();
+    }
+    return;
+}
+
+module.exports = { getBrowserSession, closeBrowserSession };
