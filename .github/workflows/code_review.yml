@@ -61,7 +61,7 @@ jobs:
         run: yarn --cwd ./node install
 
       - name: Start Node Server
-        run: yarn --cwd ./node run start
+        run: yarn --cwd ./node run start-detached
 
       - name: Run tests
         run: yarn --cwd ./node run test:coverage

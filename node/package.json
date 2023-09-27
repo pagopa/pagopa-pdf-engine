@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "start": "node ./pdf-generate/index.js",
+    "start-detached" : "node ./pdf-generate/index.js > /dev/null 2>&1 &",
     "dev": "nodemon ./pdf-generate/index.js",
     "test": "jest",
     "test:coverage": "jest --coverage"
