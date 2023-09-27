@@ -16,10 +16,10 @@ function postForm(url, body) {
 				// The request was made and the server responded with a status code
 				// that falls out of the range of 2xx
 				return error.response;
-			  } else {
+			} else {
 				// Something happened in setting up the request that triggered an Error
 				console.log('Error', error.message);
-			  }
+			}
         });
 }
 
