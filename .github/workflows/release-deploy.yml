@@ -105,26 +105,27 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.release.outputs.version }}
 
-  # deploy_app_service:
-  #   name: Deploy on App Service
-  #   runs-on: ubuntu-latest
-  #   needs: [ setup, release, image ]
-  #   strategy:
-  #     matrix:
-  #       environment: [ dev, uat, prod ]
-  #   steps:
-  #     - name: Azure Pipelines Action
-  #       uses: jacopocarlini/azure-pipelines@v1.3
-  #       with:
-  #         azure-devops-project-url: https://dev.azure.com/pagopaspa/pagopapdfengine
-  #         azure-pipeline-name: 'pagopapdfengine.deploy-node'
-  #         azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
-  #         azure-template-parameters: '{"ENV": "dev", "SEMVER": "${{env.SEMVER}}", "TEST": "true", "FORCE_REPLACE_DOCKER_IMAGE": "false"}'
-  #         azure-pipeline-variables: '{"system.debug": "true"}'
+
+  deploy_app_service:
+    name: Deploy on App Service
+    runs-on: ubuntu-latest
+    needs: [ setup, release, image ]
+    strategy:
+    matrix:
+      environment: [ dev, uat, prod ]
+    steps:
+      - name: Azure Pipelines Action
+        uses: jacopocarlini/azure-pipelines@v1.3
+        with:
+          azure-devops-project-url: https://dev.azure.com/pagopaspa/pagopapdfengine
+          azure-pipeline-name: 'pagopapdfengine.deploy-node'
+          azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
+          azure-template-parameters: '{"ENV": "dev", "SEMVER": "${{env.SEMVER}}", "TEST": "true", "FORCE_REPLACE_DOCKER_IMAGE": "false"}'
+          azure-pipeline-variables: '{"system.debug": "true"}'
 
   deploy_aks:
     name: Deploy on AKS
-    needs: [ setup, release, image ]
+    needs: [ setup, release, image, deploy_app_service ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     strategy:
       matrix:
@@ -134,8 +135,6 @@ jobs:
       environment: ${{ matrix.environment }}
       target: ${{ needs.setup.outputs.environment }}
     secrets: inherit
-
-
 
   notify:
     needs: [ deploy_aks ]
