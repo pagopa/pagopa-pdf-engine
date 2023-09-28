@@ -117,6 +117,7 @@ jobs:
       - name: Azure Pipelines Action
         uses: jacopocarlini/azure-pipelines@v1.3
         with:
+          environment: ${{ matrix.environment }}
           azure-devops-project-url: https://dev.azure.com/pagopaspa/pagopapdfengine
           azure-pipeline-name: 'pagopapdfengine.deploy-node'
           azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
