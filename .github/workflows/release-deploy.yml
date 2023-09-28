@@ -118,8 +118,8 @@ jobs:
         uses: jacopocarlini/azure-pipelines@v1.3
         with:
           environment: ${{ matrix.environment }}
-          azure-devops-project-url: https://dev.azure.com/pagopaspa/pagopapdfengine
-          azure-pipeline-name: 'pagopapdfengine.deploy-node'
+          azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
+          azure-pipeline-name: 'pagopa-pdf-engine.deploy'
           azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
           azure-template-parameters: '{"ENV": "dev", "SEMVER": "${{env.SEMVER}}", "TEST": "true", "FORCE_REPLACE_DOCKER_IMAGE": "false"}'
           azure-pipeline-variables: '{"system.debug": "true"}'
