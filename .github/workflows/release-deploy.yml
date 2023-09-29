@@ -123,7 +123,7 @@ jobs:
           azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
           azure-template-parameters: |
             {
-                "ENV": "${{inputs.ENVIRNOMENT}}",
+                "ENV": "${{inputs.environment}}",
                 "SEMVER": "${{inputs.semver}}"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
