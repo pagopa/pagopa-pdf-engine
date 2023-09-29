@@ -106,7 +106,7 @@ jobs:
           tag: ${{ needs.release.outputs.version }}
 
   deploy_app_service:
-    needs: [ setup, release, image ]
+    needs: [ image ]
     name: Deploy on App Service
     runs-on: ubuntu-latest
     # strategy:
