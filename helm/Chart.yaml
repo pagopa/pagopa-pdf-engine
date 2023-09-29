@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopapdfengine
 description: Microservice description
 type: application
-version: 0.74.0
-appVersion: 2.5.6-PRDP-144-chore-reintroducing-aps-release-on-devops
+version: 0.75.0
+appVersion: 2.5.6-1-PRDP-144-chore-reintroducing-aps-release-on-devops
 dependencies:
   - name: microservice-chart
     version: 2.4.0
