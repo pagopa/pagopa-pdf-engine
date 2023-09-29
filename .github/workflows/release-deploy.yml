@@ -105,23 +105,27 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.release.outputs.version }}
 
-
   deploy_app_service:
     needs: [ setup, release, image ]
     name: Deploy on App Service
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        environment: [ dev, uat, prod ]
+    # strategy:
+    #   matrix:
+    #     environment: [ dev, uat, prod ]
     steps:
       - name: Azure Pipelines Action
         uses: jacopocarlini/azure-pipelines@v1.3
         with:
-          environment: ${{ matrix.environment }}
+          # environment: ${{ matrix.environment }}
+          environment: ${{ env.ENVIRNOMENT }}
           azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
           azure-pipeline-name: 'pagopa-pdf-engine.deploy'
           azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
-          azure-template-parameters: '{"ENV": "dev", "SEMVER": "${{env.SEMVER}}", "TEST": "true", "FORCE_REPLACE_DOCKER_IMAGE": "false"}'
+          azure-template-parameters: |
+            {
+                "ENV": "${{env.ENVIRNOMENT}}",
+                "SEMVER": "${{inputs.semver}}"
+            }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
   deploy_aks:
@@ -130,10 +134,11 @@ jobs:
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     strategy:
       matrix:
-        environment: [ dev, uat, prod ]
+        environment: [ dev  ]
     uses: ./.github/workflows/deploy_with_github_runner.yml
     with:
       environment: ${{ matrix.environment }}
+      # environment: ${{env.ENVIRNOMENT}}
       target: ${{ needs.setup.outputs.environment }}
     secrets: inherit
 
