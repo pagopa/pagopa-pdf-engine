@@ -102,3 +102,35 @@ jobs:
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
           # from https://github.com/pagopa/opex-dashboard-azure-action/pkgs/container/opex-dashboard-azure-action
           docker-version: sha256:04d8ead53c772d23b094c2a395292dc159e6f2905e1b13b5f828f31eac6eb27f
+
+      - name: Replace opex config file parameters node
+        id: replace_opex_file_parameters_node
+        env:
+          CONFIG_FILE: .opex/${{ steps.read_parameters.outputs.apiName }}/env/${{ steps.read_parameters.outputs.environment }}/config_node.yaml
+          CONFIG_OPTIONS: ${{ github.event.client_payload.config-options-node || inputs.config-options-node }}
+        run: |
+          echo "📝 Replacing config yaml placeholders"
+          echo "Properties to be set: $CONFIG_OPTIONS into file $CONFIG_FILE"
+          for property in $(echo $CONFIG_OPTIONS | yq -o shell); do
+            IFS='=' read -r -a split <<< "$property"
+            key=${split[0]}
+            value=$(echo ${split[1]}|sed "s/'//g")
+            echo "Replacing key: [$key] with value: [$value]"
+            sed -i "s/\${$key}/$value/" $CONFIG_FILE
+          done
+          echo "Modified config file"
+          cat $CONFIG_FILE
+
+      # this action create a folder named /azure-dashboard
+      # from https://github.com/pagopa/opex-dashboard-azure-action/commits/main
+      - name: create-dashboard-node
+        uses: pagopa/opex-dashboard-azure-action@3ad80a5e4a2d5a8f342615637072f21b687320ce
+        with:
+          environment: ${{ steps.read_parameters.outputs.environment }}
+          api-name: ${{ steps.read_parameters.outputs.apiName }}
+          config: .opex/${{ steps.read_parameters.outputs.apiName }}/env/${{ steps.read_parameters.outputs.environment }}/config_node.yaml
+          client-id: ${{ secrets.CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          # from https://github.com/pagopa/opex-dashboard-azure-action/pkgs/container/opex-dashboard-azure-action
+          docker-version: sha256:04d8ead53c772d23b094c2a395292dc159e6f2905e1b13b5f828f31eac6eb27f          
