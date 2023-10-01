@@ -26,16 +26,17 @@ on:
     #     type: string
     #     required: false
 
-  repository_dispatch:
-    types:
-      - create-dashboard
+  # repository_dispatch:
+  #   types:
+  #     - create-dashboard
 
-env:
-  TEMPLATE_DIR: azure-dashboard
+# env:
+#   TEMPLATE_DIR: azure-dashboard
 
 permissions:
   id-token: write
   contents: read
+  deployments: write
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -47,7 +48,7 @@ jobs:
         environment: [uat]
         product: [pdf-engine-service, pdf-engine-service-node]
     environment:
-      name: ${{ inputs.environment }}
+      name: ${{ matrix.environment }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout
@@ -58,8 +59,7 @@ jobs:
           persist-credentials: false
 
       # from https://github.com/pagopa/opex-dashboard-azure-action/
-      - uses: pagopa/opex-dashboard-azure-action@3ad80a5e4a2d5a8f342615637072f21b687320ce
-      # - uses: pagopa/opex-dashboard-azure-action@v1.1.2
+      - uses: pagopa/opex-dashboard-azure-action@v1.1.2
         with:
           environment: ${{ matrix.environment }}
           api-name: ${{ matrix.product }}
