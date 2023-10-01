@@ -74,7 +74,7 @@ jobs:
       - name: Replace opex config file parameters java
         id: replace_opex_file_parameters_java
         env:
-          CONFIG_FILE: .opex/env/java/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          CONFIG_FILE: .opex/env/java/${{ inputs.environment }}/config.yaml
           CONFIG_OPTIONS: ${{ github.event.client_payload.config-options-node || inputs.config-options }}
         run: |
           echo "📝 Replacing config yaml placeholders"
@@ -92,7 +92,7 @@ jobs:
       - name: Replace opex config file parameters node
         id: replace_opex_file_parameters_node
         env:
-          CONFIG_FILE_NODE: .opex/env/node/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          CONFIG_FILE_NODE: .opex/env/node/${{ inputs.environment }}/config.yaml
           CONFIG_OPTIONS_NODE: ${{ github.event.client_payload.config-options || inputs.config-options }}
         run: |
           echo "📝 Replacing config yaml placeholders"
@@ -113,9 +113,9 @@ jobs:
         id: create-dashboard-java
         uses: pagopa/opex-dashboard-azure-action@3ad80a5e4a2d5a8f342615637072f21b687320ce
         with:
-          environment: ${{ steps.read_parameters.outputs.environment }}
+          environment: ${{ inputs.environment }}
           api-name: ${{ steps.read_parameters.outputs.apiName }}
-          config: .opex/env/java/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          config: .opex/env/java/${{ inputs.environment }}/config.yaml
           client-id: ${{ secrets.CLIENT_ID }}
           tenant-id: ${{ secrets.TENANT_ID }}
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
@@ -126,9 +126,9 @@ jobs:
         id: create-dashboard-node
         uses: pagopa/opex-dashboard-azure-action@3ad80a5e4a2d5a8f342615637072f21b687320ce
         with:
-          environment: ${{ steps.read_parameters.outputs.environment }}
+          environment: ${{ inputs.environment }}
           api-name: ${{ steps.read_parameters.outputs.apiName }}
-          config: .opex/env/node/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          config: .opex/env/node/${{ inputs.environment }}/config.yaml
           client-id: ${{ secrets.CLIENT_ID }}
           tenant-id: ${{ secrets.TENANT_ID }}
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
