@@ -56,3 +56,8 @@ data "azurerm_key_vault_secret" "key_vault_integration_test_webhook_slack" {
   key_vault_id = data.azurerm_key_vault.key_vault_domain.id
 }
 
+data "azurerm_key_vault_secret" "key_vault_az_devops" {
+  name         = "azure-devops-token"
+  key_vault_id = data.azurerm_key_vault.key_vault_domain.id
+}
+
