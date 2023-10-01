@@ -9,7 +9,7 @@ on:
         required: true
         type: choice
         options:
-          - pdf-engine-service
+          - pdf-receipt-service
       environment:
         description: 'Environment for which create dashboards and alerts'
         required: true
@@ -18,10 +18,6 @@ on:
           - uat
           - prod
       config-options:
-        description: 'JSON string containing env properties that will be replaced into opex config.yaml file before dashboard generation'
-        type: string
-        required: false
-      config-options-node:
         description: 'JSON string containing env properties that will be replaced into opex config.yaml file before dashboard generation'
         type: string
         required: false
@@ -71,10 +67,10 @@ jobs:
               core.setOutput("apiName", apiName);
               core.setOutput("environment", environment);
 
-      - name: Replace opex config file parameters java
-        id: replace_opex_file_parameters_java
+      - name: Replace opex config file parameters
+        id: replace_opex_file_parameters
         env:
-          CONFIG_FILE: .opex/${{ steps.read_parameters.outputs.apiName }}/java/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          CONFIG_FILE: .opex/${{ steps.read_parameters.outputs.apiName }}/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
           CONFIG_OPTIONS: ${{ github.event.client_payload.config-options || inputs.config-options }}
         run: |
           echo "📝 Replacing config yaml placeholders"
@@ -91,12 +87,11 @@ jobs:
 
       # this action create a folder named /azure-dashboard
       # from https://github.com/pagopa/opex-dashboard-azure-action/commits/main
-      - name: create-dashboard-java
-        uses: pagopa/opex-dashboard-azure-action@3ad80a5e4a2d5a8f342615637072f21b687320ce
+      - uses: pagopa/opex-dashboard-azure-action@3ad80a5e4a2d5a8f342615637072f21b687320ce
         with:
           environment: ${{ steps.read_parameters.outputs.environment }}
           api-name: ${{ steps.read_parameters.outputs.apiName }}
-          config: .opex/${{ steps.read_parameters.outputs.apiName }}/java/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          config: .opex/${{ steps.read_parameters.outputs.apiName }}/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
           client-id: ${{ secrets.CLIENT_ID }}
           tenant-id: ${{ secrets.TENANT_ID }}
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
