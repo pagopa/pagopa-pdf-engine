@@ -3,28 +3,28 @@ name: Create Dashboard
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-    inputs:
-      api-name:
-        description: 'Api name for which create dashboards and alerts'
-        required: true
-        type: choice
-        options:
-          - pdf-engine-service
-      environment:
-        description: 'Environment for which create dashboards and alerts'
-        required: true
-        type: choice
-        options:
-          - uat
-          - prod
-      config-options:
-        description: 'JSON string containing env properties that will be replaced into opex config.yaml file before dashboard generation'
-        type: string
-        required: false
-      config-options-node:
-        description: 'JSON string containing env properties that will be replaced into opex config.yaml file before dashboard generation'
-        type: string
-        required: false
+    # inputs:
+    #   api-name:
+    #     description: 'Api name for which create dashboards and alerts'
+    #     required: true
+    #     type: choice
+    #     options:
+    #       - pdf-engine-service
+    #   environment:
+    #     description: 'Environment for which create dashboards and alerts'
+    #     required: true
+    #     type: choice
+    #     options:
+    #       - uat
+    #       - prod
+    #   config-options:
+    #     description: 'JSON string containing env properties that will be replaced into opex config.yaml file before dashboard generation'
+    #     type: string
+    #     required: false
+    #   config-options-node:
+    #     description: 'JSON string containing env properties that will be replaced into opex config.yaml file before dashboard generation'
+    #     type: string
+    #     required: false
 
   repository_dispatch:
     types:
