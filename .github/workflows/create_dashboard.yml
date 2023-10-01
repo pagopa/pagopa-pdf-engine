@@ -74,7 +74,7 @@ jobs:
       - name: Replace opex config file parameters java
         id: replace_opex_file_parameters_java
         env:
-          CONFIG_FILE: .opex/${{ steps.read_parameters.outputs.apiName }}/java/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          CONFIG_FILE: .opex/${{ steps.read_parameters.outputs.apiName }}/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
           CONFIG_OPTIONS: ${{ github.event.client_payload.config-options || inputs.config-options }}
         run: |
           echo "📝 Replacing config yaml placeholders"
@@ -96,7 +96,7 @@ jobs:
         with:
           environment: ${{ steps.read_parameters.outputs.environment }}
           api-name: ${{ steps.read_parameters.outputs.apiName }}
-          config: .opex/${{ steps.read_parameters.outputs.apiName }}/java/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
+          config: .opex/${{ steps.read_parameters.outputs.apiName }}/env/${{ steps.read_parameters.outputs.environment }}/config.yaml
           client-id: ${{ secrets.CLIENT_ID }}
           tenant-id: ${{ secrets.TENANT_ID }}
           subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
