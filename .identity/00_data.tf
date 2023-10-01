@@ -2,6 +2,11 @@ data "azurerm_resource_group" "dashboards" {
   name = "dashboards"
 }
 
+data "azurerm_storage_account" "tfstate_app" {
+  name                = "pagopainfraterraform${var.env}"
+  resource_group_name = "io-infra-rg"
+}
+
 data "azurerm_kubernetes_cluster" "aks" {
   name                = local.aks_cluster.name
   resource_group_name = local.aks_cluster.resource_group_name
@@ -55,3 +60,4 @@ data "azurerm_key_vault_secret" "key_vault_az_devops" {
   name         = "azure-devops-token"
   key_vault_id = data.azurerm_key_vault.key_vault_domain.id
 }
+
