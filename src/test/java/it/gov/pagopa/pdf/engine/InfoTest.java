@@ -7,7 +7,6 @@ import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.model.AppInfo;
 import it.gov.pagopa.pdf.engine.util.HttpResponseMessageMock;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

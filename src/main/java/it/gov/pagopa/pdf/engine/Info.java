@@ -4,7 +4,6 @@ import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.model.AppInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,6 @@ public class Info {
 			authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
 			final ExecutionContext context) {
 
-		//PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
 		return request.createResponseBuilder(HttpStatus.OK)
 				.body(getInfo())
 				.build();
