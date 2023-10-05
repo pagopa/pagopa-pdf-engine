@@ -1,15 +1,17 @@
 const puppeteer = require('puppeteer');
 const registerHelpers = require("handlebars-helpers");
 let handlebars = require("handlebars");
-let splitAndSpace = require('../helpers/splitAndSpace')
+let splitAndSpace = require('../helpers/splitAndSpace');
+let not = require('../helpers/not')
+let eq = require('../helpers/eq')
 
 let browser;
 
 const getBrowserSession = async () => {
   if (browser) return browser;
 
-  registerHelpers();
-
+  handlebars.registerHelper("not", splitAndSpace);
+  handlebars.registerHelper("eq", splitAndSpace);
   handlebars.registerHelper("splitAndSpace", splitAndSpace);
 
   browser = await puppeteer.launch({
