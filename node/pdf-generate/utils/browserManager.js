@@ -10,8 +10,8 @@ let browser;
 const getBrowserSession = async () => {
   if (browser) return browser;
 
-  handlebars.registerHelper("not", splitAndSpace);
-  handlebars.registerHelper("eq", splitAndSpace);
+  handlebars.registerHelper("not", not);
+  handlebars.registerHelper("eq", eq);
   handlebars.registerHelper("splitAndSpace", splitAndSpace);
 
   browser = await puppeteer.launch({
