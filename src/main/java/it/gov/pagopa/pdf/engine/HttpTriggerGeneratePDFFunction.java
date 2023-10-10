@@ -77,7 +77,7 @@ public class HttpTriggerGeneratePDFFunction {
             HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
 
-        logger.info("Generate PDF function called at {}", LocalDateTime.now());
+        logger.debug("Generate PDF function called at {}", LocalDateTime.now());
 
         Optional<byte[]> optionalRequestBody = request.getBody();
         if (optionalRequestBody.isEmpty()) {
@@ -141,7 +141,7 @@ public class HttpTriggerGeneratePDFFunction {
         try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
             byte[] fileBytes = inputStream.readAllBytes();
 
-            logger.info("Returning generated pdf at {}", LocalDateTime.now());
+            logger.debug("Returning generated pdf at {}", LocalDateTime.now());
             return request
                     .createResponseBuilder(HttpStatus.OK)
                     .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
