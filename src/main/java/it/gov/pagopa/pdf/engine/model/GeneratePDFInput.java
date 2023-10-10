@@ -12,11 +12,9 @@ import net.lingala.zip4j.ZipFile;
 @Data
 public class GeneratePDFInput {
 
-    private Map<String, Object> data;
+    private String data;
     private boolean applySignature;
     private boolean generateZipped;
     private ZipFile templateZip;
-
-    private GeneratorType generatorType = GeneratorType.ITEXT;
 
 }

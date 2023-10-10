@@ -2,7 +2,7 @@
 package it.gov.pagopa.pdf.engine.service.impl;
 
 import com.spire.pdf.conversion.PdfStandardsConverter;
-import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
+import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
@@ -10,8 +10,9 @@ import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.apache.commons.io.IOUtils;
-
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -22,7 +23,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
+
+@ApplicationScoped
 public class GeneratePDFServiceImpl implements GeneratePDFService {
+
+    @Inject
+    PdfEngineClient pdfEngineClient;
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath, Logger logger)
@@ -32,7 +38,6 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
         try {
 
-            PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
             PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
             pdfEngineRequest.setWorkingDirPath(workingDirPath.toFile().getAbsolutePath());
             pdfEngineRequest.setData(ObjectMapperUtils.writeValueAsString(generatePDFInput.getData()));
