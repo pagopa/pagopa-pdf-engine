@@ -77,7 +77,7 @@ public class HttpTriggerGeneratePDFFunction {
             HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
 
-        logger.info("Generate PDF function called at {}", LocalDateTime.now());
+        logger.debug("Generate PDF function called at {}", LocalDateTime.now());
 
         Optional<byte[]> optionalRequestBody = request.getBody();
         if (optionalRequestBody.isEmpty()) {
@@ -122,26 +122,26 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        // if (generatePDFInput.getTemplateZip() == null) {
-        //     logger.error("Invalid request, template HTML not provided");
-        //     return request
-        //             .createResponseBuilder(BAD_REQUEST)
-        //             .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_897, INVALID_REQUEST_MESSAGE))
-        //             .build();
-        // }
+        if (generatePDFInput.getTemplateZip() == null) {
+            logger.error("Invalid request, template HTML not provided");
+            return request
+                    .createResponseBuilder(BAD_REQUEST)
+                    .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_897, INVALID_REQUEST_MESSAGE))
+                    .build();
+        }
 
-        // if (generatePDFInput.getData() == null) {
-        //     logger.error("Invalid request the PDF document input data are null");
-        //     return request
-        //             .createResponseBuilder(BAD_REQUEST)
-        //             .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE))
-        //             .build();
-        // }
+        if (generatePDFInput.getData() == null) {
+            logger.error("Invalid request the PDF document input data are null");
+            return request
+                    .createResponseBuilder(BAD_REQUEST)
+                    .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE))
+                    .build();
+        }
 
         try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
             byte[] fileBytes = inputStream.readAllBytes();
 
-            logger.info("Returning generated pdf at {}", LocalDateTime.now());
+            logger.debug("Returning generated pdf at {}", LocalDateTime.now());
             return request
                     .createResponseBuilder(HttpStatus.OK)
                     .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")

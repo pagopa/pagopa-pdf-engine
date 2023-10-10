@@ -220,7 +220,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         Assertions.assertEquals(AppErrorCodeEnum.PDFE_704, ((ErrorResponse) body).getAppErrorCode());
     }
 
-/*    @Test
+    @Test
     @SneakyThrows
     void runFailOnInvalidTemplate() {
         // Setup
@@ -243,9 +243,9 @@ class HttpTriggerGeneratePDFFunctionTest {
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
         Assertions.assertEquals(AppErrorCodeEnum.PDFE_897, ((ErrorResponse) body).getAppErrorCode());
-    }*/
+    }
 
-/*    @Test
+    @Test
     @SneakyThrows
     void runFailOnInvalidData() {
         // Setup
@@ -269,7 +269,7 @@ class HttpTriggerGeneratePDFFunctionTest {
         assertNotNull(body);
         assertTrue(body instanceof ErrorResponse);
         Assertions.assertEquals(AppErrorCodeEnum.PDFE_898, ((ErrorResponse) body).getAppErrorCode());
-    }*/
+    }
 
     @Test
     @SneakyThrows
