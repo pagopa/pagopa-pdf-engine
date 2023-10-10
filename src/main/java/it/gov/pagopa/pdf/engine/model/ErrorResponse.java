@@ -1,12 +1,14 @@
 
 package it.gov.pagopa.pdf.engine.model;
 
-import com.microsoft.azure.functions.HttpStatus;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
 import java.util.UUID;
+
+import static org.jboss.resteasy.reactive.RestResponse.StatusCode.BAD_REQUEST;
+import static org.jboss.resteasy.reactive.RestResponse.StatusCode.INTERNAL_SERVER_ERROR;
 
 /**
  * Model class for HTTP error response
@@ -16,12 +18,12 @@ import java.util.UUID;
 public class ErrorResponse {
 
     private String errorId;
-    private HttpStatus httpStatusCode;
+    private int httpStatusCode;
     private String httpStatusDescription;
     private AppErrorCodeEnum appErrorCode;
     private List<ErrorMessage> errors;
 
-    public ErrorResponse(HttpStatus httpStatusCode, AppErrorCodeEnum appErrorCode, List<ErrorMessage> errors) {
+    public ErrorResponse(int httpStatusCode, AppErrorCodeEnum appErrorCode, List<ErrorMessage> errors) {
         this.errorId = UUID.randomUUID().toString();
         this.httpStatusCode = httpStatusCode;
         this.appErrorCode = appErrorCode;

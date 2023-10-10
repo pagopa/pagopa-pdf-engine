@@ -6,6 +6,7 @@ import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -32,6 +33,7 @@ import java.nio.file.Files;
 /**
  * Client for the PDF Engine
  */
+@ApplicationScoped
 public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static PdfEngineClientImpl instance = null;
