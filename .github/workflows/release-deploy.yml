@@ -129,7 +129,8 @@ jobs:
           azure-pipeline-variables: '{"system.debug": "true"}'
 
   deploy_app_service_java:
-    needs: [ setup, release, image, deploy_app_service_node ]
+    # needs: [ setup, release, image, deploy_app_service_node ]
+    needs: [ setup, release, deploy_app_service_node ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     name: Deploy on App Service Java
     runs-on: ubuntu-latest
