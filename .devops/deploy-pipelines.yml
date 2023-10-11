@@ -8,19 +8,16 @@ parameters:
       - uat
       - prod
   - name: SEMVER
-    displayName: "When packing a release, define the version bump to apply. Use only buildNumber or skip for manual deployment"
+    displayName: "When packing a release, define the version bump to apply. Use only buildNumber or skip for manual deployment"      
+  - name: DOCKERFILE
+    displayName: Dockerfile path
     type: string
-    values:
-      - major
-      - minor
-      - patch
-      - buildNumber
-      - skip
-    default: skip
-  - name: TEST
-    displayName: Run tests
-    type: boolean
-    default: false
+  - name: BUILD_CONTEXT
+    displayName: Docker build context
+    type: string
+  - name: IMAGE_NAME
+    displayName: Image Name
+    type: string
 
 variables:
   ${{ if eq(parameters['ENV'], 'dev') }}:
@@ -53,7 +50,7 @@ variables:
   sha: ""
   tag: ""
 
-  IMAGE_REPOSITORY: $(image_repository_name)
+  IMAGE_REPOSITORY: ${{ parameters.IMAGE_NAME }}
 
 # Only manual triggers
 trigger: none
@@ -86,8 +83,8 @@ stages:
             inputs:
               containerRegistry: '$(dockerRegistryServiceConnection)'
               repository: '$(IMAGE_REPOSITORY)'
-              Dockerfile: 'node/Dockerfile' 
-              buildContext: './node'
+              Dockerfile: '${{ parameters.DOCKERFILE }}'
+              buildContext: '${{ parameters.BUILD_CONTEXT }}'
               command: 'buildAndPush'
               tags: |
                 $(Build.BuildId)

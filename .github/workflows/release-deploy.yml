@@ -105,10 +105,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.release.outputs.version }}
 
-  deploy_app_service:
+  deploy_app_service_node:
     needs: [ setup, release, image ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    name: Deploy on App Service
+    name: Deploy on App Service Node
     runs-on: ubuntu-latest
     steps:
       - name: Azure Pipelines Action
@@ -120,25 +120,37 @@ jobs:
           azure-template-parameters: |
             {
                 "ENV": "${{inputs.environment}}",
-                "SEMVER": "${{inputs.semver}}"
+                "SEMVER": "${{inputs.semver}}",
+                "DOCKERFILE": 'node/Dockerfile',
+                "BUILD_CONTEXT": './node',
+                "IMAGE_NAME": 'pagopa-pdf-engine-node'
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
-  deploy_aks:
-    name: Deploy on AKS
-    needs: [ setup, release, image, deploy_app_service ]
+  deploy_app_service_java:
+    needs: [ setup, release, image, deploy_app_service_node ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    strategy:
-      matrix:
-        environment: [ dev, uat, prod ]
-    uses: ./.github/workflows/deploy_with_github_runner.yml
-    with:
-      environment: ${{ matrix.environment }}
-      target: ${{ needs.setup.outputs.environment }}
-    secrets: inherit
+    name: Deploy on App Service Java
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Pipelines Action
+        uses: jacopocarlini/azure-pipelines@v1.3
+        with:
+          azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
+          azure-pipeline-name: 'pagopa-pdf-engine.deploy'
+          azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
+          azure-template-parameters: |
+            {
+                "ENV": "${{inputs.environment}}",
+                "SEMVER": "${{inputs.semver}}",
+                "DOCKERFILE": 'Dockerfile',
+                "BUILD_CONTEXT": '.',
+                "IMAGE_NAME": 'pagopa-pdf-engine-java'
+            }
+          azure-pipeline-variables: '{"system.debug": "true"}'
 
   notify:
-    needs: [ deploy_aks ]
+    needs: [ deploy_app_service_node, deploy_app_service_java ]
     runs-on: ubuntu-latest
     name: Notify
     if: always()
