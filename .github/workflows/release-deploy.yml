@@ -124,7 +124,7 @@ jobs:
                 "SEMVER": "${{inputs.semver}}",
                 "DOCKERFILE": "node/Dockerfile",
                 "BUILD_CONTEXT": "./node",
-                "IMAGE_NAME": "pagopa-pdf-engine-node"
+                "IMAGE_NAME": "pagopapdfengine"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
@@ -147,7 +147,7 @@ jobs:
                 "SEMVER": "${{inputs.semver}}",
                 "DOCKERFILE": "Dockerfile",
                 "BUILD_CONTEXT": ".",
-                "IMAGE_NAME": "pagopa-pdf-engine-java"
+                "IMAGE_NAME": "pagopapdfenginejava"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
