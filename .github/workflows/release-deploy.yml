@@ -91,22 +91,23 @@ jobs:
           beta: ${{ inputs.beta }}
           skip_ci: ${{ inputs.beta }}
 
-  image:
-    needs: [ setup, release ]
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    if: ${{ inputs.semver != 'skip' }}
-    steps:
-      - name: Build and Push
-        id: semver
-        uses: pagopa/github-actions-template/ghcr-build-push@v1.5.4
-        with:
-          branch: ${{ github.ref_name}}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ needs.release.outputs.version }}
+  # image:
+  #   needs: [ setup, release ]
+  #   name: Build and Push Docker Image
+  #   runs-on: ubuntu-latest
+  #   if: ${{ inputs.semver != 'skip' }}
+  #   steps:
+  #     - name: Build and Push
+  #       id: semver
+  #       uses: pagopa/github-actions-template/ghcr-build-push@v1.5.4
+  #       with:
+  #         branch: ${{ github.ref_name}}
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         tag: ${{ needs.release.outputs.version }}
 
   deploy_app_service_node:
-    needs: [ setup, release, image ]
+    # needs: [ setup, release, image ]
+    needs: [ setup, release ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     name: Deploy on App Service Node
     runs-on: ubuntu-latest
@@ -121,14 +122,16 @@ jobs:
             {
                 "ENV": "${{inputs.environment}}",
                 "SEMVER": "${{inputs.semver}}",
-                "DOCKERFILE": 'node/Dockerfile',
-                "BUILD_CONTEXT": './node',
-                "IMAGE_NAME": 'pagopa-pdf-engine-node'
+                "DOCKERFILE": "node/Dockerfile",
+                "BUILD_CONTEXT": "./node",
+                "IMAGE_NAME": "pagopapdfengine",
+                "TYPE": "node"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
   deploy_app_service_java:
-    needs: [ setup, release, image, deploy_app_service_node ]
+    # needs: [ setup, release, image, deploy_app_service_node ]
+    needs: [ setup, release, deploy_app_service_node ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     name: Deploy on App Service Java
     runs-on: ubuntu-latest
@@ -143,9 +146,10 @@ jobs:
             {
                 "ENV": "${{inputs.environment}}",
                 "SEMVER": "${{inputs.semver}}",
-                "DOCKERFILE": 'Dockerfile',
-                "BUILD_CONTEXT": '.',
-                "IMAGE_NAME": 'pagopa-pdf-engine-java'
+                "DOCKERFILE": "Dockerfile",
+                "BUILD_CONTEXT": ".",
+                "IMAGE_NAME": "pagopapdfenginejava",
+                "TYPE": "java"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 

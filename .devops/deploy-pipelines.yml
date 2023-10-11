@@ -18,6 +18,13 @@ parameters:
   - name: IMAGE_NAME
     displayName: Image Name
     type: string
+  - name: TYPE
+    displayName: Target pdf engine node/java
+    type: string
+    default: node
+    values:
+      - node
+      - java
 
 variables:
   ${{ if eq(parameters['ENV'], 'dev') }}:
@@ -63,7 +70,8 @@ stages:
   # Deploy on Azure
   - stage: deploy
     jobs:
-      - job: deployNode
+      # - job: deploy-${{ parameters.TYPE }}
+      - job: deploy
         steps:
 
           - script: |
