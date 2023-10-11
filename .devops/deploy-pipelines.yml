@@ -70,7 +70,8 @@ stages:
   # Deploy on Azure
   - stage: deploy
     jobs:
-      - job: deploy-${{ parameters.TYPE }}
+      # - job: deploy-${{ parameters.TYPE }}
+      - job: deploy
         steps:
 
           - script: |
