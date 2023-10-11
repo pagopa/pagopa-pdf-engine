@@ -145,9 +145,9 @@ jobs:
             {
                 "ENV": "${{inputs.environment}}",
                 "SEMVER": "${{inputs.semver}}",
-                "DOCKERFILE": 'Dockerfile',
-                "BUILD_CONTEXT": '.',
-                "IMAGE_NAME": 'pagopa-pdf-engine-java'
+                "DOCKERFILE": "Dockerfile",
+                "BUILD_CONTEXT": ""."",
+                "IMAGE_NAME": "pagopa-pdf-engine-java"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
