@@ -3,6 +3,7 @@ package it.gov.pagopa.pdf.engine.model;
 
 import lombok.Data;
 
+import java.nio.file.Path;
 import java.util.Map;
 import net.lingala.zip4j.ZipFile;
 
@@ -16,6 +17,6 @@ public class GeneratePDFInput {
     private boolean applySignature;
     private boolean generateZipped;
     private ZipFile templateZip;
-    private String workingDir;
+    private Path workingDir;
 
 }
