@@ -6,9 +6,6 @@ import it.gov.pagopa.pdf.engine.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 
-import java.nio.file.Path;
-import java.util.Map;
-
 /**
  * Interface of the service to be used to extract the input from the provided request body
  */
