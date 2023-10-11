@@ -1,11 +1,11 @@
 package it.gov.pagopa.pdf.engine.resource;
 
 import io.smallrye.mutiny.Uni;
+import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
+import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
-import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
-import it.gov.pagopa.pdf.engine.model.ErrorMessage;
-import it.gov.pagopa.pdf.engine.model.ErrorResponse;
-import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
+import it.gov.pagopa.pdf.engine.model.*;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
 import jakarta.inject.Inject;
@@ -30,6 +30,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.jboss.resteasy.reactive.RestResponse.StatusCode.BAD_REQUEST;
 import static org.jboss.resteasy.reactive.RestResponse.StatusCode.INTERNAL_SERVER_ERROR;
@@ -59,11 +61,77 @@ public class GeneratePdfResource {
 
     logger.debug("Generate PDF function called at {}", LocalDateTime.now());
 
+    Uni<GeneratePDFInput> generatePDFInputUni = getGeneratePDFInputUni(request);
+    Uni<PdfEngineResponse> pdfEngineResponseUni = generatePDFInputUni
+            .onFailure().invoke(error -> {
+              throw new RuntimeException();
+            })
+            .onItem().transformToUni(getPdfEngineResponseUni());
+    return pdfEngineResponseUni
+            .onFailure().invoke(getThrowableConsumer())
+            .onItem().transform(getEngineResponseResponseFunction());
+  }
+
+  private Function<PdfEngineResponse, Response> getEngineResponseResponseFunction() {
+    return item -> {
+      try (BufferedInputStream inputStream = item.getBufferedInputStream()) {
+        byte[] fileBytes = inputStream.readAllBytes();
+
+        logger.debug("Returning generated pdf at {}", LocalDateTime.now());
+        return Response.status(Response.Status.OK)
+                .header("content-type", item.isGenerateZipped() ? "application/zip" : "application/pdf")
+                .header("content-length", String.valueOf(fileBytes.length))
+                .header("content-disposition", "attachment; ")
+                .entity(fileBytes)
+                .build();
+      } catch (IOException e) {
+        logger.error("Error handling the generated stream", e);
+        return Response.status(INTERNAL_SERVER_ERROR)
+                .entity(
+                        buildResponseBody(
+                                INTERNAL_SERVER_ERROR,
+                                AppErrorCodeEnum.PDFE_907,
+                                ERROR_GENERATING_PDF_MESSAGE))
+                .build();
+      } finally {
+        clearTempDirectory(item.getWorkDirPath());
+      }
+    };
+  }
+
+  private Function<GeneratePDFInput, Uni<? extends PdfEngineResponse>> getPdfEngineResponseUni() {
+    return generatePDFInput -> {
+
+      if (generatePDFInput.getData() == null) {
+        logger.error("Invalid request the PDF document input data are null");
+        clearTempDirectory(generatePDFInput.getWorkingDir());
+        throw new RuntimeException();
+      }
+
+      try {
+        return generatePDFService.generatePDF(generatePDFInput, generatePDFInput.getWorkingDir(), logger);
+      } catch (Exception e) {
+        clearTempDirectory(generatePDFInput.getWorkingDir());
+        throw new RuntimeException(e);
+      }
+
+    };
+  }
+
+  private Consumer<Throwable> getThrowableConsumer() {
+    return error -> Response.status(INTERNAL_SERVER_ERROR)
+            .entity(
+                    buildResponseBody(
+                            INTERNAL_SERVER_ERROR,
+                            AppErrorCodeEnum.PDFE_907,
+                            ERROR_GENERATING_PDF_MESSAGE))
+            .build();
+  }
+
+  private Uni<GeneratePDFInput> getGeneratePDFInputUni(MultipartFormDataInput request) {
     Uni<GeneratePDFInput> response = Uni.createFrom().item(() ->  {
       if (request == null) {
         logger.error("Invalid request the payload is null");
-//        return Uni.createFrom().item(Response.status(RestResponse.Status.BAD_REQUEST).entity(
-//                buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_899, INVALID_REQUEST_MESSAGE)).build());
         throw new RuntimeException();
       }
 
@@ -78,102 +146,31 @@ public class GeneratePdfResource {
         );
       } catch (IOException e) {
         logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
-//        return Response.status(RestResponse.Status.INTERNAL_SERVER_ERROR)
-//                .entity(
-//                        buildResponseBody(
-//                                INTERNAL_SERVER_ERROR,
-//                                AppErrorCodeEnum.PDFE_908,
-//                                "An error occurred on processing the request"))
-//                .build();
         throw new RuntimeException();
-     }
+      }
 
+      GeneratePDFInput generatePDFInput;
+      try {
+        generatePDFInput =
+                this.parseRequestBodyService.retrieveInputData(request);
+      } catch (PDFEngineException e) {
+        logger.error("Error retrieving input data from request body", e);
+        clearTempDirectory(workingDirPath);
+        throw new RuntimeException();
+      }
 
-     GeneratePDFInput generatePDFInput;
-     try {
-       generatePDFInput =
-              this.parseRequestBodyService.retrieveInputData(request);
-     } catch (PDFEngineException e) {
-       logger.error("Error retrieving input data from request body", e);
-       Integer status = getHttpStatus(e);
-//       return Response.status(status)
-//              .entity(buildResponseBody(status, e.getErrorCode(), INVALID_REQUEST_MESSAGE))
-//              .build();
-       throw new RuntimeException();
-     }
+      if (generatePDFInput.getTemplateZip() == null) {
+        logger.error("Invalid request, template HTML not provided");
+        clearTempDirectory(workingDirPath);
+        throw new RuntimeException();
+      }
 
-     if (generatePDFInput.getTemplateZip() == null) {
-       logger.error("Invalid request, template HTML not provided");
-//       return Response.status(BAD_REQUEST)
-//              .entity(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_897, INVALID_REQUEST_MESSAGE))
-//              .build();
-       throw new RuntimeException();
-     }
+      generatePDFInput.setWorkingDir(workingDirPath);
 
-     generatePDFInput.setWorkingDir(workingDirectoryPath);
+      return generatePDFInput;
 
-     return generatePDFInput;
-
-    }).onFailure().invoke(error -> Response.status(INTERNAL_SERVER_ERROR)
-            .entity(
-                    buildResponseBody(
-                            INTERNAL_SERVER_ERROR,
-                            AppErrorCodeEnum.PDFE_907,
-                            ERROR_GENERATING_PDF_MESSAGE))
-            .build())
-      .onItem().invoke(input -> {
-
-      });
-
-    return response
-            .onFailure().invoke(error -> Response.status(INTERNAL_SERVER_ERROR)
-                    .entity(
-                            buildResponseBody(
-                                    INTERNAL_SERVER_ERROR,
-                                    AppErrorCodeEnum.PDFE_907,
-                                    ERROR_GENERATING_PDF_MESSAGE))
-                    .build())
-            .onItem().invoke(generatePDFInput -> {
-              if (generatePDFInput.getData() == null) {
-                logger.error("Invalid request the PDF document input data are null");
-                return Response.status(BAD_REQUEST)
-                        .entity(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE))
-                        .build();
-              }
-
-              try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
-                byte[] fileBytes = inputStream.readAllBytes();
-
-                logger.debug("Returning generated pdf at {}", LocalDateTime.now());
-                return Response.status(Response.Status.OK)
-                        .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
-                        .header("content-length", String.valueOf(fileBytes.length))
-                        .header("content-disposition", "attachment; ")
-                        .entity(fileBytes)
-                        .build();
-              } catch (PDFEngineException e) {
-                logger.error("Error generating the PDF document", e);
-                return Response.status(INTERNAL_SERVER_ERROR)
-                        .entity(
-                                buildResponseBody(
-                                        INTERNAL_SERVER_ERROR,
-                                        e.getErrorCode(),
-                                        ERROR_GENERATING_PDF_MESSAGE))
-                        .build();
-              } catch (IOException e) {
-                logger.error("Error handling the generated stream", e);
-                return Response.status(INTERNAL_SERVER_ERROR)
-                        .entity(
-                                buildResponseBody(
-                                        INTERNAL_SERVER_ERROR,
-                                        AppErrorCodeEnum.PDFE_907,
-                                        ERROR_GENERATING_PDF_MESSAGE))
-                        .build();
-              } finally {
-                clearTempDirectory(workingDirPath);
-              }
-            });
-
+    });
+    return response;
   }
 
   private static Integer getHttpStatus(PDFEngineException e) {
