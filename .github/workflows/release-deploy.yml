@@ -108,7 +108,7 @@ jobs:
   deploy_app_service_node:
     needs: [ setup, release, image ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    name: Deploy on App Service
+    name: Deploy on App Service Node
     runs-on: ubuntu-latest
     steps:
       - name: Azure Pipelines Action
@@ -130,7 +130,7 @@ jobs:
   deploy_app_service_java:
     needs: [ setup, release, image, deploy_app_service_node ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    name: Deploy on App Service
+    name: Deploy on App Service Java
     runs-on: ubuntu-latest
     steps:
       - name: Azure Pipelines Action
@@ -150,7 +150,7 @@ jobs:
           azure-pipeline-variables: '{"system.debug": "true"}'
 
   notify:
-    needs: [ deploy_aks ]
+    needs: [ deploy_app_service_node, deploy_app_service_java ]
     runs-on: ubuntu-latest
     name: Notify
     if: always()
