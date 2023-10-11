@@ -1,9 +1,6 @@
 package it.gov.pagopa.pdf.engine.resource;
 
 import io.smallrye.mutiny.Uni;
-import it.gov.pagopa.pdf.engine.exception.CompileTemplateException;
-import it.gov.pagopa.pdf.engine.exception.FillTemplateException;
-import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
 import it.gov.pagopa.pdf.engine.model.*;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
@@ -15,7 +12,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.apache.commons.io.FileUtils;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
