@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        environment: [uat]
+        environment: [uat, prod]
         product: [pdf-engine-service, pdf-engine-service-node]
     environment:
       name: ${{ matrix.environment }}
