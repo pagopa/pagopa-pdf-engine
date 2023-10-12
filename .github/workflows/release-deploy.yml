@@ -58,13 +58,13 @@ jobs:
         uses: pagopa/github-actions-template/semver-setup@v1.4.2
 
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV && echo "SHORT_ENV=d"
+        run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV && echo "SHORT_ENV=d" >> $GITHUB_ENV
 
       - if: ${{ github.event.inputs.environment == 'uat' }}
-        run: echo "ENVIRNOMENT=uat" >> $GITHUB_ENV && echo "SHORT_ENV=u"
+        run: echo "ENVIRNOMENT=uat" >> $GITHUB_ENV && echo "SHORT_ENV=u" >> $GITHUB_ENV
 
       - if: ${{ github.event.inputs.environment == 'prod' }}
-        run: echo "ENVIRNOMENT=prod" >> $GITHUB_ENV && echo "SHORT_ENV=p"
+        run: echo "ENVIRNOMENT=prod" >> $GITHUB_ENV && echo "SHORT_ENV=p" >> $GITHUB_ENV
 
       - if: ${{ github.event.inputs.environment == 'all' }}
         run: echo "ENVIRNOMENT=all" >> $GITHUB_ENV
