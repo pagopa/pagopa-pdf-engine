@@ -58,13 +58,13 @@ jobs:
         uses: pagopa/github-actions-template/semver-setup@v1.4.2
 
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV
+        run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV && echo "SHORT_ENV=d"
 
       - if: ${{ github.event.inputs.environment == 'uat' }}
-        run: echo "ENVIRNOMENT=uat" >> $GITHUB_ENV
+        run: echo "ENVIRNOMENT=uat" >> $GITHUB_ENV && echo "SHORT_ENV=u"
 
       - if: ${{ github.event.inputs.environment == 'prod' }}
-        run: echo "ENVIRNOMENT=prod" >> $GITHUB_ENV
+        run: echo "ENVIRNOMENT=prod" >> $GITHUB_ENV && echo "SHORT_ENV=p"
 
       - if: ${{ github.event.inputs.environment == 'all' }}
         run: echo "ENVIRNOMENT=all" >> $GITHUB_ENV
@@ -125,7 +125,8 @@ jobs:
                 "DOCKERFILE": "node/Dockerfile",
                 "BUILD_CONTEXT": "./node",
                 "IMAGE_NAME": "pagopapdfengine",
-                "TYPE": "node"
+                "TYPE": "node",
+                "APP_SERVICE_NAME": "pagopa-${{env.SHORT_ENV}}-weu-shared-pdf-engine-rg"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
@@ -149,7 +150,8 @@ jobs:
                 "DOCKERFILE": "Dockerfile",
                 "BUILD_CONTEXT": ".",
                 "IMAGE_NAME": "pagopapdfenginejava",
-                "TYPE": "java"
+                "TYPE": "java",
+                "APP_SERVICE_NAME": "pagopa-${{env.SHORT_ENV}}-weu-shared-app-pdf-engine-java"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
