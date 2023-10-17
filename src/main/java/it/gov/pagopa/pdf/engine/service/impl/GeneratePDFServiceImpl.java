@@ -15,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -29,7 +30,7 @@ import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
 @ApplicationScoped
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
-    @Inject
+    @RestClient
     PdfEngineClient pdfEngineClient;
 
     @Override
