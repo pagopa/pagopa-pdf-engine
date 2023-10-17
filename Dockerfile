@@ -5,7 +5,8 @@ COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
 USER quarkus
 WORKDIR /code
-RUN chmod +X mvnw
+RUN chmod 777 mvnw
+RUN chmod 777 .mvn
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline -s .mvn/wrapper/settings.xml
 COPY src /code/src
 COPY agent /code/agent
