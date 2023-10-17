@@ -49,8 +49,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 fileToReturn = targetFile.getAbsolutePath();
                 logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
                 PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-                fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
+                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
                 logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
                 PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
