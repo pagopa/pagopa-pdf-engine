@@ -1,7 +1,7 @@
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-//import com.spire.pdf.conversion.PdfStandardsConverter;
+import com.spire.pdf.conversion.PdfStandardsConverter;
 import io.smallrye.mutiny.Uni;
 import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
@@ -48,10 +48,10 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 FileUtils.copyInputStreamToFile(inputStream, targetFile);
                 fileToReturn = targetFile.getAbsolutePath();
                 logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-//                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-//                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-//                fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
-//                logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
+                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+                fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+                logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
                 PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
                 pdfEngineResponse.setWorkDirPath(workingDirPath);
