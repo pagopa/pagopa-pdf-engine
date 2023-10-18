@@ -125,7 +125,7 @@ public class GeneratePdfResource {
     Uni<GeneratePDFInput> response = Uni.createFrom().item(() ->  {
       if (request == null) {
         logger.error("Invalid request the payload is null");
-        throw new RuntimeException();
+        throw new GeneratePDFException(AppErrorCodeEnum.PDFE_700, "Invalid request, the payload is null");
       }
 
       java.nio.file.Path workingDirPath;
@@ -155,7 +155,7 @@ public class GeneratePdfResource {
       if (generatePDFInput.getTemplateZip() == null) {
         logger.error("Invalid request, template HTML not provided");
         clearTempDirectory(workingDirPath);
-        throw new RuntimeException();
+        throw new GeneratePDFException(AppErrorCodeEnum.PDFE_897, AppErrorCodeEnum.PDFE_897.getErrorMessage());
       }
 
       generatePDFInput.setWorkingDir(workingDirPath);
@@ -203,7 +203,9 @@ public class GeneratePdfResource {
     if (!workingDirectory.exists()) {
       try {
         Files.createDirectory(workingDirectory.toPath());
-      } catch (FileAlreadyExistsException e) {}
+      } catch (FileAlreadyExistsException e) {
+        logger.debug(e.getMessage());
+      }
     }
     return workingDirectory;
   }

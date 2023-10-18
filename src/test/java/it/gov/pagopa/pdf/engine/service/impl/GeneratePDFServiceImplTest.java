@@ -33,7 +33,6 @@ import io.quarkus.test.junit.QuarkusTest;
 //import static org.mockito.Mockito.*;
 //import static org.mockito.Mockito.spy;
 
-// @QuarkusTest
 class GeneratePDFServiceImplTest {
 
 //

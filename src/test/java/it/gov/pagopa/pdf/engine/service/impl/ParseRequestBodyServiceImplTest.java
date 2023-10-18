@@ -1,73 +1,48 @@
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.gov.pagopa.pdf.engine.exception.RequestBodyParseException;
-import it.gov.pagopa.pdf.engine.exception.UnexpectedRequestBodyFieldException;
-import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.spy;
 
 class ParseRequestBodyServiceImplTest {
-    private static final String HEADER_TEMPLATE = "some string; fieldName=\"%s\"; other string";
 
-    private static final String CONTENT_TYPE_HEADER_VALUE = "multipart/form-data";
-    private static final String CONTENT_TYPE_HEADER = "content-type";
-
-    private ObjectMapper objectMapperMock;
     private ParseRequestBodyServiceImpl sut;
 
-    private Path workingPath;
+    @BeforeEach
+    void setUp() throws IOException {
+        sut = spy(new ParseRequestBodyServiceImpl());
+    }
 
-//    @BeforeEach
-//    void setUp() throws IOException {
-//        objectMapperMock = mock(ObjectMapper.class);
-//        sut = spy(new ParseRequestBodyServiceImpl(objectMapperMock));
-//        workingPath = Files.createTempDirectory("testDir");
-//    }
-//
-//    @AfterEach
-//    void tearDown() throws IOException {
-//        FileUtils.deleteDirectory(workingPath.toFile());
-//    }
-//
-//    @Test
-//    @SneakyThrows
-//    void retrieveInputDataSuccess() {
-//        MultipartStream multipartStreamMock = mock(MultipartStream.class);
-//
-//        doReturn(multipartStreamMock).when(sut).getMultipartStream(any(), anyString());
-//        doReturn(true).when(multipartStreamMock).skipPreamble();
-//        doReturn(
-//                String.format(HEADER_TEMPLATE, "applySignature"),
-//                String.format(HEADER_TEMPLATE, "generateZipped"),
-//                String.format(HEADER_TEMPLATE, "data")
-//        ).when(multipartStreamMock).readHeaders();
-//        doReturn(Collections.singletonMap("ke1", "value1")).when(objectMapperMock).readValue(anyString(), any(TypeReference.class));
-//        doReturn(true, true, false).when(multipartStreamMock).readBoundary();
-//
-//        GeneratePDFInput result = sut.retrieveInputData(new byte[2], Collections.singletonMap(CONTENT_TYPE_HEADER, CONTENT_TYPE_HEADER_VALUE), workingPath);
-//
-//        assertNotNull(result);
-//        assertNotNull(result.getData());
-//    }
-//
+    @Test
+    @SneakyThrows
+    void validContentShouldReturnExactCopy() {
+        String data = "{\"test1\":\"data\"}";
+        File file = new File("template");
+        MultipartFormDataInput multipartFormDataInput = () -> {
+            FormData formData = new FormData(2);
+            formData.add("data",data);
+            formData.add("template", file.toPath(),
+                    "template.zip", null);
+            return formData.toMultipartFormDataInput().getValues();
+        };
+        GeneratePDFInput result = sut.retrieveInputData(multipartFormDataInput);
+        assertNotNull(result);
+        assertNotNull(result.getData());
+        assertEquals(data, result.getData());
+        assertEquals(file, result.getTemplateZip());
+    }
+
 //    @Test
 //    @SneakyThrows
 //    void retrieveInputDataWithGeneratorTypeSuccess() {

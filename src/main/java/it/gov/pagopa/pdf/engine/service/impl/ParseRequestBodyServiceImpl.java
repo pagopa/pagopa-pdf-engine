@@ -6,11 +6,9 @@ import it.gov.pagopa.pdf.engine.exception.UnexpectedRequestBodyFieldException;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
 import jakarta.enterprise.context.ApplicationScoped;
-import net.lingala.zip4j.ZipFile;
 import org.jboss.resteasy.reactive.server.multipart.FormValue;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
@@ -20,7 +18,8 @@ import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
 public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
 
     @Override
-    public GeneratePDFInput retrieveInputData(MultipartFormDataInput request) throws UnexpectedRequestBodyFieldException, RequestBodyParseException {
+    public GeneratePDFInput retrieveInputData(MultipartFormDataInput request)
+            throws UnexpectedRequestBodyFieldException, RequestBodyParseException {
         GeneratePDFInput generatePDFInput = new GeneratePDFInput();
         Map<String, Collection<FormValue>> map = request.getValues();
         for (var entry : map.entrySet()) {
