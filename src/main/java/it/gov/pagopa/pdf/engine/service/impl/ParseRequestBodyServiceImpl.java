@@ -31,13 +31,13 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
                         throw new RequestBodyParseException(PDFE_709, PDFE_709.getErrorMessage());
                     }
                     try {
-                        generatePDFInput.setTemplateZip(new ZipFile(values.stream().findFirst().get()
-                                .getFileItem().getFile().toFile()));
+                        generatePDFInput.setTemplateZip(values.stream().findFirst().get()
+                                .getFileItem().getFile().toFile());
                     } catch (Exception e) {
                         throw new RequestBodyParseException(PDFE_703, PDFE_703.getErrorMessage(), e);
                     }
-                    generatePDFInput.setTemplateZip(new ZipFile(entry.getValue().stream().findFirst()
-                            .get().getFileItem().getFile().toFile()));
+                    generatePDFInput.setTemplateZip(entry.getValue().stream().findFirst()
+                            .get().getFileItem().getFile().toFile());
                 }
                 case "data" -> {
                     Collection<FormValue> values = entry.getValue();

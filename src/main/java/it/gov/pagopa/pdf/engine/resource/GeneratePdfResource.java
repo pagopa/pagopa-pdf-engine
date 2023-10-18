@@ -1,6 +1,8 @@
 package it.gov.pagopa.pdf.engine.resource;
 
+import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.PDFEngineException;
 import it.gov.pagopa.pdf.engine.model.*;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
@@ -12,6 +14,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.apache.commons.io.FileUtils;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +30,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.function.Consumer;
+import java.util.List;
 import java.util.function.Function;
 
 import static org.jboss.resteasy.reactive.RestResponse.StatusCode.BAD_REQUEST;
@@ -60,11 +64,14 @@ public class GeneratePdfResource {
     Uni<GeneratePDFInput> generatePDFInputUni = getGeneratePDFInputUni(request);
     Uni<PdfEngineResponse> pdfEngineResponseUni = generatePDFInputUni
             .onFailure().invoke(error -> {
-              throw new RuntimeException();
+              if (error instanceof GeneratePDFException)
+                throw new GeneratePDFException(((GeneratePDFException) error)
+                        .getErrorCode(),error.getMessage(),error.getCause());
+              else
+                throw new RuntimeException(error);
             })
             .onItem().transformToUni(getPdfEngineResponseUni());
     return pdfEngineResponseUni
-            .onFailure().invoke(getThrowableConsumer())
             .onItem().transform(getEngineResponseResponseFunction());
   }
 
@@ -114,16 +121,6 @@ public class GeneratePdfResource {
     };
   }
 
-  private Consumer<Throwable> getThrowableConsumer() {
-    return error -> Response.status(INTERNAL_SERVER_ERROR)
-            .entity(
-                    buildResponseBody(
-                            INTERNAL_SERVER_ERROR,
-                            AppErrorCodeEnum.PDFE_907,
-                            ERROR_GENERATING_PDF_MESSAGE))
-            .build();
-  }
-
   private Uni<GeneratePDFInput> getGeneratePDFInputUni(MultipartFormDataInput request) {
     Uni<GeneratePDFInput> response = Uni.createFrom().item(() ->  {
       if (request == null) {
@@ -142,7 +139,7 @@ public class GeneratePdfResource {
         );
       } catch (IOException e) {
         logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
-        throw new RuntimeException();
+        throw new GeneratePDFException(AppErrorCodeEnum.PDFE_908, AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
       }
 
       GeneratePDFInput generatePDFInput;
@@ -152,7 +149,7 @@ public class GeneratePdfResource {
       } catch (PDFEngineException e) {
         logger.error("Error retrieving input data from request body", e);
         clearTempDirectory(workingDirPath);
-        throw new RuntimeException();
+        throw e;
       }
 
       if (generatePDFInput.getTemplateZip() == null) {
@@ -209,6 +206,30 @@ public class GeneratePdfResource {
       } catch (FileAlreadyExistsException e) {}
     }
     return workingDirectory;
+  }
+
+  @ServerExceptionMapper
+  public Response mapException(Exception exception) {
+    logger.error(exception.getMessage(), exception);
+
+    if (exception instanceof CompositeException) {
+      List<Throwable> causes = ((CompositeException) exception).getCauses();
+      exception = (Exception) causes.get(causes.size()-1);
+    }
+
+    if (exception instanceof GeneratePDFException) {
+      Integer status = getHttpStatus((PDFEngineException) exception);
+      return Response.status(status).entity(buildResponseBody(status,
+              ((GeneratePDFException) exception).getErrorCode(), exception.getMessage())).build();
+    } else {
+      return Response.status(INTERNAL_SERVER_ERROR)
+              .entity(
+                      buildResponseBody(
+                              INTERNAL_SERVER_ERROR,
+                              AppErrorCodeEnum.PDFE_907,
+                              ERROR_GENERATING_PDF_MESSAGE))
+              .build();
+    }
   }
 
 }

@@ -1,7 +1,7 @@
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import com.spire.pdf.conversion.PdfStandardsConverter;
+//import com.spire.pdf.conversion.PdfStandardsConverter;
 import io.smallrye.mutiny.Uni;
 import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
@@ -42,16 +42,20 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         pdfEngineRequest.setTemplate(generatePDFInput.getTemplateZip());
 
         logger.info("PdfEngineClient called at {}", LocalDateTime.now());
-        return pdfEngineClient.generatePDF(pdfEngineRequest).onItem().transform(inputStream -> {
+        return pdfEngineClient.generatePDF(pdfEngineRequest)
+                .onFailure().invoke(throwable -> {
+                    throw new GeneratePDFException(PDFE_902, String.format("Exception thrown during pdf generation process: %s", throwable));
+                })
+                .onItem().transform(inputStream -> {
             String fileToReturn = null;
             try {
                 File targetFile = File.createTempFile("tempFile", ".pdf", workingDirPath.toFile());
                 FileUtils.copyInputStreamToFile(inputStream, targetFile);
                 fileToReturn = targetFile.getAbsolutePath();
                 logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
-                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
+//                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+//                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
+//                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
                 logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
                 PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
@@ -62,8 +66,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                         new BufferedInputStream(new FileInputStream(fileToReturn)));
                     return pdfEngineResponse;
 
-            } catch (IOException | GeneratePDFException e) {
-                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new GeneratePDFException(AppErrorCodeEnum.PDFE_904, AppErrorCodeEnum.PDFE_904.getErrorMessage(), e);
             }
         });
 
