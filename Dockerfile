@@ -5,7 +5,12 @@ COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
 USER quarkus
 WORKDIR /code
-RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
+RUN chmod 777 mvnw
+RUN chmod 777 .mvn
+RUN chmod 777 mvnw
+RUN chmod 777 .mvn
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:resolve -s .mvn/wrapper/settings.xml
+RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:resolve-plugins -s .mvn/wrapper/settings.xml
 COPY src /code/src
 COPY agent /code/agent
 ARG QUARKUS_PROFILE

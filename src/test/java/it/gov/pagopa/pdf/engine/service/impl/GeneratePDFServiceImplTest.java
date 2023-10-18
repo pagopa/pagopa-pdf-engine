@@ -2,38 +2,38 @@
 package it.gov.pagopa.pdf.engine.service.impl;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
-import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
-import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
-import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
-import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
-import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
-import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
-import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
-import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import io.quarkus.test.junit.mockito.InjectMock;
+//import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
+//import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
+//import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
+//import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
+//import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
+//import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
+//import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
+//import lombok.SneakyThrows;
+//import org.apache.commons.io.FileUtils;
+//import org.junit.jupiter.api.AfterEach;
+//import org.junit.jupiter.api.Assertions;
+//import org.junit.jupiter.api.BeforeEach;
+//import org.junit.jupiter.api.Test;
+//import org.mockito.Mockito;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+//
+//import java.io.BufferedInputStream;
+//import java.io.IOException;
+//import java.lang.reflect.Field;
+//import java.nio.file.Files;
+//import java.nio.file.Path;
+//import java.util.Collections;
+//import java.util.Objects;
+//
+//import static org.junit.jupiter.api.Assertions.assertNotNull;
+//import static org.junit.jupiter.api.Assertions.assertThrows;
+//import static org.mockito.Mockito.*;
+//import static org.mockito.Mockito.spy;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.spy;
-
-@QuarkusTest
+// @QuarkusTest
 class GeneratePDFServiceImplTest {
 
 //

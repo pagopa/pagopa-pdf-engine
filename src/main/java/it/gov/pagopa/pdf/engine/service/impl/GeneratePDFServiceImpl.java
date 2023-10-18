@@ -15,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -29,7 +30,7 @@ import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
 @ApplicationScoped
 public class GeneratePDFServiceImpl implements GeneratePDFService {
 
-    @Inject
+    @RestClient
     PdfEngineClient pdfEngineClient;
 
     @Override
@@ -49,8 +50,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 fileToReturn = targetFile.getAbsolutePath();
                 logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
                 PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-                fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
+                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
                 logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
                 PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
