@@ -5,7 +5,6 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.smallrye.mutiny.Uni;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
-import it.gov.pagopa.pdf.engine.model.AppInfo;
 import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;

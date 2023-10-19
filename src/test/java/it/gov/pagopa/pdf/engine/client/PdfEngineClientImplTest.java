@@ -1,177 +1,43 @@
 package it.gov.pagopa.pdf.engine.client;
 
-import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
-import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
-import net.lingala.zip4j.ZipFile;
-import org.apache.http.HttpEntity;
+import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
+import it.gov.pagopa.pdf.engine.model.PdfEngineErrorMessage;
+import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
+import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
+import jakarta.ws.rs.core.Response;
 import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
-import java.nio.file.Files;
+import java.util.Collections;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_709;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_902;
 
 class PdfEngineClientImplTest {
-//
-//    @Test
-//    void testSingleton() {
-//        Assertions.assertDoesNotThrow(PdfEngineClientImpl::getInstance);
-//    }
-//
-//    @Test
-//    void runOk() throws IOException {
-//
-//        File tempDirectory = new File("temp");
-//        if (!tempDirectory.exists()) {
-//            Files.createDirectory(tempDirectory.toPath());
-//        }
-//
-//        File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
-//        ZipFile zipFile = new ZipFile(targetFile);
-//
-//
-//        byte[] template;
-//        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-//        try (InputStream inputStream = FileInputStream.nullInputStream()) {
-//            template = inputStream.readAllBytes();
-//
-//            pdfEngineRequest.setTemplate(zipFile);
-//            pdfEngineRequest.setData(new String(template));
-//        } finally {
-//            targetFile.deleteOnExit();
-//            tempDirectory.deleteOnExit();
-//        }
-//
-//        HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
-//        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-//
-//        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
-//        StatusLine mockStatusLine = mock(StatusLine.class);
-//        when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-//
-//        HttpEntity mockEntity = mock(HttpEntity.class);
-//        when(mockEntity.getContent()).thenReturn(InputStream.nullInputStream());
-//        when(mockResponse.getEntity()).thenReturn(mockEntity);
-//
-//        when(mockClient.execute(any())).thenReturn(mockResponse);
-//        when(mockBuilder.build()).thenReturn(mockClient);
-//
-//        PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
-//        PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
-//
-//        File tempPdf = new File(pdfEngineResponse.getTempPdfPath());
-//        Assertions.assertTrue(tempPdf.delete());
-//        Assertions.assertEquals(HttpStatus.SC_OK, pdfEngineResponse.getStatusCode());
-//    }
-//
-//    @Test
-//    void runKoUnauthorized() throws IOException {
-//
-//        File tempDirectory = new File("temp");
-//        if (!tempDirectory.exists()) {
-//            Files.createDirectory(tempDirectory.toPath());
-//        }
-//
-//        File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
-//        ZipFile zipFile = new ZipFile(targetFile);
-//
-//        byte[] template;
-//        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-//        try (InputStream inputStream = FileInputStream.nullInputStream()) {
-//            template = inputStream.readAllBytes();
-//
-//            pdfEngineRequest.setTemplate(zipFile);
-//            pdfEngineRequest.setData(new String(template));
-//        } finally {
-//            targetFile.deleteOnExit();
-//            tempDirectory.deleteOnExit();
-//        }
-//
-//        HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
-//        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-//
-//        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
-//        StatusLine mockStatusLine = mock(StatusLine.class);
-//        when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_UNAUTHORIZED);
-//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-//
-//        HttpEntity mockEntity = mock(HttpEntity.class);
-//        when(mockEntity.getContent()).thenReturn(InputStream.nullInputStream());
-//        when(mockResponse.getEntity()).thenReturn(mockEntity);
-//
-//        when(mockClient.execute(any())).thenReturn(mockResponse);
-//        when(mockBuilder.build()).thenReturn(mockClient);
-//
-//        PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
-//        PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
-//
-//        Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
-//        Assertions.assertNotNull(pdfEngineResponse.getErrorMessage());
-//
-//    }
-//
-//    @Test
-//    void runKo400() throws IOException {
-//        File tempDirectory = new File("temp");
-//        if (!tempDirectory.exists()) {
-//            Files.createDirectory(tempDirectory.toPath());
-//        }
-//
-//
-//        File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
-//        ZipFile zipFile = new ZipFile(targetFile);
-//        byte[] template;
-//        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-//        try (InputStream inputStream = FileInputStream.nullInputStream()) {
-//            template = inputStream.readAllBytes();
-//            pdfEngineRequest.setTemplate(zipFile);
-//            pdfEngineRequest.setData(new String(template));
-//        } finally {
-//            targetFile.deleteOnExit();
-//            tempDirectory.deleteOnExit();
-//        }
-//
-//        HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
-//        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-//
-//        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
-//        StatusLine mockStatusLine = mock(StatusLine.class);
-//        when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_BAD_REQUEST);
-//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-//
-//        HttpEntity mockEntity = mock(HttpEntity.class);
-//        String ERROR_MESSAGE = "\"Invalid request\"";
-//        String ERROR_400 = "{\n" +
-//                "  \"errorId\": \"a3779a25-9c8a-4a6f-9272-a052119cfd2e\",\n" +
-//                "  \"httpStatusCode\": \"BAD_REQUEST\",\n" +
-//                "  \"httpStatusDescription\": \"Bad Request\",\n" +
-//                "  \"appErrorCode\": \"PDFE_898\",\n" +
-//                "  \"errors\": [\n" +
-//                "    {\n" +
-//                "      \"message\": " + ERROR_MESSAGE +
-//                "    }\n" +
-//                "  ]\n" +
-//                "}";
-//        when(mockEntity.getContent()).thenReturn(new ByteArrayInputStream(ERROR_400.getBytes()));
-//        when(mockResponse.getEntity()).thenReturn(mockEntity);
-//
-//        when(mockClient.execute(any())).thenReturn(mockResponse);
-//        when(mockBuilder.build()).thenReturn(mockClient);
-//
-//        PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
-//        PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
-//
-//        Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
-//        Assertions.assertEquals(ERROR_MESSAGE.replace("\"", ""), pdfEngineResponse.getErrorMessage());
-//
-//    }
+
+    @Test
+    public void shouldReturn902WhenUnauthorized() {
+        GeneratePDFException exception = PdfEngineClient.toException(
+                Response.status(HttpStatus.SC_UNAUTHORIZED).build());
+        Assertions.assertEquals(exception.getErrorCode(), PDFE_902);
+    }
+
+    @Test
+    public void shouldReturnUnknownWhenGeneralError() {
+        GeneratePDFException exception = PdfEngineClient.toException(
+                Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
+        Assertions.assertEquals(exception.getErrorCode(), PDFE_902);
+    }
+
+    @Test
+    public void shouldReturnCodeError() {
+        PdfEngineErrorResponse pdfEngineErrorResponse = new PdfEngineErrorResponse();
+        pdfEngineErrorResponse.setAppStatusCode(PDFE_709.getErrorCode());
+        pdfEngineErrorResponse.setErrors(Collections.singletonList(new PdfEngineErrorMessage()));
+        GeneratePDFException exception = PdfEngineClient.toException(
+                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ObjectMapperUtils.writeValueAsString(pdfEngineErrorResponse)).build());
+        Assertions.assertEquals(exception.getErrorCode(), PDFE_709);
+    }
+
 }

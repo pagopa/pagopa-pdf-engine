@@ -14,7 +14,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.apache.commons.io.FileUtils;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.slf4j.Logger;
@@ -57,7 +56,7 @@ public class GeneratePdfResource {
 
   @POST
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  public Uni<Response> hello(MultipartFormDataInput request) throws IOException {
+  public Uni<Response> generatePdf(MultipartFormDataInput request) throws IOException {
 
     logger.debug("Generate PDF function called at {}", LocalDateTime.now());
 
@@ -108,11 +107,13 @@ public class GeneratePdfResource {
       if (generatePDFInput.getData() == null) {
         logger.error("Invalid request the PDF document input data are null");
         clearTempDirectory(generatePDFInput.getWorkingDir());
-        throw new RuntimeException();
+        throw new GeneratePDFException(AppErrorCodeEnum.PDFE_707, "Invalid request the PDF document input data are null");
       }
 
       try {
         return generatePDFService.generatePDF(generatePDFInput, generatePDFInput.getWorkingDir(), logger);
+      } catch (GeneratePDFException e) {
+        throw e;
       } catch (Exception e) {
         clearTempDirectory(generatePDFInput.getWorkingDir());
         throw new RuntimeException(e);
