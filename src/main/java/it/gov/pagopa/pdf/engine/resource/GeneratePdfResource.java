@@ -107,7 +107,7 @@ public class GeneratePdfResource {
       if (generatePDFInput.getData() == null) {
         logger.error("Invalid request the PDF document input data are null");
         clearTempDirectory(generatePDFInput.getWorkingDir());
-        throw new GeneratePDFException(AppErrorCodeEnum.PDFE_707, "Invalid request the PDF document input data are null");
+        throw new GeneratePDFException(AppErrorCodeEnum.PDFE_898, "Invalid request the PDF document input data are null");
       }
 
       try {
