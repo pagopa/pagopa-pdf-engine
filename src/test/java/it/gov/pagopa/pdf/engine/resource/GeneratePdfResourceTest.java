@@ -41,7 +41,7 @@ class GeneratePdfResourceTest {
         try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
                 .getResource("valid_pdf.pdf")).openStream()) {
 
-            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input));
+            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input.readAllBytes()));
             byte[] content =
                     given()
                             .multiPart("template", new File("./src/main/resources/valid_template.html"))

@@ -26,7 +26,7 @@ public interface PdfEngineClient {
     @Path("generate-pdf")
     @POST
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    Uni<InputStream> generatePDF(PdfEngineRequest pdfEngineRequest);
+    Uni<byte[]> generatePDF(PdfEngineRequest pdfEngineRequest);
 
     @Path("info")
     @GET

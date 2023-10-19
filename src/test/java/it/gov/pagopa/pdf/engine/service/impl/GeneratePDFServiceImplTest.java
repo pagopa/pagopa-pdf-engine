@@ -69,7 +69,7 @@ class GeneratePDFServiceImplTest {
         try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
                 .getResource("valid_pdf.pdf")).openStream()) {
 
-            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input));
+            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input.readAllBytes()));
 
             Logger logger = LoggerFactory.getLogger(GeneratePDFService.class);
 
@@ -109,7 +109,7 @@ class GeneratePDFServiceImplTest {
         try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
                 .getResource("valid_pdf.pdf")).openStream()) {
 
-            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input));
+            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input.readAllBytes()));
 
             Logger logger = LoggerFactory.getLogger(GeneratePDFService.class);
 

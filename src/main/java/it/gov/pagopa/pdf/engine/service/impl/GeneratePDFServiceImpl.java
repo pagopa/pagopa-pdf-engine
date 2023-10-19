@@ -1,8 +1,12 @@
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-//import com.spire.pdf.conversion.PdfStandardsConverter;
+import com.spire.pdf.conversion.PdfStandardsConverter;
+import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.FileSystem;
 import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -47,15 +51,15 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                     throw new GeneratePDFException(PDFE_902, String.format("Exception thrown during pdf generation process: %s", throwable));
                 })
                 .onItem().transform(inputStream -> {
-            String fileToReturn = null;
+            String fileToReturn;
             try {
                 File targetFile = File.createTempFile("tempFile", ".pdf", workingDirPath.toFile());
-                FileUtils.copyInputStreamToFile(inputStream, targetFile);
+                Vertx.vertx().fileSystem().writeFile(targetFile.getAbsolutePath(), Buffer.buffer(inputStream));
                 fileToReturn = targetFile.getAbsolutePath();
                 logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-//                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-//                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
-//                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
+                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
+                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
                 logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
                 PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
