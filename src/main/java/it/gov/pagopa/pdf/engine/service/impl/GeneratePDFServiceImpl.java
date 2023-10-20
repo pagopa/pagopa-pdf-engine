@@ -50,26 +50,27 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                     throw new GeneratePDFException(PDFE_902, String.format("Exception thrown during pdf generation process: %s", throwable));
                 })
                 .onItem().transformToUni(inputStream -> {
-            AtomicReference<String> fileToReturn = new AtomicReference<>();
+                    final AtomicReference<String>[] fileToReturn =
+                            new AtomicReference[]{new AtomicReference<String>()};
             try {
                 File targetFile = File.createTempFile("tempFile", ".pdf", workingDirPath.toFile());
                 return Uni.createFrom().completionStage(Vertx.vertx().fileSystem().writeFile(
                         targetFile.getAbsolutePath(), Buffer.buffer(inputStream)).compose(
                         unused -> {
                         try {
-                            fileToReturn.set(targetFile.getAbsolutePath());
+                            fileToReturn[0].set(targetFile.getAbsolutePath());
                             logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-                            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+                            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn[0]);
                             converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
-                            fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
+                            fileToReturn[0].set(targetFile.getParent() + "/ToPdfA2A.pdf");
                             logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
                             PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
                             pdfEngineResponse.setWorkDirPath(workingDirPath);
 
                             pdfEngineResponse.setBufferedInputStream(generatePDFInput.isGenerateZipped() ?
-                                    zipPDFDocument(new File(fileToReturn.get()), workingDirPath) :
-                                    new BufferedInputStream(new FileInputStream(fileToReturn.get())));
+                                    zipPDFDocument(new File((String) fileToReturn[0].get()), workingDirPath) :
+                                    new BufferedInputStream(new FileInputStream((String) fileToReturn[0].get())));
                             return Future.succeededFuture(pdfEngineResponse);
                         } catch (IOException e) {
                             throw new GeneratePDFException(PDFE_904,
