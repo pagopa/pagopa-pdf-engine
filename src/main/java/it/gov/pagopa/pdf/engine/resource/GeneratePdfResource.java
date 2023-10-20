@@ -48,8 +48,6 @@ public class GeneratePdfResource {
   private final Logger logger = LoggerFactory.getLogger(GeneratePdfResource.class);
 
   private final String workingDirectoryPath = System.getenv().getOrDefault("WORKING_DIRECTORY_PATH", "");
-
-  private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
   private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
   private static final String PATTERN_FORMAT = "yyyy.MM.dd.HH.mm.ss";
 
@@ -138,7 +136,7 @@ public class GeneratePdfResource {
                         .withZone(ZoneId.systemDefault())
                         .format(Instant.now())
         );
-      } catch (IOException e) {
+      } catch (Exception e) {
         logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
         throw new GeneratePDFException(AppErrorCodeEnum.PDFE_908, AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
       }
@@ -215,15 +213,15 @@ public class GeneratePdfResource {
   public Response mapException(Exception exception) {
     logger.error(exception.getMessage(), exception);
 
-    if (exception instanceof CompositeException) {
-      List<Throwable> causes = ((CompositeException) exception).getCauses();
+    if (exception instanceof CompositeException compositeException) {
+      List<Throwable> causes = compositeException.getCauses();
       exception = (Exception) causes.get(causes.size()-1);
     }
 
-    if (exception instanceof GeneratePDFException) {
-      Integer status = getHttpStatus((PDFEngineException) exception);
+    if (exception instanceof GeneratePDFException generatePDFException) {
+      Integer status = getHttpStatus(generatePDFException);
       return Response.status(status).entity(buildResponseBody(status,
-              ((GeneratePDFException) exception).getErrorCode(), exception.getMessage())).build();
+              generatePDFException.getErrorCode(), generatePDFException.getMessage())).build();
     } else {
       return Response.status(INTERNAL_SERVER_ERROR)
               .entity(

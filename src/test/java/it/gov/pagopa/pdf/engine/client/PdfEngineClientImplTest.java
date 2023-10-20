@@ -20,14 +20,14 @@ class PdfEngineClientImplTest {
     public void shouldReturn902WhenUnauthorized() {
         GeneratePDFException exception = PdfEngineClient.toException(
                 Response.status(HttpStatus.SC_UNAUTHORIZED).build());
-        Assertions.assertEquals(exception.getErrorCode(), PDFE_902);
+        Assertions.assertEquals(PDFE_902,exception.getErrorCode());
     }
 
     @Test
     public void shouldReturnUnknownWhenGeneralError() {
         GeneratePDFException exception = PdfEngineClient.toException(
                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).build());
-        Assertions.assertEquals(exception.getErrorCode(), PDFE_902);
+        Assertions.assertEquals(PDFE_902,exception.getErrorCode());
     }
 
     @Test
@@ -37,7 +37,7 @@ class PdfEngineClientImplTest {
         pdfEngineErrorResponse.setErrors(Collections.singletonList(new PdfEngineErrorMessage()));
         GeneratePDFException exception = PdfEngineClient.toException(
                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ObjectMapperUtils.writeValueAsString(pdfEngineErrorResponse)).build());
-        Assertions.assertEquals(exception.getErrorCode(), PDFE_709);
+        Assertions.assertEquals(PDFE_709,exception.getErrorCode());
     }
 
 }

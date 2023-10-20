@@ -1,6 +1,5 @@
 package it.gov.pagopa.pdf.engine.model;
 
-import jakarta.ws.rs.Path;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
