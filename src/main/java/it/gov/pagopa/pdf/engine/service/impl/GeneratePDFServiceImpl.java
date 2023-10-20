@@ -2,11 +2,10 @@
 package it.gov.pagopa.pdf.engine.service.impl;
 
 import com.spire.pdf.conversion.PdfStandardsConverter;
-import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.file.FileSystem;
 import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -16,8 +15,6 @@ import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -26,6 +23,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -50,26 +49,33 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                 .onFailure().invoke(throwable -> {
                     throw new GeneratePDFException(PDFE_902, String.format("Exception thrown during pdf generation process: %s", throwable));
                 })
-                .onItem().transform(inputStream -> {
-            String fileToReturn;
+                .onItem().transformToUni(inputStream -> {
+            AtomicReference<String> fileToReturn = new AtomicReference<>();
             try {
                 File targetFile = File.createTempFile("tempFile", ".pdf", workingDirPath.toFile());
-                Vertx.vertx().fileSystem().writeFile(targetFile.getAbsolutePath(), Buffer.buffer(inputStream));
-                fileToReturn = targetFile.getAbsolutePath();
-                logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-                converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
-                fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
-                logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
+                return Uni.createFrom().completionStage(Vertx.vertx().fileSystem().writeFile(
+                        targetFile.getAbsolutePath(), Buffer.buffer(inputStream)).compose(
+                        unused -> {
+                        try {
+                            fileToReturn.set(targetFile.getAbsolutePath());
+                            logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
+                            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+                            converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
+                            fileToReturn = targetFile.getParent() + "/ToPdfA2A.pdf";
+                            logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
-                PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-                pdfEngineResponse.setWorkDirPath(workingDirPath);
+                            PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+                            pdfEngineResponse.setWorkDirPath(workingDirPath);
 
-                pdfEngineResponse.setBufferedInputStream(generatePDFInput.isGenerateZipped()?
-                        zipPDFDocument(new File(fileToReturn), workingDirPath) :
-                        new BufferedInputStream(new FileInputStream(fileToReturn)));
-                    return pdfEngineResponse;
-
+                            pdfEngineResponse.setBufferedInputStream(generatePDFInput.isGenerateZipped() ?
+                                    zipPDFDocument(new File(fileToReturn.get()), workingDirPath) :
+                                    new BufferedInputStream(new FileInputStream(fileToReturn.get())));
+                            return Future.succeededFuture(pdfEngineResponse);
+                        } catch (IOException e) {
+                            throw new GeneratePDFException(PDFE_904,
+                                    PDFE_904.getErrorMessage(), e);
+                        }
+                }).toCompletionStage());
             } catch (IOException e) {
                 throw new GeneratePDFException(AppErrorCodeEnum.PDFE_904, AppErrorCodeEnum.PDFE_904.getErrorMessage(), e);
             }
