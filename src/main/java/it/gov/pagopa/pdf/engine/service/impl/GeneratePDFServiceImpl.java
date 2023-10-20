@@ -69,8 +69,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                             pdfEngineResponse.setWorkDirPath(workingDirPath);
 
                             pdfEngineResponse.setBufferedInputStream(generatePDFInput.isGenerateZipped() ?
-                                    zipPDFDocument(new File((String) fileToReturn[0].get()), workingDirPath) :
-                                    new BufferedInputStream(new FileInputStream((String) fileToReturn[0].get())));
+                                    zipPDFDocument(new File(fileToReturn[0].get()), workingDirPath) :
+                                    new BufferedInputStream(new FileInputStream(fileToReturn[0].get())));
                             return Future.succeededFuture(pdfEngineResponse);
                         } catch (IOException e) {
                             throw new GeneratePDFException(PDFE_904,
