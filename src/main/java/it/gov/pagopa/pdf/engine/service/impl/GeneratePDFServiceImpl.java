@@ -60,7 +60,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                         try {
                             fileToReturn[0].set(targetFile.getAbsolutePath());
                             logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-                            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn[0]);
+                            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn[0].get());
                             converter.toPdfA2A(targetFile.getParent() + "/ToPdfA2A.pdf");
                             fileToReturn[0].set(targetFile.getParent() + "/ToPdfA2A.pdf");
                             logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
