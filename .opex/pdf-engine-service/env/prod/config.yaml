@@ -13,8 +13,10 @@ action_groups:
 overrides:
   hosts:
     - api.platform.pagopa.it
-  /shared/pdf-engine/v1/generate-pdf:
-    response_time_threshold: 5 # Default: 1
-    response_time_evaluation_frequency: 35 # Default: 10
-    response_time_evaluation_time_window: 55 # Default: 20
-    response_time_event_occurrences: 5 # Default: 1
+  base_path: "shared/pdf-engine/v1"
+  endpoints:
+    /generate-pdf:
+      response_time_threshold: 6 # Default: 1
+      response_time_evaluation_frequency: 35 # Default: 10
+      response_time_evaluation_time_window: 55 # Default: 20
+      response_time_event_occurrences: 5 # Default: 1
