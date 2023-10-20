@@ -22,19 +22,15 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 @QuarkusTest
 class GeneratePDFServiceImplTest {
@@ -105,7 +101,6 @@ class GeneratePDFServiceImplTest {
         pdfInput.setApplySignature(false);
         pdfInput.setGenerateZipped(true);
 
-
         try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
                 .getResource("valid_pdf.pdf")).openStream()) {
 
@@ -121,34 +116,5 @@ class GeneratePDFServiceImplTest {
         }
 
     }
-//
-//    @Test
-//    @SneakyThrows
-//    void generatePDFCallException() {
-//        GeneratePDFInput pdfInput = new GeneratePDFInput();
-//
-//        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-//        pdfEngineResponse.setStatusCode(400);
-//        pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
-//
-//        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-//
-//        Logger logger = LoggerFactory.getLogger(GeneratePDFInput.class);
-//
-//        GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath, logger));
-//
-//        Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, e.getErrorCode());
-//    }
-
-    private static <T> void setMock(Class<T> classToMock, T mock) {
-        try {
-            Field instance = classToMock.getDeclaredField("instance");
-            instance.setAccessible(true);
-            instance.set(instance, mock);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
 }
