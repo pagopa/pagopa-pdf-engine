@@ -1,4 +1,4 @@
-oa3_spec: ./openapi/openapi.json
+oa3_spec: https://raw.githubusercontent.com/pagopa/pagopa-infra/main/src/domains/shared-app/api/pdf-engine/v1/_openapi.json.tpl # If start with http the file would be downloaded from the internet
 name: opex_pagopa-pdf-engine
 location: West Europe
 timespan: 5m
