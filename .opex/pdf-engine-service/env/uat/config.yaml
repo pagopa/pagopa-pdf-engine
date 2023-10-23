@@ -1,4 +1,5 @@
-oa3_spec: https://raw.githubusercontent.com/pagopa/pagopa-infra/main/src/domains/shared-app/api/pdf-engine/v1/_openapi.json.tpl # If start with http the file would be downloaded from the internet
+# oa3_spec: https://raw.githubusercontent.com/pagopa/pagopa-infra/main/src/domains/shared-app/api/pdf-engine/v1/_openapi.json.tpl # If start with http the file would be downloaded from the internet
+oa3_spec: ./openapi/openapi.json
 name: opex_pagopa-pdf-engine
 location: West Europe
 timespan: 5m
@@ -8,7 +9,7 @@ action_groups:
   - /subscriptions/26abc801-0d8f-4a6e-ac5f-8e81bcc09112/resourceGroups/pagopa-u-monitor-rg/providers/microsoft.insights/actionGroups/PagoPA
   - /subscriptions/26abc801-0d8f-4a6e-ac5f-8e81bcc09112/resourceGroups/pagopa-u-monitor-rg/providers/microsoft.insights/actionGroups/SlackPagoPA
 overrides:
-  hosts: # Use these hosts instead of those inside the OpenApi spec
+  hosts:
     - api.uat.platform.pagopa.it
   base_path: "shared/pdf-engine/v1"
   endpoints:
