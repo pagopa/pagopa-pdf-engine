@@ -13,7 +13,7 @@ overrides:
     - api.uat.platform.pagopa.it
   endpoints:
     /shared/pdf-engine/v1/generate-pdf:
-      response_time_threshold: 6 # Default: 1
+      response_time_threshold: 8 # Default: 1
       response_time_evaluation_frequency: 10 # Default: 10
       response_time_evaluation_time_window: 30 # Default: 20
       response_time_event_occurrences: 5 # Default: 1
