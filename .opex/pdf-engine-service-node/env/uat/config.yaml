@@ -13,9 +13,8 @@ action_groups:
 overrides:
   hosts:
     - api.uat.platform.pagopa.it
-  base_path: "shared/pdf-engine-node/v1"
   endpoints:
-    /generate-pdf:
+    /shared/pdf-engine-node/v1/generate-pdf:
       response_time_threshold: 6 # Default: 1
       response_time_evaluation_frequency: 35 # Default: 10
       response_time_evaluation_time_window: 55 # Default: 20
