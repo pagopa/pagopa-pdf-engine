@@ -34,6 +34,7 @@
   </repositories>
 
   <dependencyManagement>
+
     <dependencies>
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
