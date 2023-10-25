@@ -76,7 +76,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                                     PDFE_904.getErrorMessage(), e);
                         }
                 }).toCompletionStage());
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new GeneratePDFException(AppErrorCodeEnum.PDFE_904, AppErrorCodeEnum.PDFE_904.getErrorMessage(), e);
             }
         });
@@ -99,7 +99,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             }
         } catch (FileNotFoundException e) {
             throw new GeneratePDFException(PDFE_905, "An error occurred when zipping the PDF document", e);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new GeneratePDFException(PDFE_906, "An error occurred when zipping the PDF document", e);
         }
     }

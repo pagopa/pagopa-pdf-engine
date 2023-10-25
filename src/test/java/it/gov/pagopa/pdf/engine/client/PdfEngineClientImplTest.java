@@ -31,6 +31,16 @@ class PdfEngineClientImplTest {
     }
 
     @Test
+    public void shouldReturnUnknownWhenEmptyError() {
+        PdfEngineErrorResponse pdfEngineErrorResponse = new PdfEngineErrorResponse();
+        pdfEngineErrorResponse.setAppStatusCode(PDFE_709.getErrorCode());
+        pdfEngineErrorResponse.setErrors(Collections.singletonList(new PdfEngineErrorMessage()));
+        GeneratePDFException exception = PdfEngineClient.toException(
+                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("").build());
+        Assertions.assertEquals(PDFE_902,exception.getErrorCode());
+    }
+
+    @Test
     public void shouldReturnCodeError() {
         PdfEngineErrorResponse pdfEngineErrorResponse = new PdfEngineErrorResponse();
         pdfEngineErrorResponse.setAppStatusCode(PDFE_709.getErrorCode());
