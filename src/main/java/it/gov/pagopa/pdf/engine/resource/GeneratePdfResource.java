@@ -84,7 +84,7 @@ public class GeneratePdfResource {
                 .header("content-disposition", "attachment; ")
                 .entity(fileBytes)
                 .build();
-      } catch (IOException e) {
+      } catch (Exception e) {
         logger.error("Error handling the generated stream", e);
         return Response.status(INTERNAL_SERVER_ERROR)
                 .entity(
