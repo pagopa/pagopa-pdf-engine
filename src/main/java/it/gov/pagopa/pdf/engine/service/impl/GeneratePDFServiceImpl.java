@@ -71,7 +71,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                                     zipPDFDocument(new File(fileToReturn[0].get()), workingDirPath) :
                                     new BufferedInputStream(new FileInputStream(fileToReturn[0].get())));
                             return Future.succeededFuture(pdfEngineResponse);
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             throw new GeneratePDFException(PDFE_904,
                                     PDFE_904.getErrorMessage(), e);
                         }

@@ -117,4 +117,45 @@ class GeneratePDFServiceImplTest {
 
     }
 
+    @Test
+    @SneakyThrows
+    void generatePDFCallMissingWorkingDir() {
+        GeneratePDFInput pdfInput = new GeneratePDFInput();
+        pdfInput.setData("{\"a\"=\"b\"}");
+        pdfInput.setApplySignature(false);
+
+        try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).openStream()) {
+
+            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().item(input.readAllBytes()));
+
+            Logger logger = LoggerFactory.getLogger(GeneratePDFService.class);
+
+            assertThrows(GeneratePDFException.class,
+                    () -> sut.generatePDF(pdfInput, null, logger).await().indefinitely());
+        }
+
+    }
+
+    @Test
+    @SneakyThrows
+    void generateErrorWithBrokenStream() {
+        GeneratePDFInput pdfInput = new GeneratePDFInput();
+        pdfInput.setData("{\"a\"=\"b\"}");
+        pdfInput.setApplySignature(false);
+
+        try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).openStream()) {
+
+            when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(Uni.createFrom().nullItem());
+
+            Logger logger = LoggerFactory.getLogger(GeneratePDFService.class);
+
+            assertThrows(GeneratePDFException.class,
+                    () -> sut.generatePDF(pdfInput, null, logger).await().indefinitely());
+
+        }
+
+    }
+
 }

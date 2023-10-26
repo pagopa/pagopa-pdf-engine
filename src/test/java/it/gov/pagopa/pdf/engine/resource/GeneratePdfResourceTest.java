@@ -7,6 +7,7 @@ import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.exception.RequestBodyParseException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.ErrorResponse;
+import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
@@ -103,7 +104,7 @@ class GeneratePdfResourceTest {
 
         try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
                 .getResource("valid_pdf.pdf")).openStream();
-             BufferedInputStream bufferedInputStream = new BufferedInputStream(input)) {
+             BufferedInputStream ignored = new BufferedInputStream(input)) {
 
             PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
             pdfEngineResponse.setBufferedInputStream(null);
@@ -197,6 +198,74 @@ class GeneratePdfResourceTest {
         verify(parseRequestBodyService).retrieveInputData(Mockito.any());
         verifyNoInteractions(generatePDFService);
 
+    }
+
+    @Test
+    @SneakyThrows
+    void shouldReturnManagedErrorWhenMissingData() {
+
+        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+        generatePDFInput.setData(null);
+        when(parseRequestBodyService.retrieveInputData(Mockito.any())).thenReturn(generatePDFInput);
+
+        ErrorResponse content =
+                given()
+                        .multiPart("template", new File("./src/main/resources/valid_template.html"))
+                        .formParam("data", "{\"key1\":\"test\"}")
+                        .when().post("/generate-pdf")
+                        .then()
+                        .statusCode(400)
+                        .contentType("application/json")
+                        .extract()
+                        .as(ErrorResponse.class);
+        assertNotNull(content);
+        verify(parseRequestBodyService).retrieveInputData(Mockito.any());
+        verifyNoInteractions(generatePDFService);
+
+    }
+
+    @Test
+    @SneakyThrows
+    void shouldReturnErrorWhenServiceReturnsGenericError() {
+
+        File workingDirectory = new File("workingDirectoryPath");
+        if (!workingDirectory.exists()) {
+            try {
+                Files.createDirectory(workingDirectory.toPath());
+            } catch (FileAlreadyExistsException e) {
+            }
+        }
+
+        try (InputStream input = Objects.requireNonNull(this.getClass().getClassLoader()
+                .getResource("valid_pdf.pdf")).openStream();
+             BufferedInputStream bufferedInputStream = new BufferedInputStream(input)) {
+
+            PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+            pdfEngineResponse.setBufferedInputStream(bufferedInputStream);
+            pdfEngineResponse.setWorkDirPath(Files.createTempDirectory(
+                    workingDirectory.toPath(),
+                    DateTimeFormatter.ofPattern(PATTERN_FORMAT)
+                            .withZone(ZoneId.systemDefault())
+                            .format(Instant.now())));
+
+            when(generatePDFService.generatePDF(Mockito.any(),Mockito.any(),Mockito.any()))
+                    .thenAnswer(invoke -> new Exception());
+            when(parseRequestBodyService.retrieveInputData(Mockito.any())).thenCallRealMethod();
+            ErrorResponse content =
+                    given()
+                            .multiPart("template", new File("./src/main/resources/valid_template.html"))
+                            .formParam("data", "{\"key1\":\"test\"}")
+                            .when().post("/generate-pdf")
+                            .then()
+                            .statusCode(400)
+                            .contentType("application/json")
+                            .extract()
+                            .as(ErrorResponse.class);
+            assertNotNull(content);
+            verify(parseRequestBodyService).retrieveInputData(Mockito.any());
+            verify(generatePDFService).generatePDF(Mockito.any(),Mockito.any(),Mockito.any());
+
+        }
     }
 
 }
