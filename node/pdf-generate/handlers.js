@@ -44,6 +44,7 @@ const generatePdf = async function (req, res, next) {
         try {
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
         } catch (err) {
+            console.log(err);
             res.status(500);
             res.body(buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request"));
             return;
@@ -51,22 +52,9 @@ const generatePdf = async function (req, res, next) {
 
         console.log(req.file)
 
-        var zip = new AdmZip(req.file.buffer);
-        var zipEntries = zip.getEntries();
-
-
-        for(const zipEntry of zipEntries){
-            if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
-                fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
-                    if(err) {
-                      console.log(err);
-                    } else {
-                      console.log('The file has been saved!');
-                    }
-                });
-            }
-        }
-
+        fs.writeFileSync(path.join(workingDir,"zippedFile.zip"), req.file.buffer,  "binary");
+        const zip = new AdmZip(path.join(workingDir, "zippedFile.zip"));
+        zip.extractAllTo(workingDir);
         const browser = await getBrowserSession();
         page = await browser.newPage();
 
@@ -115,6 +103,7 @@ const generatePdf = async function (req, res, next) {
         res.send(content);
 
     } catch (err) {
+        console.log(err);
         res.status(500);
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {
@@ -123,7 +112,11 @@ const generatePdf = async function (req, res, next) {
         }
 
         if (workingDir) {
-            rmSync(workingDir, { recursive: true, force: true });
+            try {
+                rmSync(workingDir, { recursive: true, force: true });
+            } catch (err) {
+                //console.log(err);
+            }
         }
 
     }

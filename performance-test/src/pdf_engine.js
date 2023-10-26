@@ -26,7 +26,7 @@ export default function (data) {
   let inputData = retrieveInputData();
   let response = generatePDF(pdfEngineUri, subKey, templateFile, inputData, generateZipped);
 
-  console.log("Generate PDF call, Status " + response.status);
+  console.log("Generate PDF call, Status " + response);
 
   let content_type;
   if (generateZipped) {

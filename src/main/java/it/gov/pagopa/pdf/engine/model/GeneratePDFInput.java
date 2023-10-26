@@ -3,8 +3,8 @@ package it.gov.pagopa.pdf.engine.model;
 
 import lombok.Data;
 
-import java.util.Map;
-import net.lingala.zip4j.ZipFile;
+import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Model class for PDF Engine input
@@ -12,11 +12,10 @@ import net.lingala.zip4j.ZipFile;
 @Data
 public class GeneratePDFInput {
 
-    private Map<String, Object> data;
+    private String data;
     private boolean applySignature;
     private boolean generateZipped;
-    private ZipFile templateZip;
-
-    private GeneratorType generatorType = GeneratorType.ITEXT;
+    private File templateZip;
+    private Path workingDir;
 
 }

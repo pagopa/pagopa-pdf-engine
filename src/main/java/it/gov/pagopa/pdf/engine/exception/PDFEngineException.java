@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Base exception for PDF Engine exceptions
  */
-public class PDFEngineException extends Exception {
+public class PDFEngineException extends RuntimeException {
 
     /** Error code of this exception */
     private final AppErrorCodeEnum errorCode;

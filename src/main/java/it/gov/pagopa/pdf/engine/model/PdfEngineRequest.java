@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import net.lingala.zip4j.ZipFile;
+import org.jboss.resteasy.reactive.RestForm;
+
+import java.io.File;
 
 /**
  * Model class for PDF engine request
@@ -14,10 +16,11 @@ import net.lingala.zip4j.ZipFile;
 @NoArgsConstructor
 public class PdfEngineRequest {
 
-  String data;
+    @RestForm
+    String data;
 
-    String workingDirPath;
-    ZipFile template;
+    @RestForm
+    File template;
 
 
 }

@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.BufferedInputStream;
+
 /**
  * Model class for PDF Engine client's response
  */
@@ -12,10 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PdfEngineResponse {
 
-    String tempDirectoryPath;
-    String tempPdfPath;
-    int statusCode;
-    String errorMessage;
-    String errorCode;
+    private BufferedInputStream bufferedInputStream;
+    private java.nio.file.Path workDirPath;
+    private boolean generateZipped;
 
 }
