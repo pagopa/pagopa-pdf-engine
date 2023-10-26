@@ -41,8 +41,6 @@ const generatePdf = async function (req, res, next) {
 
     try {
 
-        console.log('starting!')
-
         try {
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
         } catch (err) {
@@ -57,9 +55,7 @@ const generatePdf = async function (req, res, next) {
         fs.writeFileSync(path.join(workingDir,"zippedFile.zip"), req.file.buffer,  "binary");
         const zip = new AdmZip(path.join(workingDir, "zippedFile.zip"));
         zip.extractAllTo(workingDir);
-
         const browser = await getBrowserSession();
-
         page = await browser.newPage();
 
         let data = req.body.data;
@@ -73,11 +69,8 @@ const generatePdf = async function (req, res, next) {
 
         try {
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
-
             let template = handlebars.compile(templateFile);
-
             let html = template(JSON.parse(data));
-
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
         } catch (err) {
             console.log(err)
@@ -88,9 +81,10 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
-            await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"));
-
-
+            await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
+                waitUntil: ['load','domcontentloaded']
+            });
+            await waitForRender(page);
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
                 format: 'A4',
@@ -106,8 +100,6 @@ const generatePdf = async function (req, res, next) {
         }
 
         let content = readFileSync(path.join(workingDir, "pagopa-receipt.pdf"));
-
-        console.time("pdfSend-"+timestampLog);
         res.send(content);
 
     } catch (err) {
@@ -130,5 +122,31 @@ const generatePdf = async function (req, res, next) {
     }
 
 }
+
+const waitForRender = async (page, timeout = 30000) => {
+  const checkInterval = 100;
+  const maxChecks = timeout / checkInterval;
+  let lastSize = 0;
+  let checkCounts = 1;
+  let countStableSizeIterations = 0;
+  const minStableSizeIterations = 3;
+
+  while(checkCounts++ <= maxChecks){
+    let html = await page.content();
+    let currentSize = html.length;
+
+    if(lastSize != 0 && currentSize == lastSize)
+      countStableSizeIterations++;
+    else
+      countStableSizeIterations = 0;
+
+    if(countStableSizeIterations >= minStableSizeIterations) {
+      break;
+    }
+
+    lastSize = currentSize;
+    await page.waitForTimeout(checkInterval);
+  }
+};
 
 module.exports = { info, generatePdf, shutdown };

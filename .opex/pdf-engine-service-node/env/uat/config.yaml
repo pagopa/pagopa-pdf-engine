@@ -1,3 +1,4 @@
+# oa3_spec: https://raw.githubusercontent.com/pagopa/pagopa-infra/main/src/domains/shared-app/api/pdf-engine-node/v1/_openapi.json.tpl # If start with http the file would be downloaded from the internet
 oa3_spec: ./openapi/openapi_node.json
 name: opex_pagopa-pdf-engine-node
 location: West Europe
@@ -10,11 +11,11 @@ action_groups:
   - /subscriptions/26abc801-0d8f-4a6e-ac5f-8e81bcc09112/resourceGroups/pagopa-u-monitor-rg/providers/microsoft.insights/actionGroups/PagoPA
   - /subscriptions/26abc801-0d8f-4a6e-ac5f-8e81bcc09112/resourceGroups/pagopa-u-monitor-rg/providers/microsoft.insights/actionGroups/SlackPagoPA
 overrides:
-  hosts: # Use these hosts instead of those inside the OpenApi spec
+  hosts:
     - api.uat.platform.pagopa.it
   endpoints:
     /shared/pdf-engine-node/v1/generate-pdf:
-      response_time_threshold: 5 # Default: 1
-      response_time_evaluation_frequency: 35 # Default: 10
-      response_time_evaluation_time_window: 55 # Default: 20
+      response_time_threshold: 8 # Default: 1
+      response_time_evaluation_frequency: 10 # Default: 10
+      response_time_evaluation_time_window: 30 # Default: 20
       response_time_event_occurrences: 5 # Default: 1
