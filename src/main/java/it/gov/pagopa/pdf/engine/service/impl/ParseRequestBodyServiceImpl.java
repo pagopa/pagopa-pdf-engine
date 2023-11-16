@@ -15,6 +15,7 @@ import org.apache.commons.fileupload.FileUploadBase.FileUploadIOException;
 import org.apache.commons.fileupload.MultipartStream;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -96,7 +97,7 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
         TypeReference<Map<String,Object>> typeRef = new TypeReference<>() {};
         try {
-            return this.objectMapper.readValue(os.toString(), typeRef);
+            return this.objectMapper.readValue(os.toString(StandardCharsets.UTF_8), typeRef);
         } catch (JsonProcessingException e) {
             throw new RequestBodyParseException(PDFE_707, PDFE_707.getErrorMessage(), e);
         }

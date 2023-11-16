@@ -112,6 +112,7 @@ const generatePdf = async function (req, res, next) {
         }
 
         let content = readFileSync(path.join(workingDir, "pagopa-receipt.pdf"));
+        res.setHeader('content-type', 'application/pdf');
         res.send(content);
 
     } catch (err) {
