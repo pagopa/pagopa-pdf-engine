@@ -4,6 +4,7 @@ let handlebars = require("handlebars");
 let splitAndSpace = require('../helpers/splitAndSpace');
 let not = require('../helpers/not')
 let eq = require('../helpers/eq')
+let lowercase = require('../helpers/lowercase');
 
 let browser;
 
@@ -13,6 +14,7 @@ const getBrowserSession = async () => {
   handlebars.registerHelper("not", not);
   handlebars.registerHelper("eq", eq);
   handlebars.registerHelper("splitAndSpace", splitAndSpace);
+  handlebars.registerHelper("lowercase", lowercase);
 
   browser = await puppeteer.launch({
     headless: true,
