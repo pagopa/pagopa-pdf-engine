@@ -132,12 +132,12 @@ const generatePdf = async function (req, res, next) {
 }
 
 const waitForRender = async (page, timeout = 30000) => {
-  const checkInterval = process.env.CHECK_RENDER_INTERVAL || 100;
+  const checkInterval = process.env.CHECK_SIZE_INTERVAL || 100;
   const maxChecks = timeout / checkInterval;
   let lastSize = 0;
   let checkCounts = 1;
   let countStableSizeIterations = 0;
-  const minStableSizeIterations = process.env.MIN_STABLE_RENDER_ITERATIONS || 3;
+  const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
 
   while(checkCounts++ <= maxChecks){
     let html = await page.content();
