@@ -137,7 +137,7 @@ const waitForRender = async (page, timeout = 30000) => {
   let lastSize = 0;
   let checkCounts = 1;
   let countStableSizeIterations = 0;
-  const minStableSizeIterations = 3;
+  const minStableSizeIterations = process.env.MIN_STABLE_RENDER_ITERATIONS || 3;
 
   while(checkCounts++ <= maxChecks){
     let html = await page.content();
