@@ -34,6 +34,8 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
             PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
             PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
+            pdfEngineRequest.setTitle(generatePDFInput.getTitle() != null ?
+                    generatePDFInput.getTitle() : "Documento PDF PagoPA");
             pdfEngineRequest.setWorkingDirPath(workingDirPath.toFile().getAbsolutePath());
             pdfEngineRequest.setData(ObjectMapperUtils.writeValueAsString(generatePDFInput.getData()));
             pdfEngineRequest.setTemplate(generatePDFInput.getTemplateZip());

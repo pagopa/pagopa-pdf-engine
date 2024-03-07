@@ -16,8 +16,11 @@ public class PdfEngineRequest {
 
   String data;
 
-    String workingDirPath;
-    ZipFile template;
+  String workingDirPath;
+
+  String title;
+
+  ZipFile template;
 
 
 }
