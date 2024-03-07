@@ -159,7 +159,7 @@ const waitForRender = async (page, timeout = 30000) => {
     }
 
     lastSize = currentSize;
-    await page.waitForTimeout(checkInterval);
+    await new Promise(r => setTimeout(r, checkInterval))
   }
 };
 
