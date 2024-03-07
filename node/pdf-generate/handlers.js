@@ -71,7 +71,11 @@ const generatePdf = async function (req, res, next) {
         page = await browser.newPage();
 
         let data = req.body.data;
-        let title = req.body.title || "Documento PDF PagoPA";
+        let title = req.body.title;
+
+        if (title == undefined) {
+            title = "Documento PDF PagoPA";
+        }
 
         if (data == undefined) {
             res.status(400);
