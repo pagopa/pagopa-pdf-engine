@@ -1,5 +1,4 @@
 const puppeteer = require('puppeteer');
-const registerHelpers = require("handlebars-helpers");
 let handlebars = require("handlebars");
 let splitAndSpace = require('../helpers/splitAndSpace');
 let not = require('../helpers/not')

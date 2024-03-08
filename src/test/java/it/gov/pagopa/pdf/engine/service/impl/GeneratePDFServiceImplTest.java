@@ -79,6 +79,7 @@ class GeneratePDFServiceImplTest {
         pdfInput.setData(Collections.singletonMap("a", "b"));
         pdfInput.setApplySignature(false);
         pdfInput.setGenerateZipped(true);
+        pdfInput.setTitle("title");
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
         pdfEngineResponse.setStatusCode(200);

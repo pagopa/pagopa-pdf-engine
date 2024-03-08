@@ -51,6 +51,9 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
                 case "data":
                     generatePDFInput.setData(getDocumentInputData(multipartStream));
                     break;
+                case "title":
+                    generatePDFInput.setTitle(getStringField(multipartStream, PDFE_715));
+                    break;
                 case "applySignature":
                     generatePDFInput.setApplySignature(getBooleanField(multipartStream, PDFE_708));
                     break;
@@ -86,6 +89,17 @@ public class ParseRequestBodyServiceImpl implements ParseRequestBodyService {
         }
         return Boolean.parseBoolean(outputStream.toString());
     }
+
+    private String getStringField(MultipartStream multipartStream, AppErrorCodeEnum errorCode) throws RequestBodyParseException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            multipartStream.readBodyData(outputStream);
+        } catch (IOException e) {
+            throw new RequestBodyParseException(errorCode, errorCode.getErrorMessage(), e);
+        }
+        return outputStream.toString();
+    }
+
 
 
     private Map<String,Object> getDocumentInputData(MultipartStream multipartStream) throws RequestBodyParseException {
