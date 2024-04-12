@@ -82,7 +82,9 @@ const generatePdf = async function (req, res, next) {
         try {
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
             let template = handlebars.compile(templateFile);
-            let html = template(JSON.parse(data));
+            const jsonData = JSON.parse(data);
+            jsonData.tempPath = workingDir;
+            let html = template(jsonData);
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
         } catch (err) {
             console.log(err)

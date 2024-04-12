@@ -20,7 +20,10 @@
     "hbs-cli": "^1.4.1",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.0.1",
-    "puppeteer": "^18.0.2"
+    "puppeteer": "^18.0.2",
+    "bitgener": "^1.2.12",
+    "qrcode-svg": "^1.1.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/jest": "^24.0.15",

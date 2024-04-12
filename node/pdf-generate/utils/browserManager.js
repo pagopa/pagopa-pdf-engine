@@ -5,6 +5,8 @@ let splitAndSpace = require('../helpers/splitAndSpace');
 let not = require('../helpers/not')
 let eq = require('../helpers/eq')
 let lowercase = require('../helpers/lowercase');
+let genQrCode = require('../helpers/genQrCode');
+let genDataMatrix = require('../helpers/genDataMatrix');
 
 let browser;
 
@@ -15,6 +17,8 @@ const getBrowserSession = async () => {
   handlebars.registerHelper("eq", eq);
   handlebars.registerHelper("splitAndSpace", splitAndSpace);
   handlebars.registerHelper("lowercase", lowercase);
+  handlebars.registerHelper("genQrCode", genQrCode);
+  handlebars.registerHelper("genDataMatrix", genDataMatrix);
 
   browser = await puppeteer.launch({
     headless: true,
