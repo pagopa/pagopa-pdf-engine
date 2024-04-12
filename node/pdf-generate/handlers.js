@@ -71,6 +71,11 @@ const generatePdf = async function (req, res, next) {
         page = await browser.newPage();
 
         let data = req.body.data;
+        let title = req.body.title;
+
+        if (title == undefined) {
+            title = "Documento PDF PagoPA";
+        }
 
         if (data == undefined) {
             res.status(400);
@@ -101,6 +106,7 @@ const generatePdf = async function (req, res, next) {
             await waitForRender(page);
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
+                title: title,
                 format: 'A4',
                 landscape: false,
                 printBackground: true,
@@ -155,7 +161,7 @@ const waitForRender = async (page, timeout = 30000) => {
     }
 
     lastSize = currentSize;
-    await page.waitForTimeout(checkInterval);
+    await new Promise(r => setTimeout(r, checkInterval))
   }
 };
 

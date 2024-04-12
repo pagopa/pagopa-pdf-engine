@@ -14,6 +14,7 @@ describe("generatePdf", () => {
 
   it("should return a pdf when passing valid data", async () => {
     const formData = new FormData();
+    formData.append('title', 'Test Title');
     formData.append('data', '{\n' +
         '\t\t"transaction": {\n' +
         '\t\t\t"id": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890123456789",\n' +

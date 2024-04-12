@@ -26,6 +26,8 @@ public enum AppErrorCodeEnum {
 
     PDFE_714("PDFE_708", "I/O error when reading generate type from request, and writing it to the output stream"),
 
+    PDFE_715("PDFE_715", "I/O error when reading title from request and writing it to the output stream"),
+
     PDFE_896("PDFE_896", "Unexpected field in request body"),
     PDFE_897("PDFE_897", "Invalid HTML template, template not provided"),
     PDFE_898("PDFE_898", "Invalid document data"),
@@ -40,8 +42,6 @@ public enum AppErrorCodeEnum {
     PDFE_906("PDFE_906", "I/O error when zipping the PDF document"),
     PDFE_907("PDFE_907", "I/O error on handling the PDF generation result"),
     PDFE_908("PDFE_908", "I/O error on creating the working directory");
-
-
 
     private final String errorCode;
     private final String errorMessage;

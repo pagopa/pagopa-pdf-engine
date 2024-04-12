@@ -16,6 +16,7 @@ public class GeneratePDFInput {
     private boolean applySignature;
     private boolean generateZipped;
     private ZipFile templateZip;
+    private String title;
 
     private GeneratorType generatorType = GeneratorType.ITEXT;
 
