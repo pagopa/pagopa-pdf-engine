@@ -60,6 +60,8 @@ const generatePdf = async function (req, res, next) {
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
                     if(err) {
                       console.log(err);
+                    } else {
+                      console.log('The file has been saved!');
                     }
                 });
             }
@@ -99,7 +101,7 @@ const generatePdf = async function (req, res, next) {
 
         try {
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
-                waitUntil: ['load','domcontentloaded']
+                waitUntil: ['load','domcontentloaded', 'networkidle0']
             });
             await waitForRender(page);
             await page.pdf({
@@ -143,7 +145,7 @@ const waitForRender = async (page, timeout = 30000) => {
   let lastSize = 0;
   let checkCounts = 1;
   let countStableSizeIterations = 0;
-  const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
+  const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 10;
 
   while(checkCounts++ <= maxChecks){
     let html = await page.content();
