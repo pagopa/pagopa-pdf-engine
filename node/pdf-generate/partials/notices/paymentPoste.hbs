@@ -1,0 +1,23 @@
+<section class="notice-poste-payment-data {{#if compact}}compact{{/if}}">
+  <div class="header-bollettino-postale unique-separator">
+    <div class="title">
+      <h3 class="small-caps-title">Bollettino postale PA</h3>
+    </div>
+    <div class="logo-and-date">
+      <img class="logo-bancoposta" src="assets/poste/banco-posta.svg" alt="BancoPosta" />
+      {{#if showCurrentInstalment}}
+      <p class="h4">Rata {{add @index 1}} entro {{expiryDate}}</p>
+      {{else}}
+      {{#if subtitle}}
+      {{{subtitle}}}
+      {{else}}
+      <p class="h4">Rata unica entro {{expiryDate}}</p>
+      {{/if}}
+      {{/if}}
+      <img class="poste-scissors" src="assets/poste/scissors.svg" aria-hidden="true" />
+    </div>
+  </div>
+
+  {{> paymentBollettino }}
+
+</section>

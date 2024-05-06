@@ -1,0 +1,21 @@
+<section class="instalment-payment-data" style="--columns: 2">
+
+  {{#each notice.instalments.items}}
+
+  <div>
+    <div class="inner-separator">
+      <h3 class="small-caps-title">Rata {{add @index 1}}</h3>
+    </div>
+    {{#with this}}
+    {{> paymentQRCol
+    debtor=../debtor
+    notice=../notice
+    payee=../payee
+    tempPath=../tempPath
+    }}
+    {{/with}}
+  </div>
+
+  {{/each}}
+
+</section>

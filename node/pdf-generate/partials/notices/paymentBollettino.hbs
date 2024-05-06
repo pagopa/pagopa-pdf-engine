@@ -1,0 +1,86 @@
+<div class="payment-details unique-grid-cell">
+  <div class="poste-italiane-area">
+    <img class="logo-poste-italiane" src="assets/poste/poste-italiane.svg" alt="Poste Italiane" />
+    <img class="logo-bollettino-postale" src="assets/poste/bollettino-postale.svg"
+      alt="circuito bollettino postale BancoPosta" />
+    <p class="body">Bollettino Postale pagabile in tutti gli Uffici Postali e sui canali fisici o
+      digitali abilitati di Poste Italiane e dell’Ente Creditore</p>
+    <p class="caption">
+      {{notice.posteAuth}}
+    </p>
+  </div>
+
+  <div class="payment-details-data">
+
+    <div class="account-number-and-amount">
+      <div class="account-number">
+        <img class="euro-block" src="assets/poste/euro-block.svg" alt="Euro" />
+        <dl class="data-key-value-inline-monospaced">
+          <dt>sul C/C n.</dt>
+          <dd>{{notice.posteAccountNumber}}</dd>
+        </dl>
+      </div>
+
+      <dl class="data-key-value-inline-monospaced align-right">
+        <dt>Euro</dt>
+        <dd>{{this.amount}}</dd>
+      </dl>
+    </div>
+
+    <div class="payment-details-and-datamatrix">
+
+      <div class="payment-details-data-1st-block">
+
+        <dl class="data-key-value-inline">
+          <dt>Intestato a</dt>
+          <dd>{{payee.name}}</dd>
+        </dl>
+
+
+        <dl class="data-key-value-inline">
+          <dt>Destinatario</dt>
+          <dd class="forcedCapitalCase">{{lowercase debtor.fullName}}</dd>
+        </dl>
+
+
+        <dl class="data-key-value-inline">
+          <dt>Oggetto pagamento</dt>
+          <dd>{{notice.subject}}</dd>
+        </dl>
+
+
+      </div>
+
+      <div class="payment-details-data-2nd-block">
+
+        <div class="grid-cell-span-4">
+          <dl class="data-key-value-monospaced">
+            <dt>Cod. Avviso</dt>
+            <dd>{{splitAndSpace this.refNumber}}</dd>
+          </dl>
+        </div>
+
+        <div class="grid-cell-span-1">
+          <dl class="data-key-value-monospaced">
+            <dt>Tipo</dt>
+            <dd>P1</dd>
+          </dl>
+        </div>
+
+        <div class="grid-cell-span-3 align-right">
+          <dl class="data-key-value-monospaced">
+            <dt>Cod. Fiscale Ente Creditore</dt>
+            <dd>{{payee.taxCode}}</dd>
+          </dl>
+        </div>
+
+
+      </div>
+
+      <div class="payment-data-matrix">
+        <img src={{genDataMatrix this.posteDataMatrix this.tempPath}} alt="Poste DataMatrix" />
+      </div>
+    </div>
+
+  </div>
+</div>

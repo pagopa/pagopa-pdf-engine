@@ -1,0 +1,14 @@
+<header class="notice-header">
+  <section class="main">
+    <div class="pagopa-header">
+      <img class="logo" src="assets/pagoPa-logo.svg" />
+      <p class="h4 notice-title">Avviso di pagamento</p>
+    </div>
+    <div class="notice-subject">
+      <h1 class="h1">{{notice.subject}}</h1>
+    </div>
+  </section>
+  {{#if payee.logo}}
+  <img class="notice-header-logo" alt="{{payee.name}}" src="{{payee.logo}}" />
+  {{/if}}
+</header>

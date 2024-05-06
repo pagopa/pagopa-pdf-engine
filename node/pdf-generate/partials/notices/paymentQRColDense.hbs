@@ -1,0 +1,40 @@
+<div class="instalment-details">
+  <div class="instalment-details-data-1st-block compact">
+    <div class="qrcode-area">
+      <img class="payment-qrcode" src={{genQrCode qrCode tempPath}} alt="QR PaymentCode" />
+    </div>
+
+    <dl class="data-key-value-monospaced tight">
+      <dt>Euro</dt>
+      <dd>{{amount}}</dd>
+    </dl>
+
+    <dl class="data-key-value-monospaced tight">
+      <dt>Entro il</dt>
+      <dd>{{expiryDate}}</dd>
+    </dl>
+
+    <div class="grid-cell-span-2">
+      <dl class="data-key-value-monospaced tight">
+        <dt>Cod. Avviso</dt>
+        <dd>{{splitAndSpace refNumber}}</dd>
+      </dl>
+    </div>
+
+    <div class="grid-cell-span-2 instalment-row-data">
+      <dl class="data-key-value-monospaced tight">
+        <dt>Cod. Fiscale Ente</dt>
+        <dd>{{payee.taxCode}}</dd>
+      </dl>
+      <dl class="data-key-value-monospaced tight">
+        <dt>Cod. CBILL</dt>
+        <dd>{{cbillCode}}</dd>
+      </dl>
+    </div>
+
+  </div>
+
+  <p class="caption black">Inquadra il <strong>codice QR</strong> con la tua app o usa i dati
+    sopra</p>
+
+</div>

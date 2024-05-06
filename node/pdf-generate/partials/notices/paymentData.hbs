@@ -1,0 +1,23 @@
+<section class="notice-payment-data">
+  <div class="unique-separator">
+    <h3 class="small-caps-title">
+      {{#if title}}
+      {{title}}
+      {{else}}
+      Dati per il pagamento
+      {{/if}}
+    </h3>
+    {{#if subtitle}}
+    {{{subtitle}}}
+    {{else}}
+    {{#if notice.expiryDate}}
+    <p class='h4'>Rata unica entro il {{notice.expiryDate}}</p>
+    {{else}}
+    <p class='h4'>Rata unica</p>
+    {{/if}}
+    {{/if}}
+  </div>
+
+  {{> paymentQR}}
+
+</section>
