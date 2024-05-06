@@ -10,9 +10,10 @@ const getFiles = source => readdirSync(source, { withFileTypes: true })
 .filter(dirent => !dirent.isDirectory())
     .map(dirent => dirent.name)
 const importFile = (filePath, fileName) => readFileSync(`${filePath}/${fileName}`, "utf8");
-const partialPath = `./pdf-generate/helpers`;
-const helpersPath = `./pdf-generate/helpers`;
+const requireFile = (filePath, fileName) => require(`${filePath}/${fileName}`);
 
+const partialPath = `./pdf-generate/partials`;
+const helpersPath = `./pdf-generate/helpers`;
 
 let browser;
 
@@ -25,7 +26,7 @@ const getBrowserSession = async () => {
   for (directoryHelper of helperDirectories) {
     const directoryHelperFiles = getFiles(`${helpersPath}/${directoryHelper}`);
     for (directoryHelperFile of directoryHelperFiles) {
-        const helper = importFile(`${helpersPath}/${directoryHelper}`, directoryHelperFile);
+        const helper = requireFile(`../helpers/${directoryHelper}`, path.parse(`${helpersPath}/${directoryHelper}/${directoryHelperFile}`).name);
         handlebars.registerHelper(
             path.parse(`${helpersPath}/${directoryHelper}/${directoryHelperFile}`).name , helper);
     }

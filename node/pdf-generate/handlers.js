@@ -60,8 +60,6 @@ const generatePdf = async function (req, res, next) {
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
                     if(err) {
                       console.log(err);
-                    } else {
-                      console.log('The file has been saved!');
                     }
                 });
             }
