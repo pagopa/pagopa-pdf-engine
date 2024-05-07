@@ -60,8 +60,6 @@ const generatePdf = async function (req, res, next) {
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
                     if(err) {
                       console.log(err);
-                    } else {
-                      console.log('The file has been saved!');
                     }
                 });
             }
@@ -101,8 +99,10 @@ const generatePdf = async function (req, res, next) {
 
         try {
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
-                waitUntil: ['load','domcontentloaded', 'networkidle0']
+                waitUntil: ['load','domcontentloaded']
             });
+            // path, can be relative or absolute path
+            await page.addStyleTag({path: path.join(workingDir, "style.css")});
             await waitForRender(page);
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
