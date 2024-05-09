@@ -21,7 +21,6 @@ const getBrowserSession = async () => {
   if (browser) return browser;
 
   // Register helpers
-
   const helperDirectories = getDirectories(helpersPath);
   for (directoryHelper of helperDirectories) {
     const directoryHelperFiles = getFiles(`${helpersPath}/${directoryHelper}`);
