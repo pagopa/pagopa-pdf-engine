@@ -102,7 +102,7 @@ const generatePdf = async function (req, res, next) {
                 waitUntil: ['load','domcontentloaded']
             });
             // path, can be relative or absolute path
-            await page.addStyleTag({path: path.join(workingDir, "style.css")});
+            //await page.addStyleTag({path: path.join(workingDir, "style.css")});
             await waitForRender(page);
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
@@ -145,7 +145,7 @@ const waitForRender = async (page, timeout = 30000) => {
   let lastSize = 0;
   let checkCounts = 1;
   let countStableSizeIterations = 0;
-  const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 10;
+  const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
 
   while(checkCounts++ <= maxChecks){
     let html = await page.content();
