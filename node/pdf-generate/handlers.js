@@ -12,12 +12,6 @@ let handlebars = require("handlebars");
 const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
-const { renderToString } = require('react-dom/server');
-const React = require("react");
-require('@babel/register')({
-  presets: ['@babel/preset-env', '@babel/preset-react'],
-})
-
 
 const info = async function (req, res, next) {
 
@@ -92,22 +86,12 @@ const generatePdf = async function (req, res, next) {
         try {
 
             const jsonData = JSON.parse(data);
-            if (renderMode === 'handlebar') {
-                let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
-                let template = handlebars.compile(templateFile);
-                jsonData.tempPath = workingDir;
-                let html = template(jsonData);
-                fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+            let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
+            let template = handlebars.compile(templateFile);
+            jsonData.tempPath = workingDir;
+            let html = template(jsonData);
+            fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
 
-            } else {
-                const h = React.createElement;
-                //let template = require(path.join(workingDir, "template.js"));
-                let template = require("./react/test.js");
-                let html = renderToString(h(template, {
-                    data: jsonData
-                }));
-                fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
-            }
         } catch (err) {
             console.log(err)
             res.status(500);
