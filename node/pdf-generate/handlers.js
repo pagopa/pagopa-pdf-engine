@@ -12,6 +12,12 @@ let handlebars = require("handlebars");
 const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
+const { renderToString } = require('react-dom/server');
+const React = require("react");
+require('@babel/register')({
+  presets: ['@babel/preset-env', '@babel/preset-react'],
+})
+
 
 const info = async function (req, res, next) {
 
@@ -70,6 +76,7 @@ const generatePdf = async function (req, res, next) {
 
         let data = req.body.data;
         let title = req.body.title;
+        let renderMode = req.body.renderMode || 'handlebar';
 
         if (title == undefined) {
             title = "Documento PDF PagoPA";
@@ -83,12 +90,24 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
-            let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
-            let template = handlebars.compile(templateFile);
+
             const jsonData = JSON.parse(data);
-            jsonData.tempPath = workingDir;
-            let html = template(jsonData);
-            fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+            if (renderMode === 'handlebar') {
+                let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
+                let template = handlebars.compile(templateFile);
+                jsonData.tempPath = workingDir;
+                let html = template(jsonData);
+                fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+
+            } else {
+                const h = React.createElement;
+                //let template = require(path.join(workingDir, "template.js"));
+                let template = require("./react/test.js");
+                let html = renderToString(h(template, {
+                    data: jsonData
+                }));
+                fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+            }
         } catch (err) {
             console.log(err)
             res.status(500);
@@ -124,6 +143,7 @@ const generatePdf = async function (req, res, next) {
         res.send(content);
 
     } catch (err) {
+        console.log(err);
         res.status(500);
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {
