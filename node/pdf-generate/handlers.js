@@ -60,8 +60,6 @@ const generatePdf = async function (req, res, next) {
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
                     if(err) {
                       console.log(err);
-                    } else {
-                      console.log('The file has been saved!');
                     }
                 });
             }
@@ -72,6 +70,7 @@ const generatePdf = async function (req, res, next) {
 
         let data = req.body.data;
         let title = req.body.title;
+        let renderMode = req.body.renderMode || 'handlebar';
 
         if (title == undefined) {
             title = "Documento PDF PagoPA";
@@ -85,12 +84,14 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
+
+            const jsonData = JSON.parse(data);
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
             let template = handlebars.compile(templateFile);
-            const jsonData = JSON.parse(data);
             jsonData.tempPath = workingDir;
             let html = template(jsonData);
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+
         } catch (err) {
             console.log(err)
             res.status(500);
@@ -103,6 +104,8 @@ const generatePdf = async function (req, res, next) {
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
                 waitUntil: ['load','domcontentloaded']
             });
+            // path, can be relative or absolute path
+            //await page.addStyleTag({path: path.join(workingDir, "style.css")});
             await waitForRender(page);
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
@@ -124,6 +127,7 @@ const generatePdf = async function (req, res, next) {
         res.send(content);
 
     } catch (err) {
+        console.log(err);
         res.status(500);
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {

@@ -1,0 +1,43 @@
+<section class="notice-payment-info">
+  <div class="payment-amount-title-block start-separator">
+    <h3 class="small-caps-title">Quanto e quando pagare?</h3>
+  </div>
+
+  <div class="payment-amount-block-infraction start-grid-cell">
+    <div class="amount-one-line grid-cell-span-2">
+      <p class="h1 not-shrinking">{{notice.instalments.discounted.amount}} Euro</p>
+      <p class="body"><strong>Importo scontato del 30% entro 5 giorni</strong> dalla notifica del verbale</p>
+    </div>
+    <div class="info-block">
+      <div class="info-paragraph">
+        <img src="./assets/icon-info.svg" class="info-icon" aria-hidden="true" />
+        <p class="body">Scegli l'importo corretto per i termini previsti, altrimenti riceverai altre richieste di
+          pagamento per le somme residue
+          ed eventuali somme aggiuntive.</p>
+      </div>
+      <div class="info-paragraph">
+        <img src="./assets/icon-calendar.svg" class="info-icon" aria-hidden="true" />
+        <div>
+          <h5 class="h5 mb-3x-small">Come si calcolano le scadenze?</h5>
+          <p class="body">Il giorno della notifica non si conta. Se la scadenza è di domenica (o festivo), puoi pagare
+            anche il primo giorno
+            feriale successivo.</p>
+        </div>
+      </div>
+      <div class="info-paragraph">
+        <img src="./assets/icon-document.svg" class="info-icon" aria-hidden="true" />
+        <div>
+          <h5 class="h5 mb-3x-small">Cosa succede in caso di giacenza?</h5>
+          <p class="body">La notifica corrisponde al giorno del ritiro, se questo avviene entro 10 giorni dalla data di
+            deposito (la data più
+            vecchia sull’avviso di giacenza).
+            Se non ritiri il verbale entro i 10 giorni, calcola le scadenze iniziando a contare dall’undicesimo giorno.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{> paymentMethods }}
+
+</section>

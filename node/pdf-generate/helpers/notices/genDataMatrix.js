@@ -2,8 +2,9 @@ const bitgener = require('bitgener');
 const { v4: uuidv4 } = require("uuid");
 const path = require('path');
 
-function genDataMatrix(data, path) {
-    const filename = path.join(saveDir,uuidv4()+".svg");
+function genDataMatrix(data, saveDir) {
+    const filename = path.join(
+    saveDir,uuidv4()+".svg");
     bitgener({
       data: data,
       type: 'datamatrix',

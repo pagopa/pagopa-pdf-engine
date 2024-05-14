@@ -1,0 +1,34 @@
+<section class="notice-main-info">
+  <div class="payee-title-block start-separator">
+    <h3 class="small-caps-title">Ente creditore</h3>
+    <p class="data-small">{{payee.taxCode}}</p>
+  </div>
+
+  <div class="payee-name-block start-grid-cell">
+    <p class="h2">{{payee.name}}</p>
+  </div>
+
+  <div class="payee-sector-block start-grid-cell">
+    <p class="h3">{{payee.sector}}</p>
+  </div>
+
+  <div class="payee-info-block start-grid-cell">
+    <p class="body">{{payee.additionalInfo}}</p>
+  </div>
+
+  <div class="debtor-title-block end-separator">
+    <h3 class="small-caps-title">Destinatario</h3>
+    <p class="data-small uppercase">{{debtor.taxCode}}</p>
+  </div>
+
+  <div class="debtor-name-block end-grid-cell">
+    <p class="h2 forcedCapitalCase">{{lowercase debtor.fullName}}</p>
+  </div>
+
+  <div class="debtor-address-block end-grid-cell">
+    <p class="h3">
+      {{debtor.address}} {{debtor.buildingNumber}}<br />
+      {{debtor.postalCode}} {{debtor.city}} ({{debtor.province}})
+    </p>
+  </div>
+</section>
