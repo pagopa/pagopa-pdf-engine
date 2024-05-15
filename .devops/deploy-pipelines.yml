@@ -8,7 +8,7 @@ parameters:
       - uat
       - prod
   - name: SEMVER
-    displayName: "When packing a release, define the version bump to apply. Use only buildNumber or skip for manual deployment"      
+    displayName: "When packing a release, define the version bump to apply. Use only buildNumber or skip for manual deployment"
   - name: DOCKERFILE
     displayName: Dockerfile path
     type: string
@@ -26,29 +26,32 @@ parameters:
       - node
       - java
   - name: APP_SERVICE_NAME
-    displayName: App Serivce Name Image Name
+    displayName: App Service Name Image Name
+    type: string
+  - name: APP_SERVICE_RESOURCE_GROUP
+    displayName: App Service Resource Group
     type: string
 
-      
+
 
 variables:
   ${{ if eq(parameters['ENV'], 'dev') }}:
     AZURE_SUBSCRIPTION: $(DEV_AZURE_SUBSCRIPTION)
-    RESOURCE_GROUP: $(DEV_WEB_APP_RESOURCE_GROUP_NAME)
+    #    RESOURCE_GROUP: $(DEV_WEB_APP_RESOURCE_GROUP_NAME)
     # APP_NAME: $(DEV_WEB_APP_NAME)
     STAGE: "d"
     dockerRegistryServiceConnection: $(DEV_CONTAINER_REGISTRY_SERVICE_CONN)
     dockerNamespace: $(DEV_CONTAINER_NAMESPACE)
   ${{ if eq(parameters['ENV'], 'uat') }}:
     AZURE_SUBSCRIPTION: $(UAT_AZURE_SUBSCRIPTION)
-    RESOURCE_GROUP: $(UAT_WEB_APP_RESOURCE_GROUP_NAME)
+    #    RESOURCE_GROUP: $(UAT_WEB_APP_RESOURCE_GROUP_NAME)
     # APP_NAME: $(UAT_WEB_APP_NAME)
     STAGE: "u"
     dockerRegistryServiceConnection: $(UAT_CONTAINER_REGISTRY_SERVICE_CONN)
     dockerNamespace: $(UAT_CONTAINER_NAMESPACE)
   ${{ if eq(parameters['ENV'], 'prod') }}:
     AZURE_SUBSCRIPTION: $(PROD_AZURE_SUBSCRIPTION)
-    RESOURCE_GROUP: $(PROD_WEB_APP_RESOURCE_GROUP_NAME)
+    #    RESOURCE_GROUP: $(PROD_WEB_APP_RESOURCE_GROUP_NAME)
     # APP_NAME: $(PROD_WEB_APP_NAME)
     STAGE: "p"
     dockerRegistryServiceConnection: $(PROD_CONTAINER_REGISTRY_SERVICE_CONN)
@@ -64,6 +67,7 @@ variables:
 
   APP_NAME: ${{ parameters.APP_SERVICE_NAME }}
   IMAGE_REPOSITORY: ${{ parameters.IMAGE_NAME }}
+  RESOURCE_GROUP: ${{ parameters.APP_SERVICE_RESOURCE_GROUP }}
 
 # Only manual triggers
 trigger: none

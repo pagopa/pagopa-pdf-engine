@@ -2,11 +2,6 @@ name: Release And Deploy
 
 # Controls when the workflow will run
 on:
-  pull_request:
-    branches:
-      - main
-    types: [ closed ]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
@@ -19,6 +14,13 @@ on:
           - uat
           - prod
           - all
+      domain:
+        required: true
+        type: choice
+        description: Select the domain
+        options:
+          - weu-shared
+          - itn-printit
       semver:
         required: true
         type: choice
@@ -58,7 +60,7 @@ jobs:
         uses: pagopa/github-actions-template/semver-setup@v1.4.2
 
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV 
+        run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV
 
       - if: ${{ github.event.inputs.environment == 'uat' }}
         run: echo "ENVIRNOMENT=uat" >> $GITHUB_ENV
@@ -78,7 +80,7 @@ jobs:
   release:
     name: Create a New Release
     runs-on: ubuntu-latest
-    needs: [setup]
+    needs: [ setup ]
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
@@ -113,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "SHORT_ENV=d" >> $GITHUB_ENV 
+        run: echo "SHORT_ENV=d" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'uat' }}
         run: echo "SHORT_ENV=u" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'prod' }}
@@ -133,9 +135,11 @@ jobs:
                 "BUILD_CONTEXT": "./node",
                 "IMAGE_NAME": "pagopapdfengine",
                 "TYPE": "node",
-                "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-weu-shared-app-pdf-engine"
+                "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine",
+                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
+
 
   deploy_app_service_java:
     # needs: [ setup, release, image, deploy_app_service_node ]
@@ -145,12 +149,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "SHORT_ENV=d" >> $GITHUB_ENV 
+        run: echo "SHORT_ENV=d" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'uat' }}
         run: echo "SHORT_ENV=u" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'prod' }}
         run: echo "SHORT_ENV=p" >> $GITHUB_ENV
-              
+
       - name: Azure Pipelines Action
         uses: jacopocarlini/azure-pipelines@v1.3
         with:
@@ -165,7 +169,8 @@ jobs:
                 "BUILD_CONTEXT": ".",
                 "IMAGE_NAME": "pagopapdfenginejava",
                 "TYPE": "java",
-                "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-weu-shared-app-pdf-engine-java"
+                "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine-java",
+                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
