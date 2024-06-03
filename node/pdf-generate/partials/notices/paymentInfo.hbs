@@ -1,6 +1,12 @@
 <section class="notice-payment-info">
   <div class="payment-amount-title-block start-separator">
-    <h3 class="small-caps-title">Quanto pagare?</h3>
+    <h3 class="small-caps-title">
+      {{#if notice.expiryDate}}
+      Quanto e quando pagare?
+      {{else}}
+      Quanto pagare?
+      {{/if}}
+    </h3>
   </div>
 
   <div class="payment-amount-block start-grid-cell">

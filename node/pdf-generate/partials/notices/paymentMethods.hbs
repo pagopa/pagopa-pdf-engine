@@ -9,7 +9,8 @@
   <div class="payment-info-outer">
     <div class="payment-info-inner">
       <h4 class="small-caps-title mb-3x-small">Paga con l'app IO</h4>
-      <p class="body">oppure {{getPaymentMethodCopy payee.channel.online.website payee.channel.online.app}}dal tuo Home
+      <p class="body">oppure {{getOnlinePaymentMethodContent payee.channel.online.website payee.channel.online.app}}dal
+        tuo Home
         Banking, con la tua app di pagamento o con
         gli
         altri canali
@@ -22,7 +23,8 @@
     <div class="payment-info-outer">
       <div class="payment-info-inner">
         <h4 class="small-caps-title mb-3x-small">Paga sul territorio</h4>
-        <p class="body">presso Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar,
+        <p class="body">{{getPhysicalPaymentMethodContent payee.channel.offline}}presso
+          Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar,
           Edicole,
           Ricevitorie, Supermercati,
           Tabaccherie e altri Esercenti Convenzionati.</p>

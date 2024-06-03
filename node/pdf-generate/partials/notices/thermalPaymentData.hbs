@@ -1,0 +1,50 @@
+<section class="thermal-block">
+
+  <div class="thermal-separator">
+    <h3 class="thermal-small-caps-title">
+      {{title}}
+    </h3>
+    <p class="body">
+      {{subtitle}}
+    </p>
+  </div>
+
+  <div class="thermal-grid-cell">
+    <div class="thermal-payment-qrcode-block">
+      <p class="body">Inquadra il <strong>codice QR</strong> con la tua app di pagamento o usa i dati
+        sotto.</p>
+      <img class="payment-qrcode thermal-payment-qrcode" src={{genQrCode this.qrCode this.tempPath}}
+        alt="QR PaymentCode" />
+      <div class="thermal-payment-details-data">
+
+        <dl class="thermal-data-key-value-monospaced">
+          <dt>Importo (Euro)</dt>
+          <dd>{{this.amount}}</dd>
+        </dl>
+
+        <dl class="thermal-data-key-value-monospaced">
+          <dt>Cod. CBILL</dt>
+          <dd>{{this.cbillCode}}</dd>
+        </dl>
+
+        <dl class="thermal-data-key-value-monospaced">
+          <dt>Cod. Avviso</dt>
+          <dd>{{splitAndSpace this.refNumber}}</dd>
+        </dl>
+
+        <dl class="thermal-data-key-value-monospaced">
+          <dt>Cod. Fiscale Ente Creditore</dt>
+          <dd>{{payee.taxCode}}</dd>
+        </dl>
+
+        <dl class="thermal-data-key-value">
+          <dt>Ente creditore</dt>
+          <dd>{{payee.name}}</dd>
+        </dl>
+
+      </div>
+    </div>
+  </div>
+  </div>
+
+</section>
