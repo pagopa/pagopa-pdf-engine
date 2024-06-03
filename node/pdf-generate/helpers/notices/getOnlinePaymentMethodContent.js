@@ -1,4 +1,4 @@
-function getPaymentMethodCopy(website, app) {
+function getOnlinePaymentMethodContent(website, app) {
   if (website && app) {
     return "sul sito o app dell'ente, ";
   } else if (website && !app) {
@@ -10,4 +10,4 @@ function getPaymentMethodCopy(website, app) {
   }
 }
 
-module.exports = getPaymentMethodCopy;
+module.exports = getOnlinePaymentMethodContent;
