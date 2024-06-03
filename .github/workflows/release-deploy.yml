@@ -57,7 +57,7 @@ jobs:
     steps:
       - name: Get semver
         id: get_semver
-        uses: pagopa/github-actions-template/semver-setup@v1.4.2
+        uses: pagopa/github-actions-template/semver-setup@0018ad6b766a082c35ec88cd9f18de6b54fd59d1 # v1.4.2
 
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
         run: echo "ENVIRNOMENT=dev" >> $GITHUB_ENV
@@ -86,7 +86,7 @@ jobs:
     steps:
       - name: Make Release
         id: release
-        uses: pagopa/github-actions-template/maven-release@v1.5.2
+        uses: pagopa/github-actions-template/maven-release@d63ef91b9b1f0021276f0d63dadf42067d0b49f6 # v1.5.2
         with:
           semver: ${{ needs.setup.outputs.semver }}
           github_token: ${{ secrets.BOT_TOKEN_GITHUB }}
@@ -122,7 +122,7 @@ jobs:
         run: echo "SHORT_ENV=p" >> $GITHUB_ENV
 
       - name: Azure Pipelines Action
-        uses: jacopocarlini/azure-pipelines@v1.3
+        uses: jacopocarlini/azure-pipelines@b9721743a54e862597395b4a70727cfdc03028fb # v1.3
         with:
           azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
           azure-pipeline-name: 'pagopa-pdf-engine.deploy'
@@ -156,7 +156,7 @@ jobs:
         run: echo "SHORT_ENV=p" >> $GITHUB_ENV
 
       - name: Azure Pipelines Action
-        uses: jacopocarlini/azure-pipelines@v1.3
+        uses: jacopocarlini/azure-pipelines@b9721743a54e862597395b4a70727cfdc03028fb # v1.3
         with:
           azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
           azure-pipeline-name: 'pagopa-pdf-engine.deploy'
@@ -182,7 +182,7 @@ jobs:
     steps:
       - name: Report Status
         if: always()
-        uses: ravsamhq/notify-slack-action@v2
+        uses: ravsamhq/notify-slack-action@be814b201e233b2dc673608aa46e5447c8ab13f2 # v2
         with:
           status: ${{ needs.deploy_aks.result }}
           token: ${{ secrets.GITHUB_TOKEN }}
