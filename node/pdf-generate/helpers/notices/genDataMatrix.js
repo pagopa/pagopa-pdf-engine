@@ -1,8 +1,10 @@
 const bwipjs = require('bwip-js');
-const fs = require('fs');
+const { v4: uuidv4 } = require("uuid");
+const path = require('path');
 
-function genDataMatrix(data, path) {
-    const trimmedData = data.replaceAll(' ', '');
+function genDataMatrix(data, saveDir) {
+    const filename = path.join(
+    saveDir,uuidv4()+".svg");
 
     let svg = bwipjs.toSVG({
         bcid: 'datamatrix',
@@ -15,11 +17,9 @@ function genDataMatrix(data, path) {
         textxalign:  'center',
     });
 
-    const filePath = path + "/" + trimmedData+".svg";
-    fs.writeFileSync(filePath, svg);
+    fs.writeFileSync(filename, svg);
 
-    return filePath;
-
+    return filename;
 }
 
 module.exports = genDataMatrix;
