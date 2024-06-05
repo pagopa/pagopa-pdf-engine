@@ -1,6 +1,7 @@
 const bwipjs = require('bwip-js');
 const { v4: uuidv4 } = require("uuid");
 const path = require('path');
+const fs = require('fs');
 
 function genDataMatrix(data, saveDir) {
     const filename = path.join(
