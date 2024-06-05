@@ -1,32 +1,25 @@
-const bitgener = require('bitgener');
-const { v4: uuidv4 } = require("uuid");
-const path = require('path');
+const bwipjs = require('bwip-js');
+const fs = require('fs');
 
-function genDataMatrix(data, saveDir) {
-    const filename = path.join(
-    saveDir,uuidv4()+".svg");
-    bitgener({
-      data: data,
-      type: 'datamatrix',
-      output: filename,
-      encoding: 'utf8',
-      rectangular: false,
-      padding: 0,
-      width: 256,
-      height: 256,
-      original2DSize: false,
-      color: 'black',
-      opacity: 1,
-      bgColor: '#F7931A',
-      bgOpacity: 0,
-      hri: {
-        show: false
-      }
-    }).then((ret) => {
-        console.log(ret);
+function genDataMatrix(data, path) {
+    const trimmedData = data.replaceAll(' ', '');
+
+    let svg = bwipjs.toSVG({
+        bcid: 'datamatrix',
+        text: data,
+        width: 256,
+        height: 256,
+        padding: 0,
+        scale: 3,
+        includetext: false,
+        textxalign:  'center',
     });
 
-    return filename;
+    const filePath = path + "/" + trimmedData+".svg";
+    fs.writeFileSync(filePath, svg);
+
+    return filePath;
+
 }
 
 module.exports = genDataMatrix;
