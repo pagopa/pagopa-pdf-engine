@@ -115,9 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: 
-          echo "SHORT_ENV=d" >> $GITHUB_ENV
-          echo "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine${{ env.SHORT_ENV != 'prod' && '-ha' || '' }}"
+        run: echo "SHORT_ENV=d" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'uat' }}
         run: echo "SHORT_ENV=u" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'prod' }}
@@ -150,9 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: |
-          echo "SHORT_ENV=d" >> $GITHUB_ENV
-          echo "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine-java${{ env.SHORT_ENV != 'prod' && '-ha' || '' }}"
+        run: echo "SHORT_ENV=d" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'uat' }}
         run: echo "SHORT_ENV=u" >> $GITHUB_ENV
       - if: ${{ github.event.inputs.environment == 'prod' }}
