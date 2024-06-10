@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-pdf-engine
-    tag: "2.10.4"
+    tag: "2.10.4-1-PAGOPA-1828-bcdr-dis-45-ricreare-tutti-gli-app-service-plan-per-supportare-multi-az"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
