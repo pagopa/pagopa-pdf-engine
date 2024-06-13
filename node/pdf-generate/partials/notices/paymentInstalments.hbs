@@ -29,7 +29,7 @@ compact: true for dense (use it with bollettinoPostale in the same page)
 
                  }}
 
-                    {{#if (eq ../columns 2)}}
+                    {{#if (equals ../columns 2)}}
                         {{> paymentQRCol
                                 debtor=../debtor
                                 notice=../notice
@@ -37,7 +37,7 @@ compact: true for dense (use it with bollettinoPostale in the same page)
                                 tempPath=../tempPath
                         }}
                     {{/if}}
-                    {{#if (eq ../columns 3)}}
+                    {{#if (equals ../columns 3)}}
                         {{> paymentQRColCompact
                                 debtor=../debtor
                                 notice=../notice
