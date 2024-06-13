@@ -24,7 +24,7 @@ Java Azure Function that exposes REST API to generate a PDFA/2a document based o
     + [Integration testing](#integration-testing)
     + [Performance testing](#performance-testing)
 - [Contributors 👥](#contributors-)
-  * [Mainteiners](#mainteiners)
+  * [Maintainers](#maintainers)
 
 ---
 ## API Documentation 📖
@@ -162,10 +162,10 @@ From `./integration-test/src`
 2. `yarn test`
 #### Performance testing
 
----
+
 
 ## Contributors 👥
 Made with ❤️ by PagoPa S.p.A.
 
-### Mainteiners
+### Maintainers
 See `CODEOWNERS` file
