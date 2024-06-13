@@ -1,0 +1,52 @@
+{{!-- Inputs:
+
+instalments: the list of instalments to display (2 or 3 elements)
+columns: 2/3 the number of column of the page (to render the right layout)
+start: the number of the first instalment of the row
+compact: true for dense (use it with bollettinoPostale in the same page)
+
+ --}}
+
+<section class="instalment-payment-data" style="--columns: {{columns}}">
+    {{#each instalments}}
+        <div>
+            <div class="inner-separator">
+                <h4 class="h4">Rata {{add (add @index 1) ../start}}</h4>
+            </div>
+            {{#with this}}
+                {{#if ../compact}}
+                {{! compact if there is the bollettino postale in the same page }}
+                    {{> paymentQRColDense
+                            debtor=../debtor
+                            notice=../notice
+                            payee=../payee
+                            tempPath=../tempPath
+                    }}
+                {{else}}
+                {{! else we use the standar QR
+
+                 Note: there are 2 similar versions of pagopa QR. One for 2 columns and one for 3 columns
+
+                 }}
+
+                    {{#if (eq ../columns 2)}}
+                        {{> paymentQRCol
+                                debtor=../debtor
+                                notice=../notice
+                                payee=../payee
+                                tempPath=../tempPath
+                        }}
+                    {{/if}}
+                    {{#if (eq ../columns 3)}}
+                        {{> paymentQRColCompact
+                                debtor=../debtor
+                                notice=../notice
+                                payee=../payee
+                                tempPath=../tempPath
+                        }}
+                    {{/if}}
+                {{/if}}
+            {{/with}}
+        </div>
+    {{/each}}
+</section>
