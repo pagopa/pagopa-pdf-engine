@@ -17,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: [uat, prod]
+        environment: [prod]
         product: [pdf-engine-service, pdf-engine-service-node, pdf-engine-service-apimv2, pdf-engine-service-node-apimv2]
       max-parallel: 1
     environment:
