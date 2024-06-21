@@ -1,7 +1,8 @@
-
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import com.spire.pdf.conversion.PdfStandardsConverter;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.pdf.*;
 import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
@@ -11,7 +12,6 @@ import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.IOUtils;
-
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -22,7 +22,45 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
+
 public class GeneratePDFServiceImpl implements GeneratePDFService {
+
+
+    public static void convert(String pdfNormal, String pdfA, Logger logger) {
+        Document document = new Document();
+        PdfReader reader;
+        try {
+            PdfAWriter writer = PdfAWriter.getInstance(document, new FileOutputStream(pdfA), PdfAConformanceLevel.PDF_A_1B);
+            document.addCreationDate();
+
+            writer.setTagged();
+            writer.createXmpMetadata();
+            writer.setCompressionLevel(9);
+
+            document.open();
+            PdfContentByte pdfContentByte = writer.getDirectContent();
+
+            reader = new PdfReader(pdfNormal);
+
+            PdfImportedPage page;
+
+            int pageCount = reader.getNumberOfPages();
+            for (int i = 0; i < pageCount; i++) {
+                final int index = i + 1;
+                document.setPageSize(reader.getPageSize(index));
+                document.newPage();
+
+                page = writer.getImportedPage(reader, index);
+                page.setBoundingBox(reader.getCropBox(index));
+
+                pdfContentByte.addTemplate(page, 0, 0);
+            }
+        } catch (IOException | DocumentException ex) {
+            logger.error(ex.getMessage(), ex);
+        }
+
+        document.close();
+    }
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath, Logger logger)
@@ -42,20 +80,22 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
             logger.debug("PdfEngineClient called at {}", LocalDateTime.now());
             PdfEngineResponse response = pdfEngineClient.generatePDF(pdfEngineRequest);
-            if (response.getStatusCode() != 200 || response.getTempPdfPath() == null) {
+            if(response.getStatusCode() != 200 || response.getTempPdfPath() == null) {
                 throw new GeneratePDFException(AppErrorCodeEnum.valueOf(
-                        response.getErrorCode()),response.getErrorMessage());
+                        response.getErrorCode()), response.getErrorMessage());
             }
             logger.debug("PdfEngineClient responded at {}", LocalDateTime.now());
 
             String fileToReturn = response.getTempPdfPath();
-            logger.debug("Starting pdf conversion at {}", LocalDateTime.now());
-            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+            logger.info("Starting pdf conversion at {}", LocalDateTime.now());
+//            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+//            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+            convert(fileToReturn, pdfTempFile.getParent() + "/ToPdfA2A.pdf", logger);
+
             fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
             logger.debug("Completed pdf conversion at {}", LocalDateTime.now());
 
-            if (generatePDFInput.isGenerateZipped()) {
+            if(generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(new File(fileToReturn), workingDirPath);
             }
             return new BufferedInputStream(new FileInputStream(fileToReturn));
@@ -98,4 +138,5 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
         }
     }
+
 }

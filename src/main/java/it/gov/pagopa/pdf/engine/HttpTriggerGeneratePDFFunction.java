@@ -1,4 +1,3 @@
-
 package it.gov.pagopa.pdf.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,14 +40,11 @@ import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
  */
 public class HttpTriggerGeneratePDFFunction {
 
-    private final Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
-
-    private final String workingDirectoryPath = System.getenv().getOrDefault("WORKING_DIRECTORY_PATH", "");
-
     private static final String INVALID_REQUEST_MESSAGE = "Invalid request";
     private static final String ERROR_GENERATING_PDF_MESSAGE = "An error occurred when generating the PDF";
     private static final String PATTERN_FORMAT = "yyyy.MM.dd.HH.mm.ss";
-
+    private final Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+    private final String workingDirectoryPath = System.getenv().getOrDefault("WORKING_DIRECTORY_PATH", "");
     private final GeneratePDFService generatePDFService;
     private final ParseRequestBodyService parseRequestBodyService;
 
@@ -61,6 +57,16 @@ public class HttpTriggerGeneratePDFFunction {
     public HttpTriggerGeneratePDFFunction(GeneratePDFService generatePDFService, ParseRequestBodyService parseRequestBodyService) {
         this.generatePDFService = generatePDFService;
         this.parseRequestBodyService = parseRequestBodyService;
+    }
+
+    private static HttpStatus getHttpStatus(PDFEngineException e) {
+        HttpStatus status;
+        if(e.getErrorCode().equals(AppErrorCodeEnum.PDFE_703) || e.getErrorCode().equals(AppErrorCodeEnum.PDFE_704) || e.getErrorCode().equals(AppErrorCodeEnum.PDFE_705)) {
+            status = INTERNAL_SERVER_ERROR;
+        } else {
+            status = BAD_REQUEST;
+        }
+        return status;
     }
 
     /**
@@ -80,7 +86,7 @@ public class HttpTriggerGeneratePDFFunction {
         logger.debug("Generate PDF function called at {}", LocalDateTime.now());
 
         Optional<byte[]> optionalRequestBody = request.getBody();
-        if (optionalRequestBody.isEmpty()) {
+        if(optionalRequestBody.isEmpty()) {
             logger.error("Invalid request the payload is null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -122,7 +128,7 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        if (generatePDFInput.getTemplateZip() == null) {
+        if(generatePDFInput.getTemplateZip() == null) {
             logger.error("Invalid request, template HTML not provided");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -130,7 +136,7 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        if (generatePDFInput.getData() == null) {
+        if(generatePDFInput.getData() == null) {
             logger.error("Invalid request the PDF document input data are null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -138,7 +144,7 @@ public class HttpTriggerGeneratePDFFunction {
                     .build();
         }
 
-        try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
+        try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)) {
             byte[] fileBytes = inputStream.readAllBytes();
 
             logger.debug("Returning generated pdf at {}", LocalDateTime.now());
@@ -176,16 +182,6 @@ public class HttpTriggerGeneratePDFFunction {
 
     }
 
-    private static HttpStatus getHttpStatus(PDFEngineException e) {
-        HttpStatus status;
-        if (e.getErrorCode().equals(AppErrorCodeEnum.PDFE_703) || e.getErrorCode().equals(AppErrorCodeEnum.PDFE_704) || e.getErrorCode().equals(AppErrorCodeEnum.PDFE_705)) {
-            status = INTERNAL_SERVER_ERROR;
-        } else {
-            status = BAD_REQUEST;
-        }
-        return status;
-    }
-
     private ErrorResponse buildResponseBody(HttpStatus status, AppErrorCodeEnum appErrorCode, String message) {
         return new ErrorResponse(
                 status,
@@ -209,10 +205,11 @@ public class HttpTriggerGeneratePDFFunction {
     private File createWorkingDirectory() throws IOException {
 
         File workingDirectory = new File(workingDirectoryPath);
-        if (!workingDirectory.exists()) {
+        if(!workingDirectory.exists()) {
             try {
                 Files.createDirectory(workingDirectory.toPath());
-            } catch (FileAlreadyExistsException e) {}
+            } catch (FileAlreadyExistsException e) {
+            }
         }
         return workingDirectory;
     }
