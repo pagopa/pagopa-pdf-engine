@@ -88,8 +88,6 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
 
             String fileToReturn = response.getTempPdfPath();
             logger.info("Starting pdf conversion at {}", LocalDateTime.now());
-//            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-//            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
             convert(fileToReturn, pdfTempFile.getParent() + "/ToPdfA2A.pdf", logger);
 
             fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
