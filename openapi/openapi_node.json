@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine Node",
-    "version": "2.10.9"
+    "version": "2.10.10-itextpdfa"
   },
   "servers": [
     {
