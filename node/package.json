@@ -30,10 +30,3 @@
     "jest": "^29.6.4"
   }
 }
-
-2024-06-21 16:16:16.420 DEBUG 1 --- [io-8080-exec-10] i.g.p.p.n.g.client.PdfEngineClientImpl   :
-endpoint POST https://api.dev.platform.pagopa.it/printit/pdf-engine/v1/generate-pdf
-headers [Ocp-Apim-Subscription-Key: 2627c054351c49b8a28e6754e61c933a]
-body {"debtor":{"fullName":"Mario Rossi","taxCode":"FFFCST83A15L113V","address":"Via Roma","buildingNumber":"15","postalCode":"00100","city":"Roma","province":"RM"},"payee":{"logo":"https://pagopadprintitci.blob.core.windows.net/institutionslogoblob/00264560608%2Flogo.png","name":"Comune di Frosinone","taxCode":"00264560608","sector":"Servizio Pagamenti (Test)","additionalInfo":"info test","channel":{"online":{"website":true,"app":true},"physical":{"data":""}}},"notice":{"subject":"Avviso Pagamento di TEST","amount":"1,00","expiryDate":"31/12/2024","qrCode":"PAGOPA|002|123456789012345678|00264560608|100","refNumber":"123456789012345678","cbillCode":"AMX61","posteAccountNumber":"232323","posteAuth":"AUT. 08/5 S3/81 53079 08129.07.20211","posteDocumentType":"896","posteDataMatrix":"codfase=NBPA;181234567890123456781200000023232310000000010038961P100264560608FFFCST83A15L113VMario Rossi                             Avviso Pagamento di TEST                                                                                                  A","instalments":{"items":[],"discounted":{},"reduced":{}}}}
-
-args={noticeGenerationRequestItem=NoticeGenerationRequestItem(templateId=TemplateSingleInstalment, data=NoticeRequestData(notice=Notice(subject=Avviso Pagamento di TEST, paymentAmount=100, reducedAmount=null, discountedAmount=null, dueDate=31/12/2024, code=123456789012345678, installments=null), creditorInstitution=CreditorInstitution(taxCode=00264560608, fullName=null, organization=null, info=null, webChannel=null, appChannel=null, physicalChannel=null, cbill=null, logo=null, posteAuth=null, posteAccountNumber=null))), folderId=}, operationId=f2952e2a-36a9-4a46-a393-efb3762c4c17, startTime=1718986576314, method=generateNotice, requestId=request 58
