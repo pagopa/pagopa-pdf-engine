@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.10.10-itextpdfa</version>
+    <version>2.10.11-itextpdfa</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
