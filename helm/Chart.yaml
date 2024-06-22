@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopapdfengine
 description: Microservice description
 type: application
-version: 0.118.0
-appVersion: 2.10.9-itextpdfa
+version: 0.119.0
+appVersion: 2.10.9
 dependencies:
   - name: microservice-chart
     version: 2.4.0
