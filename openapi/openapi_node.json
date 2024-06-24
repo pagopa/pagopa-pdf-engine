@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine Node",
-    "version": "2.10.10-fix-chromium-version"
+    "version": "2.10.11"
   },
   "servers": [
     {
