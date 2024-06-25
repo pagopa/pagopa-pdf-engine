@@ -136,7 +136,7 @@ jobs:
                 "IMAGE_NAME": "pagopapdfengine",
                 "TYPE": "node",
                 "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine${{ env.SHORT_ENV == 'prod' && '-ha' || '' }}",
-                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg"
+                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg",
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
@@ -169,7 +169,8 @@ jobs:
                 "IMAGE_NAME": "pagopapdfenginejava",
                 "TYPE": "java",
                 "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine-java${{ env.SHORT_ENV == 'prod' && '-ha' || '' }}",
-                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg"
+                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg",
+                "DOMAIN": "${{inputs.domain}}"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 
