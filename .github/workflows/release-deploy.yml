@@ -137,6 +137,7 @@ jobs:
                 "TYPE": "node",
                 "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine${{ env.SHORT_ENV == 'prod' && '-ha' || '' }}",
                 "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg",
+                "DOMAIN": "${{inputs.domain}}"
             }
           azure-pipeline-variables: '{"system.debug": "true"}'
 

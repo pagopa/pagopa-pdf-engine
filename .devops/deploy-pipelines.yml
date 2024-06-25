@@ -31,6 +31,13 @@ parameters:
   - name: APP_SERVICE_RESOURCE_GROUP
     displayName: App Service Resource Group
     type: string
+  - name: DOMAIN
+    displayName: App Service Resource Group
+    type: string
+    default: weu-shared
+    values:
+      - weu-shared
+      - itn-printit
 
 
 
@@ -40,22 +47,34 @@ variables:
     #    RESOURCE_GROUP: $(DEV_WEB_APP_RESOURCE_GROUP_NAME)
     # APP_NAME: $(DEV_WEB_APP_NAME)
     STAGE: "d"
-    dockerRegistryServiceConnection: $(DEV_CONTAINER_REGISTRY_SERVICE_CONN)
-    dockerNamespace: $(DEV_CONTAINER_NAMESPACE)
+    ${{ if eq(parameters['DOMAIN'], 'weu-shared') }}:
+      dockerRegistryServiceConnection: $(DEV_CONTAINER_REGISTRY_SERVICE_CONN)
+      dockerNamespace: $(DEV_CONTAINER_NAMESPACE)
+    ${{ if eq(parameters['DOMAIN'], 'itn-printit') }}:
+      dockerRegistryServiceConnection: $(ITN_DEV_CONTAINER_REGISTRY_SERVICE_CONN)
+      dockerNamespace: $(ITN_DEV_CONTAINER_NAMESPACE)
   ${{ if eq(parameters['ENV'], 'uat') }}:
     AZURE_SUBSCRIPTION: $(UAT_AZURE_SUBSCRIPTION)
     #    RESOURCE_GROUP: $(UAT_WEB_APP_RESOURCE_GROUP_NAME)
     # APP_NAME: $(UAT_WEB_APP_NAME)
     STAGE: "u"
-    dockerRegistryServiceConnection: $(UAT_CONTAINER_REGISTRY_SERVICE_CONN)
-    dockerNamespace: $(UAT_CONTAINER_NAMESPACE)
+    ${{ if eq(parameters['DOMAIN'], 'weu-shared') }}:
+      dockerRegistryServiceConnection: $(UAT_CONTAINER_REGISTRY_SERVICE_CONN)
+      dockerNamespace: $(UAT_CONTAINER_NAMESPACE)
+    ${{ if eq(parameters['DOMAIN'], 'itn-printit') }}:
+      dockerRegistryServiceConnection: $(ITN_UAT_CONTAINER_REGISTRY_SERVICE_CONN)
+      dockerNamespace: $(ITN_UAT_CONTAINER_NAMESPACE)
   ${{ if eq(parameters['ENV'], 'prod') }}:
     AZURE_SUBSCRIPTION: $(PROD_AZURE_SUBSCRIPTION)
     #    RESOURCE_GROUP: $(PROD_WEB_APP_RESOURCE_GROUP_NAME)
     # APP_NAME: $(PROD_WEB_APP_NAME)
     STAGE: "p"
-    dockerRegistryServiceConnection: $(PROD_CONTAINER_REGISTRY_SERVICE_CONN)
-    dockerNamespace: $(PROD_CONTAINER_NAMESPACE)
+    ${{ if eq(parameters['DOMAIN'], 'weu-shared') }}:
+      dockerRegistryServiceConnection: $(PROD_CONTAINER_REGISTRY_SERVICE_CONN)
+      dockerNamespace: $(PROD_CONTAINER_NAMESPACE)
+    ${{ if eq(parameters['DOMAIN'], 'itn-printit') }}:
+      dockerRegistryServiceConnection: $(ITN_PROD_CONTAINER_REGISTRY_SERVICE_CONN)
+      dockerNamespace: $(ITN_PROD_CONTAINER_NAMESPACE)
   ${{ if eq(variables['Build.SourceBranchName'], 'merge') }}:
     SOURCE_BRANCH: "main" # force to main branch
   ${{ if ne(variables['Build.SourceBranchName'], 'merge') }}:
