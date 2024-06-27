@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopapdfengine
 description: Microservice description
 type: application
-version: 0.122.0
-appVersion: 2.10.13
+version: 0.123.0
+appVersion: 2.10.13-1
 dependencies:
   - name: microservice-chart
     version: 2.4.0
