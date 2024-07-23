@@ -77,7 +77,7 @@ public class HttpTriggerGeneratePDFFunction {
             HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
 
-        logger.debug("Generate PDF function called at {}", LocalDateTime.now());
+        logger.info("Generate PDF function called at {}", LocalDateTime.now());
 
         Optional<byte[]> optionalRequestBody = request.getBody();
         if (optionalRequestBody.isEmpty()) {
