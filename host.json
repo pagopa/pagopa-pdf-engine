@@ -10,17 +10,21 @@
     }
   },
   "logging": {
-    "fileLoggingMode": "always",
+    "fileLoggingMode": "debugOnly",
     "logLevel": {
-      "default": "Information",
+      "default": "None",
       "Host.Results": "Error",
-      "Function": "Information",
-      "Host.Aggregator": "Trace"
+      "Function.generate-pdf": "Warning",
+      "Function.Info": "Error",
+      "Host.Aggregator": "Error"
     },
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": false
+        "isEnabled": true,
+        "maxTelemetryItemsPerSecond": 5,
+        "includedTypes": "PageView;Trace;Dependency;Request",
+        "excludedTypes": "Exception;Event;CustomEvent"
+      }
     }
   } 
-}
 }
