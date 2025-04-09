@@ -141,7 +141,6 @@ public class HttpTriggerGeneratePDFFunction {
         try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
             byte[] fileBytes = inputStream.readAllBytes();
 
-            logger.debug("Returning generated pdf at {}", LocalDateTime.now());
             return request
                     .createResponseBuilder(HttpStatus.OK)
                     .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
