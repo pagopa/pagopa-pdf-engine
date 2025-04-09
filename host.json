@@ -14,7 +14,8 @@
     "logLevel": {
       "default": "None",
       "Host.Results": "Error",
-      "Function.generate-pdf": "Information",
+      "Function.generate-pdf": "Warning",
+      "Function.Info": "Error",
       "Microsoft": "Information",
       "Worker": "Information",
       "Host.Aggregator": "Error",
@@ -26,7 +27,7 @@
         "maxTelemetryItemsPerSecond": 5,
         "includedTypes": "PageView;Trace;Dependency;Request",
         "excludedTypes": "Exception;Event;CustomEvent"
+      }
     }
   } 
-}
 }
