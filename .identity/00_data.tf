@@ -61,3 +61,8 @@ data "azurerm_key_vault_secret" "key_vault_az_devops" {
   key_vault_id = data.azurerm_key_vault.key_vault_domain.id
 }
 
+data "azurerm_user_assigned_identity" "workload_identity_clientid" {
+  name                = "shared-workload-identity"
+  resource_group_name = "${local.product}-weu-${var.env}-aks-rg"
+}
+

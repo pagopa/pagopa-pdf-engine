@@ -23,6 +23,7 @@ microservice-chart:
     periodSeconds: 10
   deployment:
     create: true
+    replicas: 1
   serviceMonitor:
     create: true
     endpoints:
@@ -45,7 +46,7 @@ microservice-chart:
   serviceAccount:
     create: false
     annotations: {}
-    name: ""
+    name: "shared-workload-identity"
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
@@ -127,3 +128,5 @@ microservice-chart:
         pullPolicy: Always
       envConfig:
       envSecret:
+  azure:
+    workloadIdentityClientId: <workload-identity-client-id-set-automatically-by-gha>
