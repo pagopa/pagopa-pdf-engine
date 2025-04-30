@@ -66,3 +66,8 @@ data "azurerm_user_assigned_identity" "workload_identity_clientid" {
   resource_group_name = "${local.product}-weu-${var.env}-aks-rg"
 }
 
+data "azurerm_user_assigned_identity" "identity_cd" {
+  resource_group_name = "${local.product}-identity-rg"
+  name                = "${local.product}-${local.domain}-01-github-cd-identity"
+}
+
