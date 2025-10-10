@@ -47,11 +47,20 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                         response.getErrorCode()),response.getErrorMessage());
             }
 
-            String fileToReturn = response.getTempPdfPath();
-            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-            fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
-            logger.info("generatePDF - Completed pdf conversion at {}", LocalDateTime.now());
+            String fileToReturn;
+            try {
+                fileToReturn = response.getTempPdfPath();
+                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
+                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
+                fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+                logger.info("generatePDF - Completed pdf conversion at {}", LocalDateTime.now());
+            } catch (ArrayIndexOutOfBoundsException e) {
+                logger.error("ArrayIndexOutOfBoundsException during PDF/A conversion", e);
+                throw new GeneratePDFException(PDFE_909, "Error converting PDF to PDF/A-2a format", e);
+            } catch (Exception e) {
+                logger.error("Unexpected exception during PDF/A conversion", e);
+                throw new GeneratePDFException(PDFE_909, "Error converting PDF to PDF/A-2a format", e);
+            }
 
             if (generatePDFInput.isGenerateZipped()) {
                 return zipPDFDocument(new File(fileToReturn), workingDirPath);
