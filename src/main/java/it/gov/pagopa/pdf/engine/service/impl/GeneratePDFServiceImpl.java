@@ -47,19 +47,23 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                         response.getErrorCode()),response.getErrorMessage());
             }
 
+            String originalPdfPath = response.getTempPdfPath();
+            String pdfA2aPath = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
             String fileToReturn;
+
             try {
-                fileToReturn = response.getTempPdfPath();
-                PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-                converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-                fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
-                logger.info("generatePDF - Completed pdf conversion at {}", LocalDateTime.now());
+                PdfStandardsConverter converter = new PdfStandardsConverter(originalPdfPath);
+                converter.toPdfA2A(pdfA2aPath);
+                fileToReturn = pdfA2aPath;
+                logger.info("generatePDF - Completed PDF/A-2a conversion at {}", LocalDateTime.now());
             } catch (ArrayIndexOutOfBoundsException e) {
-                logger.error("ArrayIndexOutOfBoundsException during PDF/A conversion", e);
-                throw new GeneratePDFException(PDFE_909, "Error converting PDF to PDF/A-2a format", e);
+                logger.warn("ArrayIndexOutOfBoundsException during PDF/A-2a conversion. " +
+                        "Attempting fallback to PDF/A-1b. Error: {}", e.getMessage());
+                fileToReturn = attemptPdfA1bConversion(originalPdfPath, pdfTempFile.getParent(), logger);
             } catch (Exception e) {
-                logger.error("Unexpected exception during PDF/A conversion", e);
-                throw new GeneratePDFException(PDFE_909, "Error converting PDF to PDF/A-2a format", e);
+                logger.warn("Unexpected exception during PDF/A-2a conversion. " +
+                        "Attempting fallback to PDF/A-1b. Error: {}", e.getMessage());
+                fileToReturn = attemptPdfA1bConversion(originalPdfPath, pdfTempFile.getParent(), logger);
             }
 
             if (generatePDFInput.isGenerateZipped()) {
@@ -103,6 +107,29 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             return Files.createTempFile(workingDirPath, fileName, fileExtension).toFile();
         } catch (IOException e) {
             throw new GeneratePDFException(error, error.getErrorMessage(), e);
+        }
+    }
+
+    /**
+     * Attempts to convert PDF to PDF/A-1b format as a fallback when PDF/A-2a conversion fails.
+     * If PDF/A-1b conversion fails too, it will return the original PDF path
+     *
+     * @param originalPdfPath the path to the original PDF file
+     * @param workingDir the working directory for output files
+     * @param logger the logger instance
+     * @return the path to the converted PDF/A-1b file or original PDF
+     */
+    private String attemptPdfA1bConversion(String originalPdfPath, String workingDir, Logger logger) {
+        String pdfA1bPath = workingDir + "/ToPdfA1B.pdf";
+        try {
+            PdfStandardsConverter converter = new PdfStandardsConverter(originalPdfPath);
+            converter.toPdfA1B(pdfA1bPath);
+            logger.info("generatePDF - Completed PDF/A-1b conversion (fallback) at {}", LocalDateTime.now());
+            return pdfA1bPath;
+        } catch (Exception e) {
+            logger.warn("PDF/A-1b conversion failed. " +
+                    "Returning original PDF without conversions. Error: {}", e.getMessage());
+            return originalPdfPath;
         }
     }
 }
