@@ -142,7 +142,7 @@ class GeneratePDFServiceImplTest {
         try (MockedConstruction<com.spire.pdf.conversion.PdfStandardsConverter> mockedConstruction =
                 mockConstruction(com.spire.pdf.conversion.PdfStandardsConverter.class,
                 (mock, context) -> {
-                    doThrow(new ArrayIndexOutOfBoundsException("Index 76253 out of bounds"))
+                    doThrow(new ArrayIndexOutOfBoundsException("Index 76253 out of bounds."))
                             .when(mock).toPdfA2A(Mockito.anyString());
                     doAnswer(invocation -> {
                         String pdfA1bPath = invocation.getArgument(0);
