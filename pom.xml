@@ -188,7 +188,7 @@
             <dependency>
                 <groupId>e-iceblue</groupId>
                 <artifactId>spire.pdf.free</artifactId>
-                <version>9.12.3</version>
+                <version>9.13.0</version>
             </dependency>
 
         <dependency>
