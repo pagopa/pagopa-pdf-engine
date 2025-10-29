@@ -3,6 +3,13 @@ name: Create Dashboard
 # Controls when the workflow will run
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'openapi/**'
+      - '.github/workflows/create_dashboard.yaml'
+      - '.opex/**'
 
 permissions:
   id-token: write
