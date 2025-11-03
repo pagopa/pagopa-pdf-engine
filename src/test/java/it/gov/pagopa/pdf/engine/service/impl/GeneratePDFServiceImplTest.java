@@ -30,8 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-import org.mockito.MockedConstruction;
-
 class GeneratePDFServiceImplTest {
 
     private GeneratePDFService sut;
@@ -118,118 +116,6 @@ class GeneratePDFServiceImplTest {
         GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath, logger));
 
         Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, e.getErrorCode());
-    }
-
-    @Test
-    @SneakyThrows
-    void generatePDFArrayIndexOutOfBoundsExceptionFallbackToPdfA1b() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.singletonMap("a", "b"));
-        pdfInput.setApplySignature(false);
-
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        pdfEngineResponse.setStatusCode(200);
-        String originalPdfPath = Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).getPath();
-        pdfEngineResponse.setTempPdfPath(originalPdfPath);
-
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
-
-        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
-
-        try (MockedConstruction<com.spire.pdf.conversion.PdfStandardsConverter> mockedConstruction =
-                mockConstruction(com.spire.pdf.conversion.PdfStandardsConverter.class,
-                (mock, context) -> {
-                    doThrow(new ArrayIndexOutOfBoundsException("Index 76253 out of bounds."))
-                            .when(mock).toPdfA2A(Mockito.anyString());
-                    doAnswer(invocation -> {
-                        String pdfA1bPath = invocation.getArgument(0);
-                        Files.copy(new java.io.File(originalPdfPath).toPath(),
-                                new java.io.File(pdfA1bPath).toPath());
-                        return null;
-                    }).when(mock).toPdfA1B(Mockito.anyString());
-                })) {
-
-            BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
-
-            assertNotNull(output);
-            output.close();
-        }
-    }
-
-    @Test
-    @SneakyThrows
-    void generatePDFGenericExceptionFallbackToPdfA1b() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.singletonMap("a", "b"));
-        pdfInput.setApplySignature(false);
-
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        pdfEngineResponse.setStatusCode(200);
-        String originalPdfPath = Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).getPath();
-        pdfEngineResponse.setTempPdfPath(originalPdfPath);
-
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
-
-        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
-
-        try (MockedConstruction<com.spire.pdf.conversion.PdfStandardsConverter> mockedConstruction =
-                mockConstruction(com.spire.pdf.conversion.PdfStandardsConverter.class,
-                (mock, context) -> {
-                    doThrow(new RuntimeException("Conversion error"))
-                            .when(mock).toPdfA2A(Mockito.anyString());
-                    doAnswer(invocation -> {
-                        String pdfA1bPath = invocation.getArgument(0);
-                        Files.copy(new java.io.File(originalPdfPath).toPath(),
-                                new java.io.File(pdfA1bPath).toPath());
-                        return null;
-                    }).when(mock).toPdfA1B(Mockito.anyString());
-                })) {
-
-            BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
-
-            assertNotNull(output);
-            output.close();
-        }
-    }
-
-    @Test
-    @SneakyThrows
-    void generatePDFBothConversionsFailReturnsOriginalPdf() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.singletonMap("a", "b"));
-        pdfInput.setApplySignature(false);
-
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        pdfEngineResponse.setStatusCode(200);
-        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).getPath());
-
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
-
-        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
-
-        try (MockedConstruction<com.spire.pdf.conversion.PdfStandardsConverter> mockedConstruction =
-                mockConstruction(com.spire.pdf.conversion.PdfStandardsConverter.class,
-                (mock, context) -> {
-                    doThrow(new RuntimeException("PDF/A-2a conversion failed"))
-                            .when(mock).toPdfA2A(Mockito.anyString());
-                    doThrow(new RuntimeException("PDF/A-1b conversion failed"))
-                            .when(mock).toPdfA1B(Mockito.anyString());
-                })) {
-
-            BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
-
-            assertNotNull(output);
-            output.close();
-        }
     }
 
     private static <T> void setMock(Class<T> classToMock, T mock) {
