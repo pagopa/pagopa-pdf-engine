@@ -20,9 +20,26 @@ let browser;
 const getBrowserSession = async () => {
   if (browser) return browser;
 
+  const envFolders = process.env.FOLDERS_TO_LOAD || "receipts";
+  let includedFolders = [];
+  if (envFolders) {
+          includedFolders = envFolders.split(',')
+          .map(folder => folder.trim())
+          .filter(folder => folder.length > 0);
+  }
+  if (!includedFolders.includes('commons')) {
+          includedFolders.push('commons');
+  }
+  const includeAll = includedFolders.length === 0;
+
+  console.log(includedFolders);
+
   // Register helpers
-  const helperDirectories = getDirectories(helpersPath);
-  for (directoryHelper of helperDirectories) {
+ const allHelperDirectories = getDirectories(helpersPath);
+    const helperDirectoriesToLoad = includeAll
+        ? allHelperDirectories
+        : allHelperDirectories.filter(dir => includedFolders.includes(dir)); // Filtro
+  for (directoryHelper of helperDirectoriesToLoad) {
     const directoryHelperFiles = getFiles(`${helpersPath}/${directoryHelper}`);
     for (directoryHelperFile of directoryHelperFiles) {
         const helper = requireFile(`../helpers/${directoryHelper}`, path.parse(`${helpersPath}/${directoryHelper}/${directoryHelperFile}`).name);
@@ -32,8 +49,11 @@ const getBrowserSession = async () => {
   }
 
   // Register partials
-  const partialDirectories = getDirectories(partialPath);
-  for (directoryPartial of partialDirectories) {
+  const allPartialDirectories = getDirectories(partialPath);
+    const partialDirectoriesToLoad = includeAll
+        ? allPartialDirectories
+        : allPartialDirectories.filter(dir => includedFolders.includes(dir)); // Filtro
+  for (directoryPartial of partialDirectoriesToLoad) {
     const directoryPartialFiles = getFiles(`${partialPath}/${directoryPartial}`);
     for (directoryPartialFile of directoryPartialFiles) {
         const partial = importFile(`${partialPath}/${directoryPartial}`, directoryPartialFile);

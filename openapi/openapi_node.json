@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine Node",
-    "version": "2.10.21-1-PIDM-921-fix-spire-pdfa2a-conversion"
+    "version": "2.10.21-1-PAGOPA-3357-rivedere-pdf-engine"
   },
   "servers": [
     {
