@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.10.21</version>
+    <version>2.10.21-1-PIDM-921-fix-spire-pdfa2a-conversion</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
@@ -188,7 +188,7 @@
             <dependency>
                 <groupId>e-iceblue</groupId>
                 <artifactId>spire.pdf.free</artifactId>
-                <version>9.12.3</version>
+                <version>9.13.0</version>
             </dependency>
 
         <dependency>

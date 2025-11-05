@@ -47,16 +47,27 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
                         response.getErrorCode()),response.getErrorMessage());
             }
 
-            String fileToReturn = response.getTempPdfPath();
-            PdfStandardsConverter converter = new PdfStandardsConverter(fileToReturn);
-            converter.toPdfA2A(pdfTempFile.getParent() + "/ToPdfA2A.pdf");
-            fileToReturn = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
-            logger.info("generatePDF - Completed pdf conversion at {}", LocalDateTime.now());
+            String originalPdfPath = response.getTempPdfPath();
+            String pdfA2aPath = pdfTempFile.getParent() + "/ToPdfA2A.pdf";
+
+            try {
+                PdfStandardsConverter converter = new PdfStandardsConverter(originalPdfPath);
+                converter.toPdfA2A(pdfA2aPath);
+                logger.info("generatePDF - Completed PDF/A-2a conversion at {}", LocalDateTime.now());
+            } catch (ArrayIndexOutOfBoundsException e) {
+                logger.error("ArrayIndexOutOfBoundsException during PDF/A-2a conversion: {}", e.getMessage(), e);
+                throw new GeneratePDFException(PDFE_909,
+                    "Failed to convert PDF to PDF/A-2a format due to internal library error", e);
+            } catch (Exception e) {
+                logger.error("Unexpected exception during PDF/A-2a conversion: {}", e.getMessage(), e);
+                throw new GeneratePDFException(PDFE_909,
+                    "Failed to convert PDF to PDF/A-2a format", e);
+            }
 
             if (generatePDFInput.isGenerateZipped()) {
-                return zipPDFDocument(new File(fileToReturn), workingDirPath);
+                return zipPDFDocument(new File(pdfA2aPath), workingDirPath);
             }
-            return new BufferedInputStream(new FileInputStream(fileToReturn));
+            return new BufferedInputStream(new FileInputStream(pdfA2aPath));
 
         } catch (GeneratePDFException e) {
             throw e;
