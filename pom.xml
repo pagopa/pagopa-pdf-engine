@@ -89,6 +89,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>applicationinsights-core</artifactId>
+            <version>3.7.6</version>
+            <scope>compile</scope>
+        </dependency>
 
         <!-- jaxb -->
         <dependency>
