@@ -4,7 +4,7 @@ const fs = require('fs');
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
-const { getBrowserSession, closeBrowserSession } = require('./utils/browserManager');
+const {getBrowserSession, closeBrowserSession} = require('./utils/browserManager');
 const buildResponseBody = require('./utils/buildUtils');
 const multer = require('multer');
 const express = require('express');
@@ -12,6 +12,11 @@ let handlebars = require("handlebars");
 const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
+const appInsights = require("applicationinsights");
+
+
+const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
+
 
 const info = async function (req, res, next) {
 
@@ -31,6 +36,17 @@ const shutdown = async function (req, res, server) {
 
 const generatePdf = async function (req, res, next) {
 
+    appInsights.setup(connectionString).start();
+    const client = appInsights.defaultClient;
+
+    client.trackEvent({
+        name: "PDF_ENGINE_NODE",
+        properties: {
+            "type": "PDF_ENGINE_NODE_ERROR",
+            "title": "Generate PDF NodeJS Function Invoked",
+        }
+    });
+
     var workingDir;
     var page;
 
@@ -44,6 +60,15 @@ const generatePdf = async function (req, res, next) {
         try {
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
         } catch (err) {
+            client.trackEvent({
+                name: "PDF_ENGINE_NODE",
+                properties: {
+                    "type": "PDF_ENGINE_NODE_ERROR",
+                    "title": "An error occurred on processing the request",
+                    "details": "Error creating working directory",
+                    "cause": err.toString()
+                }
+            });
             res.status(500);
             res.body(buildResponseBody(500, 'PDFE_908', "An error occurred on processing the request"));
             return;
@@ -55,11 +80,20 @@ const generatePdf = async function (req, res, next) {
         var zipEntries = zip.getEntries();
 
 
-        for(const zipEntry of zipEntries){
-            if(!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
+        for (const zipEntry of zipEntries) {
+            if (!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
-                    if(err) {
-                      console.log(err);
+                    if (err) {
+                        client.trackEvent({
+                            name: "PDF_ENGINE_NODE",
+                            properties: {
+                                "type": "PDF_ENGINE_NODE_ERROR",
+                                "title": "outputFile error",
+                                "details": "An error occurred writing file " + zipEntry.entryName,
+                                "cause": err.toString()
+                            }
+                        });
+                        console.log(err);
                     }
                 });
             }
@@ -77,6 +111,15 @@ const generatePdf = async function (req, res, next) {
         }
 
         if (data == undefined) {
+            client.trackEvent({
+                name: "PDF_ENGINE_NODE",
+                properties: {
+                    "type": "PDF_ENGINE_NODE_ERROR",
+                    "title": "Invalid request",
+                    "details": "Missing data parameter",
+                    "cause": err.toString()
+                }
+            });
             res.status(400);
             res.json(buildResponseBody(400, 'PDFE_898', "Invalid request"));
 
@@ -93,6 +136,15 @@ const generatePdf = async function (req, res, next) {
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
 
         } catch (err) {
+            client.trackEvent({
+                name: "PDF_ENGINE_NODE",
+                properties: {
+                    "type": "PDF_ENGINE_NODE_ERROR",
+                    "title": "Error compiling the HTML template",
+                    "details": "An error occurred compiling the HTML template",
+                    "cause": err.toString()
+                }
+            });
             console.log(err)
             res.status(500);
             res.json(buildResponseBody(400, 'PDFE_901', "Error compiling the HTML template"));
@@ -102,7 +154,7 @@ const generatePdf = async function (req, res, next) {
 
         try {
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
-                waitUntil: ['load','domcontentloaded']
+                waitUntil: ['load', 'domcontentloaded']
             });
             // path, can be relative or absolute path
             //await page.addStyleTag({path: path.join(workingDir, "style.css")});
@@ -115,6 +167,15 @@ const generatePdf = async function (req, res, next) {
                 printBackground: true,
             });
         } catch (err) {
+            client.trackEvent({
+                name: "PDF_ENGINE_NODE",
+                properties: {
+                    "type": "PDF_ENGINE_NODE_ERROR",
+                    "title": "Error generating the PDF document",
+                    "details": "An error occurred generating the PDF document",
+                    "cause": err.toString()
+                }
+            });
             console.log(err);
             res.status(500);
             res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
@@ -127,6 +188,15 @@ const generatePdf = async function (req, res, next) {
         res.send(content);
 
     } catch (err) {
+        client.trackEvent({
+            name: "PDF_ENGINE_NODE",
+            properties: {
+                "type": "PDF_ENGINE_NODE_ERROR",
+                "title": "Error generating the PDF document",
+                "details": "An error occurred generating the PDF document",
+                "cause": err.toString()
+            }
+        });
         console.log(err);
         res.status(500);
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
@@ -136,37 +206,46 @@ const generatePdf = async function (req, res, next) {
         }
 
         if (workingDir) {
-            rmSync(workingDir, { recursive: true, force: true });
+            rmSync(workingDir, {recursive: true, force: true});
         }
+
+        client.trackEvent({
+            name: "PDF_ENGINE_NODE",
+            properties: {
+                "type": "PDF_ENGINE_NODE_LOG",
+                "title": "PDF generation process completed",
+                "details": "PDF " + title + " generated successfully"
+            }
+        });
 
     }
 
 }
 
 const waitForRender = async (page, timeout = 30000) => {
-  const checkInterval = process.env.CHECK_SIZE_INTERVAL || 100;
-  const maxChecks = timeout / checkInterval;
-  let lastSize = 0;
-  let checkCounts = 1;
-  let countStableSizeIterations = 0;
-  const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
+    const checkInterval = process.env.CHECK_SIZE_INTERVAL || 100;
+    const maxChecks = timeout / checkInterval;
+    let lastSize = 0;
+    let checkCounts = 1;
+    let countStableSizeIterations = 0;
+    const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
 
-  while(checkCounts++ <= maxChecks){
-    let html = await page.content();
-    let currentSize = html.length;
+    while (checkCounts++ <= maxChecks) {
+        let html = await page.content();
+        let currentSize = html.length;
 
-    if(lastSize != 0 && currentSize == lastSize)
-      countStableSizeIterations++;
-    else
-      countStableSizeIterations = 0;
+        if (lastSize != 0 && currentSize == lastSize)
+            countStableSizeIterations++;
+        else
+            countStableSizeIterations = 0;
 
-    if(countStableSizeIterations >= minStableSizeIterations) {
-      break;
+        if (countStableSizeIterations >= minStableSizeIterations) {
+            break;
+        }
+
+        lastSize = currentSize;
+        await new Promise(r => setTimeout(r, checkInterval))
     }
-
-    lastSize = currentSize;
-    await new Promise(r => setTimeout(r, checkInterval))
-  }
 };
 
-module.exports = { info, generatePdf, shutdown };
+module.exports = {info, generatePdf, shutdown};

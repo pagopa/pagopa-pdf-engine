@@ -31,24 +31,24 @@ public class AppInsightTelemetryClient {
         Map<String, String> props =
                 Map.of(
                         "type",
-                        "PDF_ENGINE_JAVA_LOG",
+                        "PDF_ENGINE_JAVA_ERROR",
                         "title",
                         title,
                         "details",
                         e.getMessage(),
                         "cause",
                         e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
-        this.telemetryClient.trackEvent("PDF_ENGINE_JAVA_ALERT", props, null);
+        this.telemetryClient.trackEvent("PDF_ENGINE_JAVA", props, null);
     }
 
     public void createCustomEventError(String title) {
         Map<String, String> props =
                 Map.of(
                         "type",
-                        "PDF_ENGINE_JAVA_LOG",
+                        "PDF_ENGINE_JAVA_ERROR  ",
                         "title",
                         title);
-        this.telemetryClient.trackEvent("PDF_ENGINE_JAVA_ALERT", props, null);
+        this.telemetryClient.trackEvent("PDF_ENGINE_JAVA", props, null);
     }
 
 
