@@ -183,6 +183,14 @@ const generatePdf = async function (req, res, next) {
             return;
         }
 
+        client.trackEvent({
+            name: "PDF_ENGINE_NODE",
+            properties: {
+                "type": "PDF_ENGINE_NODE_LOG",
+                "title": "PDF generation process completed",
+                "details": "PDF " + title + " generated successfully"
+            }
+        });
         let content = readFileSync(path.join(workingDir, "pagopa-receipt.pdf"));
         res.setHeader('content-type', 'application/pdf');
         res.send(content);
@@ -208,15 +216,6 @@ const generatePdf = async function (req, res, next) {
         if (workingDir) {
             rmSync(workingDir, {recursive: true, force: true});
         }
-
-        client.trackEvent({
-            name: "PDF_ENGINE_NODE",
-            properties: {
-                "type": "PDF_ENGINE_NODE_LOG",
-                "title": "PDF generation process completed",
-                "details": "PDF " + title + " generated successfully"
-            }
-        });
 
     }
 
