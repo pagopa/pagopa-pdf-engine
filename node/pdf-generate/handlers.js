@@ -42,7 +42,7 @@ const generatePdf = async function (req, res, next) {
     client.trackEvent({
         name: "PDF_ENGINE_NODE",
         properties: {
-            "type": "PDF_ENGINE_NODE_ERROR",
+            "type": "PDF_ENGINE_NODE_LOG",
             "title": "Generate PDF NodeJS Function Invoked",
         }
     });
