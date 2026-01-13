@@ -65,7 +65,7 @@ const generatePdf = async function (req, res, next) {
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
                     "title": "An error occurred on processing the request",
-                    "details": "Error creating working directory",
+                    "details": "PDFE_908 - Error creating working directory",
                     "cause": err.toString()
                 }
             });
@@ -116,7 +116,7 @@ const generatePdf = async function (req, res, next) {
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
                     "title": "Invalid request",
-                    "details": "Missing data parameter",
+                    "details": "PDFE_898 - Missing data parameter",
                     "cause": err.toString()
                 }
             });
@@ -141,7 +141,7 @@ const generatePdf = async function (req, res, next) {
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
                     "title": "Error compiling the HTML template",
-                    "details": "An error occurred compiling the HTML template",
+                    "details": "PDFE_901 - An error occurred compiling the HTML template",
                     "cause": err.toString()
                 }
             });
@@ -172,7 +172,7 @@ const generatePdf = async function (req, res, next) {
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
                     "title": "Error generating the PDF document",
-                    "details": "An error occurred generating the PDF document",
+                    "details": "PDFE_902 - An error occurred generating the PDF document",
                     "cause": err.toString()
                 }
             });
@@ -201,7 +201,7 @@ const generatePdf = async function (req, res, next) {
             properties: {
                 "type": "PDF_ENGINE_NODE_ERROR",
                 "title": "Error generating the PDF document",
-                "details": "An error occurred generating the PDF document",
+                "details": "PDFE_902 - An error occurred generating the PDF document",
                 "cause": err.toString()
             }
         });
