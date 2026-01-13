@@ -93,7 +93,7 @@ const generatePdf = async function (req, res, next) {
                                 "cause": err.toString()
                             }
                         });
-                        console.log(err);
+                        console.error(err);
                     }
                 });
             }
@@ -145,7 +145,7 @@ const generatePdf = async function (req, res, next) {
                     "cause": err.toString()
                 }
             });
-            console.log(err)
+            console.error(err)
             res.status(500);
             res.json(buildResponseBody(400, 'PDFE_901', "Error compiling the HTML template"));
 
@@ -176,7 +176,7 @@ const generatePdf = async function (req, res, next) {
                     "cause": err.toString()
                 }
             });
-            console.log(err);
+            console.error(err);
             res.status(500);
             res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
 
@@ -205,7 +205,7 @@ const generatePdf = async function (req, res, next) {
                 "cause": err.toString()
             }
         });
-        console.log(err);
+        console.error(err);
         res.status(500);
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {
