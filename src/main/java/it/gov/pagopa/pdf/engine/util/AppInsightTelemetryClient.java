@@ -28,6 +28,7 @@ public class AppInsightTelemetryClient {
     }
 
     public void createCustomEventError(String title, Exception e) {
+        String message = e.getMessage() != null ? e.getMessage() : "";
         Map<String, String> props =
                 Map.of(
                         "type",
@@ -35,9 +36,9 @@ public class AppInsightTelemetryClient {
                         "title",
                         title,
                         "details",
-                        e.getMessage(),
+                        message,
                         "cause",
-                        e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+                        e.getCause() != null ? e.getCause().getMessage() : message);
         this.telemetryClient.trackEvent("PDF_ENGINE_JAVA", props, null);
     }
 
