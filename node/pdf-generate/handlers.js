@@ -128,7 +128,7 @@ const generatePdf = async function (req, res, next) {
                     "type": "PDF_ENGINE_NODE_ERROR",
                     "title": "Invalid request",
                     "details": "PDFE_898 - Missing data parameter",
-                    "cause": err.toString()
+                    "cause": "data parameter is undefined"
                 }
             });
             res.status(400);
