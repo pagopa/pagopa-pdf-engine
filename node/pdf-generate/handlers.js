@@ -34,12 +34,23 @@ const shutdown = async function (req, res, server) {
     process.exit(0);
 }
 
+function trackCustomEvent(msg) {
+    try {
+        appInsights.setup(connectionString).start();
+        const client = appInsights.defaultClient;
+        if (!client) {
+            client.trackEvent(msg);
+        }
+    }
+    catch (e) {
+        console.error("custom event tracking failed", e);
+    }
+}
+
 const generatePdf = async function (req, res, next) {
 
-    appInsights.setup(connectionString).start();
-    const client = appInsights.defaultClient;
 
-    client.trackEvent({
+    trackCustomEvent({
         name: "PDF_ENGINE_NODE",
         properties: {
             "type": "PDF_ENGINE_NODE_LOG",
@@ -60,7 +71,7 @@ const generatePdf = async function (req, res, next) {
         try {
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
         } catch (err) {
-            client.trackEvent({
+            trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
@@ -84,7 +95,7 @@ const generatePdf = async function (req, res, next) {
             if (!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
                     if (err) {
-                        client.trackEvent({
+                        trackCustomEvent({
                             name: "PDF_ENGINE_NODE",
                             properties: {
                                 "type": "PDF_ENGINE_NODE_ERROR",
@@ -111,7 +122,7 @@ const generatePdf = async function (req, res, next) {
         }
 
         if (data == undefined) {
-            client.trackEvent({
+            trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
@@ -136,7 +147,7 @@ const generatePdf = async function (req, res, next) {
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
 
         } catch (err) {
-            client.trackEvent({
+            trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
@@ -167,7 +178,7 @@ const generatePdf = async function (req, res, next) {
                 printBackground: true,
             });
         } catch (err) {
-            client.trackEvent({
+            trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
                 properties: {
                     "type": "PDF_ENGINE_NODE_ERROR",
@@ -183,7 +194,7 @@ const generatePdf = async function (req, res, next) {
             return;
         }
 
-        client.trackEvent({
+        trackCustomEvent({
             name: "PDF_ENGINE_NODE",
             properties: {
                 "type": "PDF_ENGINE_NODE_LOG",
@@ -196,7 +207,7 @@ const generatePdf = async function (req, res, next) {
         res.send(content);
 
     } catch (err) {
-        client.trackEvent({
+        trackCustomEvent({
             name: "PDF_ENGINE_NODE",
             properties: {
                 "type": "PDF_ENGINE_NODE_ERROR",
