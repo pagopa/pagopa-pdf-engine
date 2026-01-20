@@ -1,0 +1,104 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PDF Engine Node - Unified Monitoring (Shared & PrintIT)",
+    "version": "2.10.22"
+  },
+  "servers": [
+    {
+      "url": "${host}",
+      "description": "Base host"
+    }
+  ],
+  "paths": {
+    "/shared/pdf-engine-node/v1/info": {
+      "get": {
+        "tags": ["Shared Node"],
+        "summary": "Health Check (Shared Node)",
+        "operationId": "healthCheckNodeShared",
+        "responses": {
+          "200": { "description": "OK" }
+        }
+      }
+    },
+    "/shared/pdf-engine-node/v1/generate-pdf": {
+      "post": {
+        "tags": ["Shared Node"],
+        "summary": "Create PDF (Shared Node)",
+        "operationId": "createPdfNodeShared",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/PdfEngineRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Successful response" },
+          "400": { "description": "Bad Request" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    },
+    "/printit/pdf-engine-node/v1/info": {
+      "get": {
+        "tags": ["PrintIT Node"],
+        "summary": "Health Check (PrintIT Node)",
+        "operationId": "healthCheckNodePrintIt",
+        "responses": {
+          "200": { "description": "OK" }
+        }
+      }
+    },
+    "/printit/pdf-engine-node/v1/generate-pdf": {
+      "post": {
+        "tags": ["PrintIT Node"],
+        "summary": "Create PDF (PrintIT Node)",
+        "operationId": "createPdfNodePrintIt",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/PdfEngineRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Successful response" },
+          "400": { "description": "Bad Request" },
+          "500": { "description": "Internal Server Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PdfEngineResponse": {
+        "type": "object",
+        "properties": {
+          "errorId": { "type": "integer", "format": "int64" },
+          "httpStatusDescription": { "type": "string" },
+          "httpStatusCode": {},
+          "appErrorCode": {},
+          "errors": {}
+        }
+      },
+      "PdfEngineRequest": {
+        "required": ["template", "data"],
+        "type": "object",
+        "properties": {
+          "template": { "type": "string", "format": "binary" },
+          "data": { "type": "string" },
+          "applySignature": { "type": "boolean" },
+          "generateZipped": { "type": "boolean" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "name": "Ocp-Apim-Subscription-Key",
+        "in": "header"
+      }
+    }
+  }
+}
