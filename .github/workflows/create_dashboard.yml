@@ -3,15 +3,6 @@ name: Create Dashboard
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'prod'
-        type: choice
-        options:
-          - uat
-          - prod
   push:
     branches:
       - main
@@ -33,7 +24,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: [ "${{ github.event.inputs.environment || 'prod' }}" ]
+        environment: [prod]
         product: [pdf-engine-service, pdf-engine-service-node]
       max-parallel: 1
     environment:
