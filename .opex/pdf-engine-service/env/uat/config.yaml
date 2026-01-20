@@ -1,5 +1,5 @@
 # oa3_spec: https://raw.githubusercontent.com/pagopa/pagopa-infra/main/src/domains/shared-app/api/pdf-engine/v1/_openapi.json.tpl # If start with http the file would be downloaded from the internet
-oa3_spec: ./openapi/openapi.json
+oa3_spec: ./openapi/openapi-pdf-engine-monitor.json
 name: opex_pagopa-pdf-engine
 location: West Europe
 timespan: 5m
@@ -13,6 +13,11 @@ overrides:
     - api.uat.platform.pagopa.it
   endpoints:
     /shared/pdf-engine/v1/generate-pdf:
+      response_time_threshold: 8 # Default: 1
+      response_time_evaluation_frequency: 10 # Default: 10
+      response_time_evaluation_time_window: 30 # Default: 20
+      response_time_event_occurrences: 5 # Default: 1
+    /printit/pdf-engine/v1/generate-pdf:
       response_time_threshold: 8 # Default: 1
       response_time_evaluation_frequency: 10 # Default: 10
       response_time_evaluation_time_window: 30 # Default: 20
