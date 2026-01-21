@@ -12,10 +12,7 @@ let handlebars = require("handlebars");
 const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
-const appInsights = require("applicationinsights");
-
-
-const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
+const telemetryClient = require('./utils/telemetry');
 
 
 const info = async function (req, res, next) {
@@ -35,14 +32,10 @@ const shutdown = async function (req, res, server) {
 }
 
 function trackCustomEvent(msg) {
+    if (!telemetryClient) return;
     try {
-        appInsights.setup(connectionString).start();
-        const client = appInsights.defaultClient;
-        if (!client) {
-            client.trackEvent(msg);
-        }
-    }
-    catch (e) {
+        telemetryClient.trackEvent(msg);
+    } catch (e) {
         console.error("custom event tracking failed", e);
     }
 }
