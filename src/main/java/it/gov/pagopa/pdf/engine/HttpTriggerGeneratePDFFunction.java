@@ -16,6 +16,7 @@ import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.service.ParseRequestBodyService;
 import it.gov.pagopa.pdf.engine.service.impl.GeneratePDFServiceImpl;
 import it.gov.pagopa.pdf.engine.service.impl.ParseRequestBodyServiceImpl;
+import it.gov.pagopa.pdf.engine.util.AppInsightTelemetryClient;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,10 +78,13 @@ public class HttpTriggerGeneratePDFFunction {
             HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context) {
 
+        AppInsightTelemetryClient appInsightTelemetryClient = new AppInsightTelemetryClient();
+
         logger.info("Generate PDF function called at {}", LocalDateTime.now());
 
         Optional<byte[]> optionalRequestBody = request.getBody();
         if (optionalRequestBody.isEmpty()) {
+            appInsightTelemetryClient.createCustomEventError("Invalid request the payload is null");
             logger.error("Invalid request the payload is null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -98,6 +102,7 @@ public class HttpTriggerGeneratePDFFunction {
                             .format(Instant.now())
             );
         } catch (IOException e) {
+            appInsightTelemetryClient.createCustomEventError(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
             logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -114,6 +119,8 @@ public class HttpTriggerGeneratePDFFunction {
         try {
             generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders(), workingDirPath);
         } catch (PDFEngineException e) {
+            appInsightTelemetryClient.createCustomEventError("Error retrieving input data from request body", e);
+
             logger.error("Error retrieving input data from request body", e);
             HttpStatus status = getHttpStatus(e);
             return request
@@ -123,6 +130,8 @@ public class HttpTriggerGeneratePDFFunction {
         }
 
         if (generatePDFInput.getTemplateZip() == null) {
+            appInsightTelemetryClient.createCustomEventError("Invalid request, template HTML not provided");
+
             logger.error("Invalid request, template HTML not provided");
             return request
                     .createResponseBuilder(BAD_REQUEST)
@@ -131,12 +140,16 @@ public class HttpTriggerGeneratePDFFunction {
         }
 
         if (generatePDFInput.getData() == null) {
+            appInsightTelemetryClient.createCustomEventError("Invalid request the PDF document input data are null");
+
             logger.error("Invalid request the PDF document input data are null");
             return request
                     .createResponseBuilder(BAD_REQUEST)
                     .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE))
                     .build();
         }
+
+        appInsightTelemetryClient.createCustomEvent("Starting Generation PDF", generatePDFInput.toString());
 
         try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
             byte[] fileBytes = inputStream.readAllBytes();
@@ -149,6 +162,8 @@ public class HttpTriggerGeneratePDFFunction {
                     .body(fileBytes)
                     .build();
         } catch (PDFEngineException e) {
+            appInsightTelemetryClient.createCustomEventError("Error generating the PDF document", e);
+
             logger.error("Error generating the PDF document", e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -159,6 +174,8 @@ public class HttpTriggerGeneratePDFFunction {
                                     ERROR_GENERATING_PDF_MESSAGE))
                     .build();
         } catch (IOException e) {
+            appInsightTelemetryClient.createCustomEventError("Error handling the generated stream", e);
+
             logger.error("Error handling the generated stream", e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)

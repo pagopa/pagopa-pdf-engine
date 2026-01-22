@@ -1,6 +1,7 @@
 
 package it.gov.pagopa.pdf.engine;
 
+import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -50,14 +51,17 @@ class HttpTriggerGeneratePDFFunctionTest {
     private GeneratePDFService generatePDFServiceMock;
     private ParseRequestBodyService parseRequestBodyServiceMock;
     private ExecutionContext executionContextMock;
+    private TelemetryClient telemetryClientMock;
 
     @BeforeEach
     void setUp() {
         environmentVariables.set("WORKING_DIRECTORY_PATH", "temp");
+        environmentVariables.set("APPLICATIONINSIGHTS_CONNECTION_STRING", "secret");
 
         generatePDFServiceMock = mock(GeneratePDFService.class);
         parseRequestBodyServiceMock = mock(ParseRequestBodyService.class);
         executionContextMock = mock(ExecutionContext.class);
+        telemetryClientMock = mock(TelemetryClient.class);
         function = spy(new HttpTriggerGeneratePDFFunction(generatePDFServiceMock, parseRequestBodyServiceMock));
     }
 
