@@ -27,9 +27,7 @@ const getBrowserSession = async () => {
           .map(folder => folder.trim())
           .filter(folder => folder.length > 0);
   }
-  if (!includedFolders.includes('commons')) {
-          includedFolders.push('commons');
-  }
+
   const includeAll = includedFolders.length === 0;
 
   console.log(includedFolders);
