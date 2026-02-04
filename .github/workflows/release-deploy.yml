@@ -112,7 +112,7 @@ jobs:
     needs: [ setup, release ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     name: Deploy on App Service Node
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted-job, "${{ inputs.environment }}" ]
     steps:
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
         run: echo "SHORT_ENV=d" >> $GITHUB_ENV
@@ -146,7 +146,7 @@ jobs:
     needs: [ setup, release, deploy_app_service_node ]
     if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     name: Deploy on App Service Java
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted-job, "${{ inputs.environment }}" ]
     steps:
       - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
         run: echo "SHORT_ENV=d" >> $GITHUB_ENV
