@@ -96,7 +96,7 @@ trigger: none
 pr: none
 
 pool:
-  name: $(poolImage)
+  vmImage: $(poolImage)
 
 stages:
   # Deploy on Azure
