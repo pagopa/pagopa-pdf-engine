@@ -1,43 +1,55 @@
 <section class="notice-payment-info">
     <div class="payment-amount-title-block start-separator">
-        <h3 class="small-caps-title">
-            {{#if notice.expiryDate}}
-                Quanto e quando pagare?
-            {{else}}
-                Quanto pagare?
-            {{/if}}
+        {{#if notice.expiryDate}}
+        {{{languageHandler 'paymentInfo.title.withExpiryDate' classPrimaryLang='small-caps-title'
+        classSecondaryLang='small-caps-title-bilingual'}}}
+        {{else}}
+        {{{languageHandler 'paymentInfo.title.withoutExpiryDate' classPrimaryLang='small-caps-title'
+        classSecondaryLang='small-caps-title-bilingual'}}}
+        {{/if}}
         </h3>
     </div>
 
     <div class="payment-amount-block start-grid-cell">
         <dl class="amount">
-            <dt class="body strong">Importo</dt>
+            <dt>
+                {{{languageHandler 'paymentInfo.amount.default'
+                classPrimaryLang='body strong'
+                classSecondaryLang='body muted'}}}
+            </dt>
             <dd class="h1">{{notice.amount}} Euro</dd>
         </dl>
 
         {{#if notice.expiryDate}}
-            <dl class="expiry-date">
-                <dt class="body strong">entro il</dt>
-                <dd class="h1">{{notice.expiryDate}}</dd>
-            </dl>
+        <dl class="expiry-date">
+            <dt>
+                {{{languageHandler 'paymentInfo.expiryDate.default'
+                classPrimaryLang='body strong'
+                classSecondaryLang='body muted'}}}
+            </dt>
+            <dd class="h1">{{notice.expiryDate}}</dd>
+        </dl>
         {{/if}}
 
         <div class="info-block">
 
             {{#if notice.instalments.items}}
-                <div class="info-paragraph">
-                    <img src="./assets/icons/icon-info.svg" class="info-icon" aria-hidden="true"/>
-                    <p class="body">Puoi pagare per intero oppure in {{notice.instalments.items.length}} rate</p>
-                </div>
+            <div class="info-paragraph">
+                <img src="./assets/icons/icon-info.svg" class="info-icon" aria-hidden="true" />
+                {{{languageHandler 'paymentInfo.instalments.default'
+                classPrimaryLang='body'
+                classSecondaryLang='body muted'
+                align="vertical"
+                number=notice.instalments.items.length}}}
+            </div>
             {{/if}}
 
             <div class="info-paragraph">
-                <img src="./assets/icons/icon-info.svg" class="info-icon" aria-hidden="true"/>
-                <p class="body">In fase di pagamento, se previsto dall’ente, l'importo potrebbe essere
-                    aggiornato
-                    automaticamente e subire variazioni in
-                    diminuzione
-                    (per sgravi, note di credito) o in aumento (per sanzioni, interessi, ecc.).</p>
+                <img src="./assets/icons/icon-info.svg" class="info-icon" aria-hidden="true" />
+                {{{languageHandler 'paymentInfo.legal'
+                classPrimaryLang='body'
+                classSecondaryLang='body muted'
+                align="vertical"}}}
             </div>
 
         </div>

@@ -1,6 +1,7 @@
 <section class="notice-payment-data">
   <div class="unique-separator">
-    <h3 class="small-caps-title">Dati per il pagamento</h3>
+    {{{languageHandler 'paymentData.title' classPrimaryLang='small-caps-title'
+    classSecondaryLang='small-caps-title-bilingual'}}}
   </div>
 
   <section class="instalment-payment-data" style="--columns: 3">
@@ -9,7 +10,8 @@
 
     <div>
       <div class="inner-separator">
-        <h3 class="small-caps-title">Rata {{add @index 1}}</h3>
+        {{{languageHandler "paymentData.instalmentNumber" classPrimaryLang="small-caps-title"
+        classSecondaryLang="small-caps-title-bilingual" number=(add @index 1)}}}
       </div>
       {{#with this}}
       {{> paymentQRColCompact

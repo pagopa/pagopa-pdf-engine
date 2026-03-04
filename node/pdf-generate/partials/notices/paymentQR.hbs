@@ -1,33 +1,45 @@
 <div class="payment-details unique-grid-cell">
     <div class="qrcode-area">
-        <img class="payment-qrcode" src={{genQrCode this.qrCode this.tempPath}} alt="QR PaymentCode"/>
-        <p class="body mt-small">Inquadra il <strong>codice QR</strong> con la tua app di pagamento o usa i dati
-            accanto.</p>
+        <img class="payment-qrcode" src={{genQrCode this.qrCode this.tempPath}} alt="QR PaymentCode" />
+        {{{languageHandler
+        "paymentData.instructions.qrCode.singlePayment"
+        classContainer="mt-small"
+        classPrimaryLang="body"
+        classSecondaryLang="body muted"
+        align="vertical"
+        }}}
     </div>
     <div class="payment-details-data">
         <div class="payment-details-data-1st-block">
 
             <div class="grid-cell-span-1">
                 <dl class="data-key-value">
-                    <dt>Destinatario</dt>
+                    <dt>
+                        {{{languageHandler "paymentData.recipient" classSecondaryLang="muted"}}}
+                    </dt>
                     <dd class="forcedCapitalCase">{{lowercase debtor.fullName}}</dd>
                 </dl>
             </div>
 
-            <p class="amount align-right">
-                Euro <strong>{{this.amount}}</strong>
-            </p>
+            <dl class="data-key-value-inline-monospaced align-right valign-start">
+                <dt>Euro</dt>
+                <dd>{{this.amount}}</dd>
+            </dl>
 
             <div class="grid-cell-span-2">
                 <dl class="data-key-value">
-                    <dt>Ente creditore</dt>
+                    <dt>
+                        {{{languageHandler "paymentData.payee" classSecondaryLang="muted"}}}
+                    </dt>
                     <dd>{{payee.name}}</dd>
                 </dl>
             </div>
 
             <div class="grid-cell-span-2">
                 <dl class="data-key-value">
-                    <dt>Oggetto del pagamento</dt>
+                    <dt>
+                        {{{languageHandler "paymentData.description" classSecondaryLang="muted"}}}
+                    </dt>
                     <dd>{{notice.subject}}</dd>
                 </dl>
             </div>
@@ -37,21 +49,30 @@
 
             <div class="grid-cell-span-2">
                 <dl class="data-key-value-monospaced">
-                    <dt>Cod. CBILL</dt>
+                    <dt>
+                        {{{languageHandler "paymentData.cbillCode" classSecondaryLang="muted" classContainer="dense"
+                        align="vertical"}}}
+                    </dt>
                     <dd>{{notice.cbillCode}}</dd>
                 </dl>
             </div>
 
             <div class="grid-cell-span-4">
                 <dl class="data-key-value-monospaced">
-                    <dt>Cod. Avviso</dt>
+                    <dt>
+                        {{{languageHandler "paymentData.refNumber" classSecondaryLang="muted" classContainer="dense"
+                        align="vertical"}}}
+                    </dt>
                     <dd>{{splitAndSpace this.refNumber}}</dd>
                 </dl>
             </div>
 
             <div class="grid-cell-span-2 align-right">
                 <dl class="data-key-value-monospaced">
-                    <dt>Cod. Fiscale Ente</dt>
+                    <dt>
+                        {{{languageHandler "paymentData.payeeTaxCode" classSecondaryLang="muted" classContainer="dense"
+                        align="vertical"}}}
+                    </dt>
                     <dd>{{payee.taxCode}}</dd>
                 </dl>
             </div>
