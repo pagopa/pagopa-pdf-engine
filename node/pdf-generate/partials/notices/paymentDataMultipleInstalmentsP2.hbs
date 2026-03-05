@@ -1,20 +1,21 @@
 <section class="notice-payment-data">
   <div class="unique-separator">
-    <h3 class="small-caps-title">Dati per il pagamento</h3>
+    {{{languageHandler 'paymentData.title' classPrimaryLang='small-caps-title'
+    classSecondaryLang='small-caps-title-bilingual'}}}
   </div>
 
   <div class="payment-data-compact unique-grid-cell">
     <div class="payment-data-compact-row">
       <dl class="data-key-value">
-        <dt>Destinatario</dt>
+        <dt>{{{languageHandler "paymentData.recipient" classSecondaryLang="muted" align="vertical"}}}</dt>
         <dd class="forcedCapitalCase">{{lowercase debtor.fullName}}</dd>
       </dl>
       <dl class="data-key-value">
-        <dt>Ente creditore</dt>
+        <dt>{{{languageHandler "paymentData.payee" classSecondaryLang="muted" align="vertical"}}}</dt>
         <dd>{{payee.name}}</dd>
       </dl>
       <dl class="data-key-value">
-        <dt>Oggetto del pagamento</dt>
+        <dt>{{{languageHandler "paymentData.description" classSecondaryLang="muted" align="vertical"}}}</dt>
         <dd>{{notice.subject}}</dd>
       </dl>
     </div>
@@ -26,10 +27,13 @@
 
     <div>
       <div class="inner-separator">
-        <h3 class="small-caps-title">Rata {{add @index 4}}</h3>
+        {{{languageHandler "paymentData.instalmentNumber" classPrimaryLang="small-caps-title"
+        classSecondaryLang="small-caps-title-bilingual" number=(add @index 4)}}}
       </div>
       {{#with this}}
       {{> paymentQRColDense
+      debtor=../debtor
+      notice=../notice
       payee=../payee
       tempPath=../tempPath
       }}

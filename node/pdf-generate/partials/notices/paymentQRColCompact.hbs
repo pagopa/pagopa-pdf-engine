@@ -1,7 +1,7 @@
 <div class="instalment-details">
     <div class="instalment-details-data-1st-block compact">
         <div class="qrcode-area">
-            <img class="payment-qrcode" src={{genQrCode qrCode tempPath}} alt="QR PaymentCode"/>
+            <img class="payment-qrcode" src={{genQrCode qrCode tempPath}} alt="QR PaymentCode" />
         </div>
 
         <dl class="data-key-value-monospaced tight">
@@ -10,24 +10,26 @@
         </dl>
 
         <dl class="data-key-value-monospaced tight">
-            <dt>Entro il</dt>
+            <dt>
+                {{{languageHandler "paymentInfo.expiryDate.default" classSecondaryLang="muted"}}}
+            </dt>
             <dd>{{expiryDate}}</dd>
         </dl>
 
         <div class="grid-cell-span-2">
             <dl class="data-key-value-monospaced tight">
-                <dt>Cod. Avviso</dt>
+                <dt>{{{languageHandler "paymentData.refNumber" forceSecondaryLang="true"}}}</dt>
                 <dd>{{splitAndSpace refNumber}}</dd>
             </dl>
         </div>
 
         <div class="grid-cell-span-2 instalment-row-data">
             <dl class="data-key-value-monospaced tight">
-                <dt>Cod. Fiscale Ente</dt>
+                <dt>{{{languageHandler "paymentData.payeeTaxCode" forceSecondaryLang="true"}}}</dt>
                 <dd>{{payee.taxCode}}</dd>
             </dl>
             <dl class="data-key-value-monospaced tight">
-                <dt>Cod. CBILL</dt>
+                <dt>{{{languageHandler "paymentData.cbillCode" forceSecondaryLang="true"}}}</dt>
                 <dd>{{notice.cbillCode}}</dd>
             </dl>
         </div>
@@ -36,16 +38,20 @@
 
     <div class="instalment-details-data-2nd-block">
         <dl class="data-key-value">
-            <dt>Oggetto del pagamento</dt>
+            <dt>{{{languageHandler "paymentData.description" forceSecondaryLang="true"}}}</dt>
             <dd>{{notice.subject}}</dd>
         </dl>
         <dl class="data-key-value">
-            <dt>Ente creditore</dt>
+            <dt>{{{languageHandler "paymentData.payee" forceSecondaryLang="true"}}}</dt>
             <dd>{{payee.name}}</dd>
         </dl>
     </div>
 
-    <p class="caption black">Inquadra il <strong>codice QR</strong> con la tua app o usa i dati
-        sopra</p>
+    {{{languageHandler
+    "paymentData.instructions.qrCode.instalments"
+    classPrimaryLang="caption black"
+    forceSecondaryLang="true"
+    align="vertical"
+    }}}
 
 </div>

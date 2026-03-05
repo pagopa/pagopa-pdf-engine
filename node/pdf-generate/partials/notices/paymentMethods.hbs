@@ -1,37 +1,90 @@
 <div class="payment-methods-title-block end-separator">
-    <h3 class="small-caps-title">Dove pagare?</h3>
+    {{{languageHandler
+    "whereToPay.title"
+    classPrimaryLang="small-caps-title"
+    classSecondaryLang="small-caps-title-bilingual"
+    }}}
     <div class="pagopa-website-block">
-        <p class="body">vai su <span class="h4">pagopa.gov.it</span></p>
+        <p class="h4">pagopa.gov.it</p>
     </div>
 </div>
 
 <div class="payment-methods-block end-grid-cell">
     <div class="payment-info-outer">
         <div class="payment-info-inner">
-            <h4 class="small-caps-title mb-3x-small">Paga con l'app IO</h4>
-            <p class="body">oppure {{getOnlinePaymentMethodContent payee.channel.online.website
-                                                                   payee.channel.online.app}}dal
-                tuo Home
-                Banking, con la tua app di pagamento o con
-                gli
-                altri canali
-                abilitati.</p>
+            {{#if metadata.abroad}}
+            {{! Paga online (Estero) }}
+            {{{languageHandler
+            "whereToPay.abroad.online.title"
+            classPrimaryLang="small-caps-title"
+            classSecondaryLang="body muted"
+            classContainer="mb-3x-small"
+            }}}
+            {{! Testo descrittivo }}
+            {{{languageHandler
+            (getOnlinePaymentMethodLocaleKey payee.channel.online.website payee.channel.online.app "abroad")
+            classPrimaryLang="body"
+            classSecondaryLang="body muted"
+            align="vertical"
+            }}}
+            {{else}}
+            {{! Paga con l'app IO (Italia) }}
+            {{{languageHandler
+            "whereToPay.italy.online.title"
+            classPrimaryLang="small-caps-title"
+            classSecondaryLang="body muted"
+            classContainer="mb-3x-small"
+            }}}
+            {{! Testo descrittivo }}
+            {{{languageHandler
+            (getOnlinePaymentMethodLocaleKey payee.channel.online.website payee.channel.online.app "italy")
+            classPrimaryLang="body"
+            classSecondaryLang="body muted"
+            align="vertical"
+            }}}
+            {{/if}}
         </div>
-        <img src="./assets/icons/pictogram-devices.svg" class="payment-info-pictogram" aria-hidden="true"/>
+        {{#unless metadata.secondaryLanguage}}<img src="./assets/icons/pictogram-devices.svg" class="payment-info-pictogram" aria-hidden="true" />{{/unless}}
     </div>
 
     <div>
         <div class="payment-info-outer">
             <div class="payment-info-inner">
-                <h4 class="small-caps-title mb-3x-small">Paga sul territorio</h4>
-                <p class="body">{{getPhysicalPaymentMethodContent payee.channel.offline}}presso
-                    Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar,
-                    Edicole,
-                    Ricevitorie, Supermercati,
-                    Tabaccherie e altri Esercenti Convenzionati.</p>
+                {{#if metadata.abroad}}
+                {{! Paga sul territorio (Estero) }}
+                {{{languageHandler
+                "whereToPay.abroad.physical.title"
+                classPrimaryLang="small-caps-title"
+                classSecondaryLang="body muted"
+                classContainer="mb-3x-small"
+                }}}
+                {{! Testo descrittivo }}
+                {{{languageHandler
+                "whereToPay.abroad.physical.description"
+                classPrimaryLang="body"
+                classSecondaryLang="body muted"
+                align="vertical"
+                }}}
+                {{else}}
+                {{! Paga sul territorio (Italia) }}
+                {{{languageHandler
+                "whereToPay.italy.physical.title"
+                classPrimaryLang="small-caps-title"
+                classSecondaryLang="body muted"
+                classContainer="mb-3x-small"
+                }}}
+                {{! Testo descrittivo }}
+                {{{languageHandler
+                "whereToPay.italy.physical.description"
+                classPrimaryLang="body"
+                classSecondaryLang="body muted"
+                align="vertical"
+                customLocation=(getPhysicalPaymentMethodContent payee.channel.offline)
+                }}}
+                {{/if}}
             </div>
-            <img src="./assets/icons/pictogram-physical-locations.svg" class="payment-info-pictogram"
-                 aria-hidden="true"/>
+            {{#unless metadata.secondaryLanguage}}<img src="./assets/icons/pictogram-physical-locations.svg" class="payment-info-pictogram"
+                aria-hidden="true" />{{/unless}}
         </div>
     </div>
 </div>

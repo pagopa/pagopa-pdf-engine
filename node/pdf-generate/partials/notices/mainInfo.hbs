@@ -1,11 +1,12 @@
 <section class="notice-main-info">
   <div class="payee-title-block start-separator">
-    <h3 class="small-caps-title">Ente creditore</h3>
+    {{{languageHandler 'paymentData.payee' classPrimaryLang='small-caps-title'
+    classSecondaryLang='small-caps-title-bilingual'}}}
     <p class="data-small">{{payee.taxCode}}</p>
   </div>
 
   <div class="payee-name-block start-grid-cell">
-    <p class="h2">{{payee.name}}</p>
+    <p class="{{getDynamicPayeeSizeClassName payee.name}}">{{payee.name}}</p>
   </div>
 
   <div class="payee-sector-block start-grid-cell">
@@ -17,7 +18,8 @@
   </div>
 
   <div class="debtor-title-block end-separator">
-    <h3 class="small-caps-title">Destinatario</h3>
+    {{{languageHandler 'paymentData.recipient' classPrimaryLang='small-caps-title'
+    classSecondaryLang='small-caps-title-bilingual'}}}
     <p class="data-small uppercase">{{debtor.taxCode}}</p>
   </div>
 
