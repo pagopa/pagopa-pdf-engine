@@ -1,0 +1,564 @@
+{
+  "it": {
+    "translation": {
+      "heading": {
+        "title": "Avviso di pagamento"
+      },
+      "paymentInfo": {
+        "title": {
+          "withExpiryDate": "Quanto e quando pagare?",
+          "withoutExpiryDate": "Quanto pagare?"
+        },
+        "amount": {
+          "default": "Importo"
+        },
+        "expiryDate": {
+          "default": "entro il"
+        },
+        "instalments": {
+          "default": "Puoi pagare per intero o in {{number}} rate",
+          "many": "Importi e scadenze sono riportati nel dettaglio di ogni singola rata."
+        },
+        "legal": "In fase di pagamento l’importo potrebbe subire aumenti (per sanzioni, interessi, costi di notifica o altri fattori) o riduzioni (per sgravi o note di credito)."
+      },
+      "infraction": {
+        "amount": {
+          "discounted": "Importo scontato del 30%",
+          "reduced": "Importo ridotto"
+        },
+        "expiryDate": {
+          "default": {
+            "discounted": "<strong>entro 5 giorni</strong> dalla notifica",
+            "reduced": "<strong>dal 6º al 60º giorno</strong> dalla notifica"
+          },
+          "extended": {
+            "discounted": "<strong>entro 5 giorni</strong><br /> dalla notifica del verbale",
+            "reduced": "<strong>dal 6º al 60º giorno</strong><br /> dalla notifica del verbale"
+          },
+          "withAmount": {
+            "discounted": "<strong>Importo scontato del 30% entro 5 giorni</strong> dalla notifica del verbale",
+            "reduced": "<strong>Importo ridotto dal 6° al 60° giorno</strong> dalla notifica del verbale"
+          }
+        },
+        "disclaimer": {
+          "expiry": {
+            "question": "Come si calcolano le scadenze?",
+            "answer": "Il giorno della notifica non si conta. Se la scadenza è di domenica (o festivo), puoi pagare anche il primo giorno feriale successivo."
+          },
+          "unclaimed": {
+            "question": "Cosa succede in caso di giacenza?",
+            "answer": "La notifica corrisponde al giorno del ritiro, se questo avviene entro 10 giorni dalla data di deposito (la data più vecchia sull’avviso di giacenza). Se non ritiri il verbale entro i 10 giorni, calcola le scadenze iniziando a contare dall’undicesimo giorno."
+          },
+          "chooseAmount": "Scegli l’importo corretto per i termini previsti, altrimenti riceverai altre richieste di pagamento per le somme residue ed eventuali somme aggiuntive."
+        }
+      },
+      "whereToPay": {
+        "title": "Dove pagare?",
+        "italy": {
+          "physical": {
+            "title": "Paga sul territorio",
+            "description": "{{customLocation}}presso Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar, Edicole, Ricevitorie, Supermercati, Tabaccherie e altri Esercenti Convenzionati."
+          },
+          "online": {
+            "title": "Paga con l’app IO",
+            "description": {
+              "default": "oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+            }
+          }
+        },
+        "abroad": {
+          "physical": {
+            "title": "Paga sul territorio",
+            "description": "presso Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar, Edicole, Ricevitorie, Supermercati, Tabaccherie e altri Esercenti Convenzionati in Italia."
+          },
+          "online": {
+            "title": "Paga online",
+            "description": {
+              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
+              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
+              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
+              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+            }
+          }
+        }
+      },
+      "paymentData": {
+        "title": "Dati per il pagamento",
+        "instalmentNumber": "Rata {{number}}",
+        "payee": "Ente creditore",
+        "recipient": "Destinatario",
+        "description": "Oggetto del pagamento",
+        "cbillCode": "Cod. CBILL",
+        "payeeTaxCode": "Cod. Fiscale Ente",
+        "refNumber": "Cod. Avviso",
+        "type": {
+          "withExpiryDate": "Rata unica entro il",
+          "withoutExpiryDate": "Rata unica"
+        },
+        "instructions": {
+          "qrCode": {
+            "singlePayment": "Inquadra il <strong>codice QR</strong> con la tua app di pagamento o usa i dati accanto.",
+            "instalments": "Inquadra il <strong>codice QR</strong> con la tua app di pagamento o usa i dati sopra."
+          }
+        }
+      },
+      "postePayingInSlip": {
+        "title": "Bollettino postale",
+        "description": "Bollettino Postale pagabile in tutti gli Uffici Postali e sui canali fisici o digitali abilitati di Poste Italiane e dell'Ente Creditore.",
+        "accountNumber": "sul C/C n.",
+        "owner": "Intestato a",
+        "recipient": "Destinatario",
+        "paymentDescription": "Oggetto pagamento",
+        "refNumber": "Codice Avviso",
+        "type": "Tipo",
+        "payeeTaxCode": "Cod. Fiscale Ente"
+      }
+    }
+  },
+  "en": {
+    "translation": {
+      "heading": {
+        "title": "Payment Notice"
+      },
+      "paymentInfo": {
+        "title": {
+          "withExpiryDate": "How much and when to pay?",
+          "withoutExpiryDate": "How much to pay?"
+        },
+        "amount": {
+          "default": "Amount"
+        },
+        "expiryDate": {
+          "default": "by"
+        },
+        "instalments": {
+          "default": "You can pay in full or in {{number}} instalments",
+          "many": "Amounts and due dates are shown in each instalment detail."
+        },
+        "legal": "During the payment the amount may increase (due to penalties, interest, notification costs or other factors) or be reduced (due to discounts or credit notes)."
+      },
+      "infraction": {
+        "amount": {
+          "discounted": "30% off",
+          "reduced": "Reduced amount"
+        },
+        "expiryDate": {
+          "default": {
+            "discounted": "<strong>within 5 days</strong> from the notification",
+            "reduced": "<strong>from the 6th to the 60th day</strong> from the notification"
+          },
+          "extended": {
+            "discounted": "<strong>within 5 days</strong><br /> from the notification",
+            "reduced": "<strong>from the 6th to the 60th day</strong><br /> from the notification"
+          },
+          "withAmount": {
+            "discounted": "<strong>30% off within 5 days</strong> from the notification",
+            "reduced": "<strong>Reduced amount from the 6th to the 60th day</strong> from the notification"
+          }
+        },
+        "disclaimer": {
+          "expiry": {
+            "question": "How are deadlines calculated?",
+            "answer": "The day of notification is not counted. If the due date is a Sunday (or a public holiday), you can also pay on the next working day. The day of notification is not counted. If the due date is a Sunday (or a public holiday), you can also pay on the next working day."
+          },
+          "unclaimed": {
+            "question": "What happens in case of a failed delivery attempt?",
+            "answer": "The notification is the day of the collection, if this occurs within 10 days from the date printed on the non-delivery notice. If you don’t collect the notice within 10 days, count the deadlines starting from the 11th day."
+          },
+          "chooseAmount": "Choose the correct amount depending on deadlines, otherwise you will receive other payment requests for the remaining and/or additional amounts."
+        }
+      },
+      "whereToPay": {
+        "title": "Where to pay?",
+        "italy": {
+          "physical": {
+            "title": "Pay locally",
+            "description": "{{customLocation}}at banks and ATMs, in post offices, cafés, news stands, betting and tobacco Shops, supermarkets and other affiliated merchants."
+          },
+          "online": {
+            "title": "Pay with the IO app",
+            "description": {
+              "default": "or with your Home Banking, payment app or the other affiliated channels.",
+              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+            }
+          }
+        },
+        "abroad": {
+          "physical": {
+            "title": "Pay locally",
+            "description": "at banks and ATMs, in post offices, cafés, news stands, betting and tobacco Shops, supermarkets and other affiliated merchants in Italy."
+          },
+          "online": {
+            "title": "Pay online",
+            "description": {
+              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
+              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
+              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
+              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+            }
+          }
+        }
+      },
+      "paymentData": {
+        "title": "Payment details",
+        "instalmentNumber": "Instalment #{{number}}",
+        "payee": "Payee",
+        "recipient": "Recipient",
+        "description": "Payment description",
+        "cbillCode": "CBILL code",
+        "payeeTaxCode": "Payee tax code",
+        "refNumber": "Notice code",
+        "type": {
+          "withExpiryDate": "Full amount by",
+          "withoutExpiryDate": "Full amount"
+        },
+        "instructions": {
+          "qrCode": {
+            "singlePayment": "Scan the <strong>QR Code</strong> with your payment app or use the data printed here.",
+            "instalments": "Scan the <strong>QR Code</strong> with your payment app or use the data printed above."
+          }
+        }
+      }
+    }
+  },
+  "de": {
+    "translation": {
+      "heading": {
+        "title": "Zahlungsmitteilung"
+      },
+      "paymentInfo": {
+        "title": {
+          "withExpiryDate": "Wieviel und wann bezahlen?",
+          "withoutExpiryDate": "Wieviel bezahlen?"
+        },
+        "amount": {
+          "default": "Betrag"
+        },
+        "expiryDate": {
+          "default": "vor dem"
+        },
+        "instalments": {
+          "default": "Es ist möglich, den Betrag vollständig oder in {{number}} Raten zu zahlen",
+          "many": "Die Beträge und Fälligkeiten sind in den Details der einzelnen Rate angegeben."
+        },
+        "legal": "Während des Zahlungsvorganges kann sich der Betrag erhöhen (durch Strafen, Zinsen, Zustellungsgebühren oder anderes) oder verringern (durch Entlastungen oder Gutschriften)."
+      },
+      "infraction": {
+        "amount": {
+          "discounted": "Um 30% reduzierter Betrag",
+          "reduced": "Reduzierte zahlung"
+        },
+        "expiryDate": {
+          "default": {
+            "discounted": "<strong>innerhalb 5 tagen</strong> ab zustellungsdatum",
+            "reduced": "<strong>vom 6ten bis 60ten tag</strong> ab zustellungsdatum"
+          },
+          "extended": {
+            "discounted": "<strong>innerhalb 5 tagen</strong><br /> ab zustellungsdatum",
+            "reduced": "<strong>vom 6ten bis 60ten tag</strong><br /> ab zustellungsdatum"
+          },
+          "withAmount": {
+            "discounted": "<strong>Um 30% reduzierter Betrag innerhalb 5 tagen</strong> ab zustellungsdatum",
+            "reduced": "<strong>Reduzierte zahlung vom 6ten bis 60ten tag</strong> ab zustellungsdatum"
+          }
+        },
+        "disclaimer": {
+          "expiry": {
+            "question": "Wie werden die Fristen berechnet?",
+            "answer": "Der Tag der Zustellung wird nicht mitgerechnet. Fällt die Frist auf einen Sonntag (oder Feiertag), kann am ersten folgenden Werktag bezahlt werden."
+          },
+          "unclaimed": {
+            "question": "Was passiert bei Lagerung?",
+            "answer": "Die Zustellung entspricht dem Tag der Abholung, wenn diese innerhalb von 10 Tagen nach dem Lagerdatum erfolgt. Wird der Bericht nicht innerhalb von 10 Tagen abgeholt, sind die Fristen ab dem elften Tag zu berechnen."
+          },
+          "chooseAmount": "Den zur eigenen Frist passenden Bereich auswählen."
+        }
+      },
+      "whereToPay": {
+        "title": "Wo bezahlen?",
+        "italy": {
+          "physical": {
+            "title": "In ihrer umgebung",
+            "description": "{{customLocation}}bei Banken und ATM-Schaltern, in Postämtern und Poststellen, Tabaktrafiken und anderen angebundenen Dienstleistern."
+          },
+          "online": {
+            "title": "Pay with the IO app",
+            "description": {
+              "default": "or with your Home Banking, payment app or the other affiliated channels.",
+              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+            }
+          }
+        },
+        "abroad": {
+          "physical": {
+            "title": "Paga sul territorio",
+            "description": "{{customLocation}}presso Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar, Edicole, Ricevitorie, Supermercati, Tabaccherie e altri Esercenti Convenzionati in Italia."
+          },
+          "online": {
+            "title": "Paga online",
+            "description": {
+              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
+              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
+              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
+              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+            }
+          }
+        }
+      },
+      "paymentData": {
+        "title": "Zahlungsinformationen",
+        "instalmentNumber": "Rate {{number}}",
+        "payee": "Körperschaft",
+        "recipient": "Empfänger",
+        "description": "Zahlungsgrund",
+        "cbillCode": "CBILL-Kodex",
+        "payeeTaxCode": "St.Nr. der Körperschaft",
+        "refNumber": "Zahlungsmitteilungskodex",
+        "type": {
+          "withExpiryDate": "Einzige rate fällig am",
+          "withoutExpiryDate": "Einzige rate"
+        },
+        "instructions": {
+          "qrCode": {
+            "singlePayment": "Den <strong>QR-Code</strong> mit der Zahlungs-App scannen oder folgende Daten verwenden.",
+            "instalments": "Den <strong>QR-Code</strong> mit der Zahlungs-App scannen oder oben Daten verwenden."
+          }
+        }
+      },
+      "postePayingInSlip": {
+        "title": "Posterlagschein",
+        "description": "Posterlagschein, in allen Postämtern sowie auf den von Poste Italiane autorisierten physischen oder digitalen Kanälen zahlbar.",
+        "accountNumber": "auf das K/K Nr",
+        "owner": "Lautend auf",
+        "recipient": "Empfänger",
+        "paymentDescription": "Zahlungsgrund",
+        "refNumber": "Zahlungsmitteilungskodex",
+        "type": "Typ",
+        "payeeTaxCode": "St.Nr. der Körperschaft"
+      }
+    }
+  },
+  "fr": {
+    "translation": {
+      "heading": {
+        "title": "Avis de paiement"
+      },
+      "paymentInfo": {
+        "title": {
+          "withExpiryDate": "Combien et quand payer?",
+          "withoutExpiryDate": "Combien payer?"
+        },
+        "amount": {
+          "default": "Montant"
+        },
+        "expiryDate": {
+          "default": "avant le"
+        },
+        "instalments": {
+          "default": "Vous pouvez payer le montant total ou en {{number}} échéances",
+          "many": "Les montants et les échéances sont indiqués en détail pour chaque versement."
+        },
+        "legal": "Lors du paiement, le montant peut être augmenté (en raison de sanctions, d’intérêts, de frais de notification ou d’autres facteurs) ou réduit (en raison de réductions ou de notes de crédit)."
+      },
+      "infraction": {
+        "amount": {
+          "discounted": "Montant réduit de 30%",
+          "reduced": "Montant réduit"
+        },
+        "expiryDate": {
+          "default": {
+            "discounted": "<strong>dans les 5 jours</strong> suivant la notification",
+            "reduced": "<strong>entre le 6e et le 60e jour</strong> à compter de la notification"
+          },
+          "extended": {
+            "discounted": "<strong>dans les 5 jours</strong> suivant la notification du procès-verbal",
+            "reduced": "<strong>entre le 6e et le 60e jour</strong> à compter de la notification du procès-verbal"
+          },
+          "withAmount": {
+            "discounted": "<strong>Montant réduit de 30% dans les 5 jours</strong> suivant la notification",
+            "reduced": "<strong>Montant réduit entre le 6e et le 60e jour</strong> à compter de la notification"
+          }
+        },
+        "disclaimer": {
+          "expiry": {
+            "question": "Comment sont calculées les échéances?",
+            "answer": "Le jour de la notification n’est pas compté. Si l’échéance tombe un dimanche (ou à un jour férié), vous pouvez également payer le premier jour ouvrable suivant."
+          },
+          "unclaimed": {
+            "question": "Que se passe-t-il en cas de conservation au bureau de poste?",
+            "answer": "La notification correspond au jour du retrait, si celui-ci a lieu dans les 10 jours à compter de la date de dépôt (la date la plus ancienne figurant sur l’avis de passage). Si vous ne retirez pas le procès-verbal dans les 10 jours, calculez les échéances en commençant à compter à partir du onzième jour."
+          },
+          "chooseAmount": "Choisissez le montant correct pour les délais prévus, sinon vous recevrez d’autres demandes de paiement pour les sommes restantes et les frais supplémentaires éventuels."
+        }
+      },
+      "whereToPay": {
+        "title": "Où payer?",
+        "italy": {
+          "physical": {
+            "title": "Payez sur le territoire",
+            "description": "{{customLocation}}dans les banques, les guichets automatiques, les bureaux de poste, les points postaux, les bars, les kiosques à journaux, les détaillants, les supermarchés, les bureaux de tabac et les autres opérateurs agréés."
+          },
+          "online": {
+            "title": "Payez avec l'app IO",
+            "description": {
+              "default": "ou depuis votre « Banque à domicile », avec votre application de paiement ou avec les autres canaux activés.",
+              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+            }
+          }
+        },
+        "abroad": {
+          "physical": {
+            "title": "Payez sur le territoire",
+            "description": "dans les banques, les guichets automatiques, les bureaux de poste, les points postaux, les bars, les kiosques à journaux, les détaillants, les supermarchés, les bureaux de tabac et les autres opérateurs agréés en Italie."
+          },
+          "online": {
+            "title": "Paga online",
+            "description": {
+              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
+              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
+              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
+              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+            }
+          }
+        }
+      },
+      "paymentData": {
+        "title": "Données pour le paiement",
+        "instalmentNumber": "Versement {{number}}",
+        "payee": "Organisme créancier",
+        "recipient": "Destinataire",
+        "description": "Objet du paiement",
+        "cbillCode": "Code CBILL",
+        "payeeTaxCode": "Code Organisme fiscal",
+        "refNumber": "Code Avis",
+        "type": {
+          "withExpiryDate": "Versement unique avant le",
+          "withoutExpiryDate": "Versement unique"
+        },
+        "instructions": {
+          "qrCode": {
+            "singlePayment": "Encadrez le <strong>code QR</strong> avec votre application de paiement ou utilisez les données ci-contre.",
+            "instalments": "Encadrez le <strong>code QR</strong> avec votre application de paiement ou utilisez les données ci-dessus."
+          }
+        }
+      }
+    }
+  },
+  "sl": {
+    "translation": {
+      "heading": {
+        "title": "Obvestilo o plačilu"
+      },
+      "paymentInfo": {
+        "title": {
+          "withExpiryDate": "Koliko in kdaj plačati?",
+          "withoutExpiryDate": "Koliko plačati?"
+        },
+        "amount": {
+          "default": "Znesek"
+        },
+        "expiryDate": {
+          "default": "do"
+        },
+        "instalments": {
+          "default": "Plačate lahko v celoti ali v {{number}} obrokih",
+          "many": "Zneski in roki zapadlosti so podrobno prikazani za vsak posamezen obrok."
+        },
+        "legal": "Med fazo plačila se lahko znesek poveča (zaradi sankcij, obresti, stroškov obvestil ali drugih dejavnikov) ali zmanjša (zaradi popustov ali dobropisov)."
+      },
+      "infraction": {
+        "amount": {
+          "discounted": "Znesek s 30-% popustom",
+          "reduced": "Zmanjšan znesek"
+        },
+        "expiryDate": {
+          "default": {
+            "discounted": "<strong>v 5 dneh</strong> od vročitve zapisnika",
+            "reduced": "<strong>od 6. do 60. dne</strong> od vročitve zapisnika"
+          },
+          "extended": {
+            "discounted": "<strong>v 5 dneh</strong><br /> od vročitve zapisnika",
+            "reduced": "<strong>od 6. do 60. dne</strong><br /> od vročitve zapisnika"
+          },
+          "withAmount": {
+            "discounted": "<strong>Znesek s 30-% popustom v 5 dneh</strong> od vročitve zapisnika",
+            "reduced": "<strong>Zmanjšan znesek od 6. do 60. dne</strong> od vročitve zapisnika"
+          }
+        },
+        "disclaimer": {
+          "expiry": {
+            "question": "Kako se izračunajo roki zapadlosti?",
+            "answer": "Dan izdaje obvestila se ne všteva. Če je rok zapadlosti nedelja (ali praznik), lahko plačilo izvedete tudi naslednji prvi delovni dan."
+          },
+          "unclaimed": {
+            "question": "Kaj se zgodi, če pismo ni izročeno?",
+            "answer": "Obvestilo ustreza dnevu prevzema, če se to zgodi v 10 dneh od datuma prispetja (najstarejši datum na obvestilu o prispelem pismu). Če zapisnika ne prevzamete v 10 dneh, izračunajte roke zapadlosti, ki začnejo teči z enajstim dnem."
+          },
+          "chooseAmount": "Izberite pravilen znesek za predvidene roke, sicer boste prejeli druge zahteve za plačilo za preostale zneske in morebitne dodatne zneske."
+        }
+      },
+      "whereToPay": {
+        "title": "Kje plačati?",
+        "italy": {
+          "physical": {
+            "title": "Plačajte lokalno",
+            "description": "{{customLocation}}na bankah in okencih bankomatov, poštnih uradih in poštnih točkah, v barih, kioskih, sprejemnih pisarnah, supermarketih, trafikah in pri drugih pooblaščenih operaterjih."
+          },
+          "online": {
+            "title": "Plačajte z aplikacijo IO",
+            "description": {
+              "default": "ali prek svoje spletne banke, z aplikacijo za plačevanje ali prek drugih razpoložljivih kanalov.",
+              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
+              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+            }
+          }
+        },
+        "abroad": {
+          "physical": {
+            "title": "Plačajte lokalno",
+            "description": "{{customLocation}}na bankah in okencih bankomatov, poštnih uradih in poštnih točkah, v barih, kioskih, sprejemnih pisarnah, supermarketih, trafikah in pri drugih pooblaščenih operaterjih v Italiji."
+          },
+          "online": {
+            "title": "Paga online",
+            "description": {
+              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
+              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
+              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
+              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+            }
+          }
+        }
+      },
+      "paymentData": {
+        "title": "Podatki za plačilo",
+        "instalmentNumber": "Obrok št. {{number}}",
+        "payee": "Plačnik",
+        "recipient": "Prejemnik",
+        "description": "Predmet plačila",
+        "cbillCode": "Št. CBILL",
+        "payeeTaxCode": "Davčna številka plačnika",
+        "refNumber": "Št. obvestila",
+        "type": {
+          "withExpiryDate": "Enkratni obrok do",
+          "withoutExpiryDate": "Enkratni obrok"
+        },
+        "instructions": {
+          "qrCode": {
+            "singlePayment": "Skenirajte <strong>QR-kodo</strong> z aplikacijo za plačila ali uporabite podatke, navedene ob kodi.",
+            "instalments": "Skenirajte <strong>QR-kodo</strong> z aplikacijo za plačila ali uporabite podatke, navedene nad njo."
+          }
+        }
+      }
+    }
+  }
+}

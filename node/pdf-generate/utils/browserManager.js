@@ -17,6 +17,16 @@ const helpersPath = `./pdf-generate/helpers`;
 
 let browser;
 
+const HandlebarsI18n = require("handlebars-i18n");
+
+const i18next = require("i18next");
+i18next.init({
+    resources: JSON.parse(readFileSync('./pdf-generate/assets/i18next.json', 'utf8')),
+    lng: "it"
+});
+
+HandlebarsI18n.init();
+
 const getBrowserSession = async () => {
   if (browser) return browser;
 
