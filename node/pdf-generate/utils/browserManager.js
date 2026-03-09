@@ -24,7 +24,7 @@ if (existsSync(localeFilePath)) {
         lng: "it"
     });
 } else {
-    console.warn(`File traduzioni non trovato: ${localeFilePath}`);
+    console.warn(`Translation file not found: ${localeFilePath}`);
 }
 
 HandlebarsI18n.init();
