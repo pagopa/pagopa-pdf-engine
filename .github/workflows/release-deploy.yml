@@ -93,90 +93,65 @@ jobs:
           beta: ${{ inputs.beta }}
           skip_ci: ${{ inputs.beta }}
 
-  # image:
-  #   needs: [ setup, release ]
-  #   name: Build and Push Docker Image
-  #   runs-on: ubuntu-latest
-  #   if: ${{ inputs.semver != 'skip' }}
-  #   steps:
-  #     - name: Build and Push
-  #       id: semver
-  #       uses: pagopa/github-actions-template/ghcr-build-push@v1.5.4
-  #       with:
-  #         branch: ${{ github.ref_name}}
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
-  #         tag: ${{ needs.release.outputs.version }}
-
-  deploy_app_service_node:
-    # needs: [ setup, release, image ]
-    needs: [ setup, release ]
-    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    name: Deploy on App Service Node
+  build-and-push:
+    needs: release
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        type: [ node, java ]
     steps:
-      - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "SHORT_ENV=d" >> $GITHUB_ENV
-      - if: ${{ github.event.inputs.environment == 'uat' }}
-        run: echo "SHORT_ENV=u" >> $GITHUB_ENV
-      - if: ${{ github.event.inputs.environment == 'prod' }}
-        run: echo "SHORT_ENV=p" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
 
-      - name: Azure Pipelines Action
-        uses: jacopocarlini/azure-pipelines@b9721743a54e862597395b4a70727cfdc03028fb # v1.3
+      - name: Login to Container Registry
+        uses: azure/docker-login@v1
         with:
-          azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
-          azure-pipeline-name: 'pagopa-pdf-engine.deploy'
-          azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
-          azure-template-parameters: |
-            {
-                "ENV": "${{inputs.environment}}",
-                "SEMVER": "${{inputs.semver}}",
-                "DOCKERFILE": "node/Dockerfile",
-                "BUILD_CONTEXT": "./node",
-                "IMAGE_NAME": "pagopapdfengine",
-                "TYPE": "node",
-                "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine${{ env.SHORT_ENV == 'prod' && '-ha' || '' }}",
-                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg",
-                "DOMAIN": "${{inputs.domain}}"
-            }
-          azure-pipeline-variables: '{"system.debug": "true"}'
+          login-server: ${{ secrets.ACR_NAME }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-  deploy_app_service_java:
-    # needs: [ setup, release, image, deploy_app_service_node ]
-    needs: [ setup, release, deploy_app_service_node ]
-    if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    name: Deploy on App Service Java
+      - name: Build and Push Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.type == 'node' && './node' || '.' }}
+          file: ${{ matrix.type == 'node' && 'node/Dockerfile' || 'Dockerfile' }}
+          push: true
+          tags: |
+            ${{ secrets.ACR_NAME }}/pagopapdfengine${{ matrix.type == 'java' && 'java' || '' }}:${{ needs.setup-and-release.outputs.version }}
+            ${{ secrets.ACR_NAME }}/pagopapdfengine${{ matrix.type == 'java' && 'java' || '' }}:latest
+
+  deploy:
+    needs: release
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }} # Gestisce l'approvazione per uat/prod
+    strategy:
+      matrix:
+        type: [node, java]
     steps:
-      - if: ${{ github.event.inputs.environment == null || github.event.inputs.environment == 'dev' }}
-        run: echo "SHORT_ENV=d" >> $GITHUB_ENV
-      - if: ${{ github.event.inputs.environment == 'uat' }}
-        run: echo "SHORT_ENV=u" >> $GITHUB_ENV
-      - if: ${{ github.event.inputs.environment == 'prod' }}
-        run: echo "SHORT_ENV=p" >> $GITHUB_ENV
-
-      - name: Azure Pipelines Action
-        uses: jacopocarlini/azure-pipelines@b9721743a54e862597395b4a70727cfdc03028fb # v1.3
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          azure-devops-project-url: https://dev.azure.com/pagopaspa/pagoPA-projects
-          azure-pipeline-name: 'pagopa-pdf-engine.deploy'
-          azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
-          azure-template-parameters: |
-            {
-                "ENV": "${{inputs.environment}}",
-                "SEMVER": "${{inputs.semver}}",
-                "DOCKERFILE": "Dockerfile",
-                "BUILD_CONTEXT": ".",
-                "IMAGE_NAME": "pagopapdfenginejava",
-                "TYPE": "java",
-                "APP_SERVICE_NAME": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-app-pdf-engine-java${{ env.SHORT_ENV == 'prod' && '-ha' || '' }}",
-                "APP_SERVICE_RESOURCE_GROUP": "pagopa-${{ env.SHORT_ENV }}-${{inputs.domain}}-pdf-engine-rg",
-                "DOMAIN": "${{inputs.domain}}"
-            }
-          azure-pipeline-variables: '{"system.debug": "true"}'
+          client-id: ${{ secrets.CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: pagopa-${{ inputs.environment == 'prod' && 'p' || 'd' }}-${{ inputs.domain }}-app-pdf-engine-${{ matrix.type }}${{ inputs.environment == 'prod' && '-ha' || '' }}
+          images: ${{ secrets.CONTAINER_REGISTRY }}/pagopapdfengine${{ matrix.type == 'java' && 'java' || '' }}:${{ needs.setup-and-release.outputs.version }}
+          slot-name: ${{ inputs.environment != 'dev' && 'staging' || '' }}
+          resource-group-name: pagopa-${{ inputs.environment == 'prod' && 'p' || 'd' }}-${{ inputs.domain }}-pdf-engine-rg
+
+      - name: Swap Slots (if not dev)
+        if: inputs.environment != 'dev'
+        run: |
+          az webapp deployment slot swap \
+            --name pagopa-${{ inputs.environment == 'prod' && 'p' || 'd' }}-${{ inputs.domain }}-app-pdf-engine-${{ matrix.type }}${{ inputs.environment == 'prod' && '-ha' || '' }} \
+            --resource-group pagopa-${{ inputs.environment == 'prod' && 'p' || 'd' }}-${{ inputs.domain }}-pdf-engine-rg \
+            --slot staging --target-slot production
 
   notify:
-    needs: [ deploy_app_service_node, deploy_app_service_java ]
+    needs: [ deploy ]
     runs-on: ubuntu-latest
     name: Notify
     if: always()
