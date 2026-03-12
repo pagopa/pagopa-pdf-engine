@@ -162,7 +162,7 @@
         "disclaimer": {
           "expiry": {
             "question": "How are deadlines calculated?",
-            "answer": "The day of notification is not counted. If the due date is a Sunday (or a public holiday), you can also pay on the next working day. The day of notification is not counted. If the due date is a Sunday (or a public holiday), you can also pay on the next working day."
+            "answer": "The day of notification is not counted. If the due date is a Sunday (or a public holiday), you can also pay on the next working day."
           },
           "unclaimed": {
             "question": "What happens in case of a failed delivery attempt?",
@@ -182,9 +182,9 @@
             "title": "Pay with the IO app",
             "description": {
               "default": "or with your Home Banking, payment app or the other affiliated channels.",
-              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+              "websiteOnly": "or on the payee's website, or with your Home Banking, payment app or the other affiliated channels.",
+              "appOnly": "or on the payee's app, or with your Home Banking, payment app or the other affiliated channels.",
+              "websiteAndApp": "or on the payee's website or app, or with your Home Banking, payment app or the other affiliated channels."
             }
           }
         },
@@ -196,10 +196,10 @@
           "online": {
             "title": "Pay online",
             "description": {
-              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
-              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
-              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
-              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+              "default": "Go to <strong>pagopa.gov.it</strong> and choose the channel you prefer.",
+              "websiteOnly": "Go to <strong>pagopa.gov.it</strong> and choose the channel you prefer, or visit the payee's website.",
+              "appOnly": "Go to <strong>pagopa.gov.it</strong> and choose the channel you prefer, or use the payee's app.",
+              "websiteAndApp": "Go to <strong>pagopa.gov.it</strong> and choose the channel you prefer, or use the payee's app or website."
             }
           }
         }
@@ -223,6 +223,17 @@
             "instalments": "Scan the <strong>QR Code</strong> with your payment app or use the data printed above."
           }
         }
+      },
+      "postePayingInSlip": {
+        "title": "Postal payment slip",
+        "description": "Postal payment slip payable at all Post Offices and through the physical or digital channels of Poste Italiane and the Payee.",
+        "accountNumber": "on account no.",
+        "owner": "Account holder",
+        "recipient": "Recipient",
+        "paymentDescription": "Payment description",
+        "refNumber": "Notice code",
+        "type": "Type",
+        "payeeTaxCode": "Payee tax code"
       }
     }
   },
@@ -287,27 +298,27 @@
             "description": "{{customLocation}}bei Banken und ATM-Schaltern, in Postämtern und Poststellen, Tabaktrafiken und anderen angebundenen Dienstleistern."
           },
           "online": {
-            "title": "Pay with the IO app",
+            "title": "Mit der IO-App bezahlen",
             "description": {
-              "default": "or with your Home Banking, payment app or the other affiliated channels.",
-              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+              "default": "oder über Ihr Home Banking, Ihre Zahlungs-App oder die anderen angebundenen Kanäle.",
+              "websiteOnly": "oder auf der Webseite der Körperschaft, oder über Ihr Home Banking, Ihre Zahlungs-App oder die anderen angebundenen Kanäle.",
+              "appOnly": "oder über die App der Körperschaft, oder über Ihr Home Banking, Ihre Zahlungs-App oder die anderen angebundenen Kanäle.",
+              "websiteAndApp": "oder auf der Webseite oder über die App der Körperschaft, oder über Ihr Home Banking, Ihre Zahlungs-App oder die anderen angebundenen Kanäle."
             }
           }
         },
         "abroad": {
           "physical": {
-            "title": "Paga sul territorio",
-            "description": "{{customLocation}}presso Banche e Sportelli ATM, negli Uffici Postali e Punti Postali, nei Bar, Edicole, Ricevitorie, Supermercati, Tabaccherie e altri Esercenti Convenzionati in Italia."
+            "title": "In ihrer umgebung",
+            "description": "bei Banken und ATM-Schaltern, in Postämtern und Poststellen, Tabaktrafiken und anderen angebundenen Dienstleistern in Italien."
           },
           "online": {
-            "title": "Paga online",
+            "title": "Online bezahlen",
             "description": {
-              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
-              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
-              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
-              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+              "default": "Besuchen Sie <strong>pagopa.gov.it</strong> und wählen Sie den bevorzugten Kanal.",
+              "websiteOnly": "Besuchen Sie <strong>pagopa.gov.it</strong> und wählen Sie den bevorzugten Kanal, oder besuchen Sie die Webseite der Körperschaft.",
+              "appOnly": "Besuchen Sie <strong>pagopa.gov.it</strong> und wählen Sie den bevorzugten Kanal, oder nutzen Sie die App der Körperschaft.",
+              "websiteAndApp": "Besuchen Sie <strong>pagopa.gov.it</strong> und wählen Sie den bevorzugten Kanal, oder nutzen Sie die App oder die Webseite der Körperschaft."
             }
           }
         }
@@ -409,9 +420,9 @@
             "title": "Payez avec l'app IO",
             "description": {
               "default": "ou depuis votre « Banque à domicile », avec votre application de paiement ou avec les autres canaux activés.",
-              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+              "websiteOnly": "ou sur le site de l'organisme, ou depuis votre « Banque à domicile », avec votre application de paiement ou avec les autres canaux activés.",
+              "appOnly": "ou sur l'application de l'organisme, ou depuis votre « Banque à domicile », avec votre application de paiement ou avec les autres canaux activés.",
+              "websiteAndApp": "ou sur le site ou l'application de l'organisme, ou depuis votre « Banque à domicile », avec votre application de paiement ou avec les autres canaux activés."
             }
           }
         },
@@ -421,12 +432,12 @@
             "description": "dans les banques, les guichets automatiques, les bureaux de poste, les points postaux, les bars, les kiosques à journaux, les détaillants, les supermarchés, les bureaux de tabac et les autres opérateurs agréés en Italie."
           },
           "online": {
-            "title": "Paga online",
+            "title": "Payez en ligne",
             "description": {
-              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
-              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
-              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
-              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+              "default": "Rendez-vous sur <strong>pagopa.gov.it</strong> et choisissez le canal que vous préférez.",
+              "websiteOnly": "Rendez-vous sur <strong>pagopa.gov.it</strong> et choisissez le canal que vous préférez, ou visitez le site de l'organisme.",
+              "appOnly": "Rendez-vous sur <strong>pagopa.gov.it</strong> et choisissez le canal que vous préférez, ou utilisez l'application de l'organisme.",
+              "websiteAndApp": "Rendez-vous sur <strong>pagopa.gov.it</strong> et choisissez le canal que vous préférez, ou utilisez l'application ou le site de l'organisme."
             }
           }
         }
@@ -450,6 +461,17 @@
             "instalments": "Encadrez le <strong>code QR</strong> avec votre application de paiement ou utilisez les données ci-dessus."
           }
         }
+      },
+      "postePayingInSlip": {
+        "title": "Bulletin de versement postal",
+        "description": "Bulletin de versement postal payable dans tous les bureaux de poste et sur les canaux physiques ou numériques de Poste Italiane et de l'organisme créancier.",
+        "accountNumber": "sur le C/C n°",
+        "owner": "Titulaire du compte",
+        "recipient": "Destinataire",
+        "paymentDescription": "Objet du paiement",
+        "refNumber": "Code Avis",
+        "type": "Type",
+        "payeeTaxCode": "Code Organisme fiscal"
       }
     }
   },
@@ -517,9 +539,9 @@
             "title": "Plačajte z aplikacijo IO",
             "description": {
               "default": "ali prek svoje spletne banke, z aplikacijo za plačevanje ali prek drugih razpoložljivih kanalov.",
-              "websiteOnly": "oppure sul sito dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "appOnly": "oppure sull'app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati.",
-              "websiteAndApp": "oppure sul sito o app dell'ente, oppure dal tuo Home Banking, con la tua app di pagamento o con gli altri canali abilitati."
+              "websiteOnly": "ali na spletni strani plačnika, ali prek svoje spletne banke, z aplikacijo za plačevanje ali prek drugih razpoložljivih kanalov.",
+              "appOnly": "ali prek aplikacije plačnika, ali prek svoje spletne banke, z aplikacijo za plačevanje ali prek drugih razpoložljivih kanalov.",
+              "websiteAndApp": "ali na spletni strani ali prek aplikacije plačnika, ali prek svoje spletne banke, z aplikacijo za plačevanje ali prek drugih razpoložljivih kanalov."
             }
           }
         },
@@ -529,12 +551,12 @@
             "description": "{{customLocation}}na bankah in okencih bankomatov, poštnih uradih in poštnih točkah, v barih, kioskih, sprejemnih pisarnah, supermarketih, trafikah in pri drugih pooblaščenih operaterjih v Italiji."
           },
           "online": {
-            "title": "Paga online",
+            "title": "Plačajte prek spleta",
             "description": {
-              "default": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci.",
-              "websiteOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure visita il sito dell'ente.",
-              "appOnly": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app dell'ente.",
-              "websiteAndApp": "Vai su <strong>pagopa.gov.it</strong> e scegli il canale che preferisci, oppure usa l'app o il sito dell'ente."
+              "default": "Obiščite <strong>pagopa.gov.it</strong> in izberite želeni kanal.",
+              "websiteOnly": "Obiščite <strong>pagopa.gov.it</strong> in izberite želeni kanal ali obiščite spletno stran plačnika.",
+              "appOnly": "Obiščite <strong>pagopa.gov.it</strong> in izberite želeni kanal ali uporabite aplikacijo plačnika.",
+              "websiteAndApp": "Obiščite <strong>pagopa.gov.it</strong> in izberite želeni kanal ali uporabite aplikacijo ali spletno stran plačnika."
             }
           }
         }
@@ -558,6 +580,17 @@
             "instalments": "Skenirajte <strong>QR-kodo</strong> z aplikacijo za plačila ali uporabite podatke, navedene nad njo."
           }
         }
+      },
+      "postePayingInSlip": {
+        "title": "Poštna položnica",
+        "description": "Poštna položnica, plačljiva na vseh poštnih uradih ter prek fizičnih ali digitalnih kanalov Poste Italiane in plačnika.",
+        "accountNumber": "na TRR št.",
+        "owner": "Imetnik računa",
+        "recipient": "Prejemnik",
+        "paymentDescription": "Predmet plačila",
+        "refNumber": "Št. obvestila",
+        "type": "Vrsta",
+        "payeeTaxCode": "Davčna številka plačnika"
       }
     }
   }
