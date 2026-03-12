@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine Node - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.10.25-1"
+    "version": "2.10.25-2-update-i18next-init"
   },
   "servers": [
     {
