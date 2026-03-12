@@ -81,7 +81,7 @@ variables:
   ${{ if eq(variables['Build.SourceBranchName'], 'merge') }}:
     SOURCE_BRANCH: "main" # force to main branch
   ${{ if ne(variables['Build.SourceBranchName'], 'merge') }}:
-    SOURCE_BRANCH: ${{ variables['Build.SourceBranchName'] }}
+    SOURCE_BRANCH: ${{ variables['Build.SourceBranch'] }}
 
   title: ""
   sha: ""
@@ -107,6 +107,7 @@ stages:
         steps:
 
           - script: |
+              echo ${{variables['Build.SourceBranch']}}        
               echo ${{variables['Build.SourceBranchName']}}        
               echo $(SOURCE_BRANCH)
 
