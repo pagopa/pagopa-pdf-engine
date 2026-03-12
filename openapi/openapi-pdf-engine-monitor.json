@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.10.26"
+    "version": "2.10.26-1-chore/sync-notice-templates"
   },
   "servers": [
     {
