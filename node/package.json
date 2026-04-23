@@ -24,7 +24,7 @@
     "nodemon": "^3.0.1",
     "puppeteer": "^22.0.0",
     "qrcode-svg": "^1.1.0",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.15",
