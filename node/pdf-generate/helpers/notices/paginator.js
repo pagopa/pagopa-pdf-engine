@@ -33,7 +33,7 @@ function paginator(notice, withBollettinoPoste) {
   const instalments = notice.instalments.items;
   const instalmentsNumber = instalments.length;
 
-  const data = withBollettinoPoste ? getPaginationDataPoste(instalmentsNumber) : getPaginationData(instalmentsNumber);
+  const data = withBollettinoPoste ? getPaginationDataPoste() : getPaginationData(instalmentsNumber);
 
   return paginateAndGroupArray(
     instalments,
