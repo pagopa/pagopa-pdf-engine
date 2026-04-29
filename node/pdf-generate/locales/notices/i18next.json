@@ -463,7 +463,7 @@
         }
       },
       "postePayingInSlip": {
-        "title": "Bulletin de versement postal",
+        "title": "Bulletin postal",
         "description": "Bulletin de versement postal payable dans tous les bureaux de poste et sur les canaux physiques ou numériques de Poste Italiane et de l'organisme créancier.",
         "accountNumber": "sur le C/C n°",
         "owner": "Titulaire du compte",
