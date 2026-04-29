@@ -41,5 +41,4 @@ obj/
 **/*.lock.hcl
 **/node_modules
 **/coverage
-yarn.lock
 **/docker/.env
