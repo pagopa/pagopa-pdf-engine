@@ -84,58 +84,13 @@ function paginateAndGroupArray(array, firstPageRows, firstPageCols, pageRows, pa
   return paginatedArray;
 }
 
-function getPaginationDataPoste(instalmentsNumber) {
-  let firstPageRows = 0;
-  let firstPageColumns = 0;
-  let secondPageRows = 0;
-  let secondPageColumns = 0;
-
-  switch (instalmentsNumber) {
-    case 2:
-      firstPageRows = 1;
-      firstPageColumns = 2;
-      break;
-    case 3:
-      firstPageRows = 1;
-      firstPageColumns = 3;
-      break;
-    case 4:
-      firstPageRows = 1;
-      firstPageColumns = 2;
-      secondPageRows = 1;
-      secondPageColumns = 2;
-      break;
-    case 5:
-      firstPageRows = 1;
-      firstPageColumns = 2;
-      secondPageRows = 1;
-      secondPageColumns = 3;
-      break;
-    case 6:
-      firstPageRows = 1;
-      firstPageColumns = 3;
-      secondPageRows = 1;
-      secondPageColumns = 3;
-      break;
-    case 7:
-      firstPageRows = 1;
-      firstPageColumns = 3;
-      secondPageRows = 1;
-      secondPageColumns = 2;
-      break;
-    case 8:
-      firstPageRows = 1;
-      firstPageColumns = 2;
-      secondPageRows = 1;
-      secondPageColumns = 3;
-      break;
-    default:
-      firstPageRows = 1;
-      firstPageColumns = 3;
-      secondPageRows = 1;
-      secondPageColumns = 3;
-  }
-  return { firstPageRows, firstPageColumns, secondPageRows, secondPageColumns };
+function getPaginationDataPoste() {
+  return {
+    firstPageRows: 1,
+    firstPageColumns: 2,
+    secondPageRows: 1,
+    secondPageColumns: 2,
+  };
 }
 
 function getPaginationData(instalmentsNumber) {
