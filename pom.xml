@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.10.28-1-chore-sync-notice-templates</version>
+    <version>2.10.28-2-chore-sync-notice-templates</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
