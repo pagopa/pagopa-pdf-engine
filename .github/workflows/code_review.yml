@@ -67,7 +67,14 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: yarn --cwd ./node install --frozen-lockfile
+        # --ignore-scripts mitigates supply-chain risk (sonar:S6505) by skipping
+        # arbitrary lifecycle scripts of transitive dependencies.
+        run: yarn --cwd ./node install --frozen-lockfile --ignore-scripts
+
+      - name: Install Puppeteer browser
+        # Run only the trusted Puppeteer postinstall to download Chromium,
+        # which was skipped above by --ignore-scripts.
+        run: node ./node/node_modules/puppeteer/install.mjs
 
       - name: Start Node Server
         run: yarn --cwd ./node run start-detached

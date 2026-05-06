@@ -1,8 +1,9 @@
-ARG NODE_VERSION=24-bookworm
+# Pinned by digest tag: node:24-bookworm
+ARG NODE_VERSION=sha256:e9891237dfbb1de60ce19e9ff9fac5d73ad9c37da303ad72ff2a425ad1057e71
 ARG OWNER=pagopa
 ARG REPO=repo
 
-FROM node:$NODE_VERSION AS builder
+FROM node@$NODE_VERSION AS builder
 
 WORKDIR /usr/src/build
 
@@ -18,7 +19,7 @@ RUN yarn install --frozen-lockfile --production
 # Copy source code to the build stage
 COPY . .
 
-FROM node:$NODE_VERSION
+FROM node@$NODE_VERSION
 LABEL maintainer="https://pagopa.it"
 LABEL org.opencontainers.image.source="https://github.com/pagopa/pagopa-pdf-engine"
 
