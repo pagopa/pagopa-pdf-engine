@@ -7,6 +7,11 @@ FROM node@$NODE_VERSION AS builder
 
 WORKDIR /usr/src/build
 
+# Store Puppeteer's Chromium inside the project, so it is propagated
+# to the runtime stage with the rest of the app (since Puppeteer >= 19
+# the browser lives in ~/.cache/puppeteer, NOT in node_modules/puppeteer).
+ENV PUPPETEER_CACHE_DIR=/usr/src/build/.cache/puppeteer
+
 # Enable Yarn with package.json version
 RUN corepack enable
 
@@ -28,9 +33,13 @@ LABEL org.opencontainers.image.source="https://github.com/pagopa/pagopa-pdf-engi
 
 WORKDIR /usr/src/app
 
+# Tell Puppeteer where to find the Chromium copied from the builder stage.
+ENV PUPPETEER_CACHE_DIR=/usr/src/app/.cache/puppeteer
+
 COPY ./package.json /usr/src/app/package.json
 COPY --from=builder /usr/src/build/pdf-generate /usr/src/app/pdf-generate
 COPY --from=builder /usr/src/build/node_modules /usr/src/app/node_modules
+COPY --from=builder /usr/src/build/.cache/puppeteer /usr/src/app/.cache/puppeteer
 
 # Chrome headless dependencies (Debian 12 / bookworm)
 # https://pptr.dev/troubleshooting#chrome-doesnt-launch-on-linux
