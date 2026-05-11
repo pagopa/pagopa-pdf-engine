@@ -78,11 +78,11 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private final CloseableHttpClient httpClient;
 
     private static final class Holder {
-        private static PdfEngineClientImpl instance = new PdfEngineClientImpl();
+        private static final PdfEngineClientImpl INSTANCE = new PdfEngineClientImpl();
     }
 
     public static PdfEngineClientImpl getInstance() {
-        return Holder.instance;
+        return Holder.INSTANCE;
     }
 
     private PdfEngineClientImpl() {

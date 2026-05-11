@@ -4,18 +4,15 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
-import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.model.AppInfo;
 import it.gov.pagopa.pdf.engine.util.HttpResponseMessageMock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.lang.reflect.Field;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,10 +34,6 @@ class InfoTest {
         @SuppressWarnings("unchecked")
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        InfoTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
-        Mockito.lenient().doAnswer(invocation -> true).when(pdfEngineClient).info();
-
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
@@ -59,17 +52,6 @@ class InfoTest {
         assertNotNull(responseBody.getEnvironment());
         assertEquals("pagopa-pdf-engine", responseBody.getName());
         assertEquals("azure-fn", responseBody.getEnvironment());
-    }
-
-    private static <T> void setMock(Class<T> classToMock, T mock) {
-        try {
-            Class<?> holder = Class.forName(classToMock.getName() + "$Holder");
-            Field instance = holder.getDeclaredField("instance");
-            instance.setAccessible(true);
-            instance.set(null, mock);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }
