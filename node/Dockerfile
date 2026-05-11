@@ -1,7 +1,5 @@
 # Pinned by digest tag: node:24-bookworm
 ARG NODE_VERSION=sha256:e9891237dfbb1de60ce19e9ff9fac5d73ad9c37da303ad72ff2a425ad1057e71
-ARG OWNER=pagopa
-ARG REPO=repo
 
 FROM node@$NODE_VERSION AS builder
 
