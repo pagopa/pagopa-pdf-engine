@@ -7,4 +7,6 @@ import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 public interface PdfEngineClient {
 
     PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest);
+
+    boolean info();
 }

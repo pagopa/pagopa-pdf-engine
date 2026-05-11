@@ -10,168 +10,256 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.NoHttpResponseException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 
+import javax.net.ssl.SSLException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Client for the PDF Engine
+ * Client for the PDF Engine.
+ *
+ * <p>A single, pooled {@link CloseableHttpClient} instance is reused for the
+ * lifetime of the JVM. This avoids repeated TLS handshakes and – more
+ * importantly – Azure App Service SNAT port exhaustion that was causing
+ * systematic {@link ConnectTimeoutException}s under load towards the APIM
+ * endpoint ({@code api.platform.pagopa.it}).</p>
  */
 public class PdfEngineClientImpl implements PdfEngineClient {
 
-    private static PdfEngineClientImpl instance = null;
-
-    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_GENERATE_ENDPOINT", "http://localhost:3000/generate-pdf");
-    private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
+    // ---------- Endpoints ----------
+    private final String pdfEngineEndpoint = System.getenv().getOrDefault(
+            "PDF_ENGINE_NODE_GENERATE_ENDPOINT", "http://localhost:3000/generate-pdf");
+    private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault(
+            "PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
 
     private static final String DATA_KEY = "data";
+    private static final String TEMPLATE_KEY = "template";
 
-    private final Header subKeyHeader = new BasicHeader("Ocp-Apim-Subscription-Key", System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
+    private final Header subKeyHeader = new BasicHeader(
+            "Ocp-Apim-Subscription-Key",
+            System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
 
-    private final HttpClientBuilder httpClientBuilder;
+    // ---------- HTTP timeouts (ms), tunable via env ----------
+    private static final int CONNECT_TIMEOUT_MS = envInt("PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS", 5_000);
+    private static final int CONNECTION_REQUEST_TIMEOUT_MS = envInt("PDF_ENGINE_HTTP_CONN_REQUEST_TIMEOUT_MS", 2_000);
+    private static final int SOCKET_TIMEOUT_MS = envInt("PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", 30_000);
+    private static final int RETRY_COUNT = envInt("PDF_ENGINE_HTTP_RETRY_COUNT", 2);
 
-    private PdfEngineClientImpl() {
-        this.httpClientBuilder = HttpClientBuilder.create();
-    }
+    // ---------- Connection pool, tunable via env ----------
+    // The engine talks to a single upstream host (APIM), so all calls share one
+    // route: MAX_CONN_TOTAL is therefore aligned with MAX_CONN_PER_ROUTE. Raise
+    // MAX_CONN_TOTAL only if /info or future endpoints are exposed on a
+    // different host (=> different route).
+    private static final int MAX_CONN_PER_ROUTE = envInt("PDF_ENGINE_HTTP_MAX_CONN_PER_ROUTE", 100);
+    private static final int MAX_CONN_TOTAL = envInt("PDF_ENGINE_HTTP_MAX_CONN_TOTAL", MAX_CONN_PER_ROUTE);
+    private static final long CONN_TTL_SECONDS = envLong("PDF_ENGINE_HTTP_CONN_TTL_SECONDS", 60L);
+    private static final long IDLE_EVICT_SECONDS = envLong("PDF_ENGINE_HTTP_IDLE_EVICT_SECONDS", 30L);
+    private static final int VALIDATE_AFTER_INACTIVITY_MS = envInt("PDF_ENGINE_HTTP_VALIDATE_AFTER_INACTIVITY_MS", 2_000);
 
-    public PdfEngineClientImpl(HttpClientBuilder clientBuilder) {
-        this.httpClientBuilder = clientBuilder;
+    /**
+     * Long-lived, thread-safe pooled HTTP client.
+     */
+    private final CloseableHttpClient httpClient;
+
+    // ---------- Singleton (Bill Pugh: initialization-on-demand holder) ----------
+    // Lazy + thread-safe by JLS class-initialization semantics, with no need for
+    // synchronization or volatile on getInstance().
+    // INSTANCE is intentionally NOT final so that integration tests can swap in
+    // a mocked PdfEngineClientImpl via reflection.
+    private static final class Holder {
+        private static PdfEngineClientImpl instance = new PdfEngineClientImpl();
     }
 
     public static PdfEngineClientImpl getInstance() {
-        if (instance == null) {
-            instance = new PdfEngineClientImpl();
-        }
+        return Holder.instance;
+    }
 
-        return instance;
+    private PdfEngineClientImpl() {
+        this(buildDefaultHttpClient());
     }
 
     /**
-     * Generate the client, builds the request and returns the response
-     *
-     * @param pdfEngineRequest Request to the client
-     * @return response with the PDF or error message and the status
+     * Visible for tests: allows injecting a mocked or custom client.
      */
+    public PdfEngineClientImpl(CloseableHttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
+
+    // -----------------------------------------------------------------
+    // Public API
+    // -----------------------------------------------------------------
+
+    /**
+     * Sends the request to the PDF engine and returns the response.
+     *
+     * @param pdfEngineRequest input request
+     * @return response containing the generated PDF or an error description
+     */
+    @Override
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
-
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-
-        //Generate client
-        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
-            //Encode template and data
-
-            StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
-            FileBody templateBody = new FileBody(pdfEngineRequest.getTemplate().getFile(), ContentType.DEFAULT_BINARY);
-
-            //Build the multipart request
-            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-            builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-            builder.addPart(DATA_KEY, dataBody);
-            builder.addPart("template", templateBody);
-
-            HttpEntity entity = builder.build();
-
-            //Set endpoint and auth key
-            HttpPost request = new HttpPost(pdfEngineEndpoint);
-            request.setHeader(subKeyHeader);
-            request.setEntity(entity);
-
-            pdfEngineResponse = handlePdfEngineResponse(client, request);
-        } catch (IOException e) {
+        try {
+            HttpPost request = buildGenerateRequest(pdfEngineRequest);
+            return executeGenerate(request);
+        } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
+            return pdfEngineResponse;
         }
-
-        return pdfEngineResponse;
     }
 
     /**
-     * Method to contact the underlying service info endpoint
-     * @return boolean to determine if the service is available or otherwise
-     */
-    public boolean info() {
-
-        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
-            HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
-            request.setHeader(subKeyHeader);
-            return handleInfoResponse(client, request);
-        } catch (IOException e) {
-           return false;
-        }
-
-    }
-
-    /**
-     * Calls the PDF Engine and handles its response, updating the PdfEngineResponse accordingly
+     * Pings the underlying service info endpoint.
      *
-     * @param client  The previously generated client
-     * @param request The request to the PDF engine
-     * @return pdf engine response
+     * @return {@code true} if the service answered with HTTP 200, {@code false} otherwise
      */
-    private static PdfEngineResponse handlePdfEngineResponse(CloseableHttpClient client, HttpPost request) {
+    @Override
+    public boolean info() {
+        HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
+        request.setHeader(subKeyHeader);
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
+            return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // HTTP client construction
+    // -----------------------------------------------------------------
+
+    /**
+     * Builds the shared {@link CloseableHttpClient} with a pooled connection
+     * manager, sensible timeouts and a retry handler for transient I/O errors.
+     */
+    private static CloseableHttpClient buildDefaultHttpClient() {
+        PoolingHttpClientConnectionManager connectionManager =
+                new PoolingHttpClientConnectionManager(CONN_TTL_SECONDS, TimeUnit.SECONDS);
+        connectionManager.setMaxTotal(MAX_CONN_TOTAL);
+        connectionManager.setDefaultMaxPerRoute(MAX_CONN_PER_ROUTE);
+        connectionManager.setValidateAfterInactivity(VALIDATE_AFTER_INACTIVITY_MS);
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(CONNECT_TIMEOUT_MS)
+                .setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT_MS)
+                .setSocketTimeout(SOCKET_TIMEOUT_MS)
+                .build();
+
+        return HttpClientBuilder.create()
+                .setConnectionManager(connectionManager)
+                .setConnectionManagerShared(false)
+                .setDefaultRequestConfig(requestConfig)
+                .setRetryHandler(buildRetryHandler())
+                .setConnectionTimeToLive(CONN_TTL_SECONDS, TimeUnit.SECONDS)
+                .evictExpiredConnections()
+                .evictIdleConnections(IDLE_EVICT_SECONDS, TimeUnit.SECONDS)
+                .build();
+    }
+
+    /**
+     * Retry handler: retries on transient I/O failures (connect timeouts,
+     * dropped keep-alive connections, read timeouts) but NOT on auth/SSL or
+     * unknown-host errors. Critical to absorb single hiccups on APIM without
+     * surfacing them as HTTP 500 to the caller.
+     */
+    private static DefaultHttpRequestRetryHandler buildRetryHandler() {
+        return new DefaultHttpRequestRetryHandler(
+                RETRY_COUNT,
+                true,
+                List.of(InterruptedIOException.class, UnknownHostException.class, SSLException.class)
+        ) {
+            @Override
+            public boolean retryRequest(
+                    IOException exception,
+                    int executionCount,
+                    org.apache.http.protocol.HttpContext context
+            ) {
+                if (executionCount > RETRY_COUNT) {
+                    return false;
+                }
+                if (exception instanceof ConnectTimeoutException
+                        || exception instanceof NoHttpResponseException
+                        || exception instanceof SocketTimeoutException) {
+                    return true;
+                }
+                return super.retryRequest(exception, executionCount, context);
+            }
+        };
+    }
+
+    // -----------------------------------------------------------------
+    // Request / response handling
+    // -----------------------------------------------------------------
+
+    private HttpPost buildGenerateRequest(PdfEngineRequest pdfEngineRequest) {
+        StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
+        FileBody templateBody = new FileBody(pdfEngineRequest.getTemplate().getFile(), ContentType.DEFAULT_BINARY);
+
+        HttpEntity entity = MultipartEntityBuilder.create()
+                .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
+                .addPart(DATA_KEY, dataBody)
+                .addPart(TEMPLATE_KEY, templateBody)
+                .build();
+
+        HttpPost request = new HttpPost(pdfEngineEndpoint);
+        request.setHeader(subKeyHeader);
+        request.setEntity(entity);
+        return request;
+    }
+
+    private PdfEngineResponse executeGenerate(HttpPost request) {
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        //Execute call
-        try (CloseableHttpResponse response = client.execute(request)) {
-            //Retrieve response
+        try (CloseableHttpResponse response = httpClient.execute(request)) {
             HttpEntity entityResponse = response.getEntity();
 
-            //Handles response
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 try (InputStream inputStream = entityResponse.getContent()) {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-
                     saveTempPdf(pdfEngineResponse, inputStream);
                 }
             } else {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-
                 handleErrorResponse(pdfEngineResponse, response, entityResponse);
             }
         } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
         }
-
         return pdfEngineResponse;
     }
 
-    private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
-        try (CloseableHttpResponse response = client.execute(request)) {
-            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
-     * Saves pdf as temporary file
-     *
-     * @param pdfEngineResponse Pdf engine response
-     * @param inputStream       InputStream pdf
-     * @throws IOException In case of error to save
+     * Persists the PDF returned by the engine to a temporary file.
      */
-    private static void saveTempPdf(PdfEngineResponse pdfEngineResponse, InputStream inputStream) throws IOException {
+    private void saveTempPdf(PdfEngineResponse pdfEngineResponse, InputStream inputStream) throws IOException {
         File tempDirectory = new File("temp");
         if (!tempDirectory.exists()) {
             Files.createDirectory(tempDirectory.toPath());
         }
-
         File targetFile = File.createTempFile("tempFile", ".pdf", tempDirectory);
-
         FileUtils.copyInputStreamToFile(inputStream, targetFile);
 
         pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
@@ -179,50 +267,35 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     }
 
     /**
-     * Handles error message in case of error thrown
-     *
-     * @param pdfEngineResponse Pdf engine respone
-     * @param e                 Error thrown
+     * Translates an exception thrown during the call into an error response.
      */
-    private static void handleExceptionErrorMessage(PdfEngineResponse pdfEngineResponse, Exception e) {
+    private void handleExceptionErrorMessage(PdfEngineResponse pdfEngineResponse, Exception e) {
         pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         pdfEngineResponse.setErrorMessage(String.format("Exception thrown during pdf generation process: %s", e));
         pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
     }
 
     /**
-     * Handles error response from the PDF Engine
-     *
-     * @param pdfEngineResponse Response to update
-     * @param response          Response from the PDF engine
-     * @param entityResponse    Response content from the PDF Engine
-     * @throws IOException in case of error encoding to string
+     * Maps a non-2xx response from the PDF engine onto the {@link PdfEngineResponse}.
      */
-    private static void handleErrorResponse(
+    private void handleErrorResponse(
             PdfEngineResponse pdfEngineResponse,
             CloseableHttpResponse response,
             HttpEntity entityResponse
     ) throws IOException {
-        //Verify if unauthorized
-        if (response != null &&
-                response.getStatusLine() != null &&
-                response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED
-        ) {
+        if (response != null
+                && response.getStatusLine() != null
+                && response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
             pdfEngineResponse.setErrorMessage("Unauthorized call to PDF engine function");
-
         } else if (entityResponse != null) {
-            //Handle JSON response
             String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
-
             if (!jsonString.isEmpty()) {
                 PdfEngineErrorResponse errorResponse =
                         ObjectMapperUtils.mapString(jsonString, PdfEngineErrorResponse.class);
-
-                if (errorResponse != null &&
-                        errorResponse.getErrors() != null &&
-                        !errorResponse.getErrors().isEmpty() &&
-                        errorResponse.getErrors().get(0) != null
-                ) {
+                if (errorResponse != null
+                        && errorResponse.getErrors() != null
+                        && !errorResponse.getErrors().isEmpty()
+                        && errorResponse.getErrors().get(0) != null) {
                     pdfEngineResponse.setErrorCode(errorResponse.getAppStatusCode());
                     pdfEngineResponse.setErrorMessage(errorResponse.getErrors().get(0).getMessage());
                 }
@@ -232,5 +305,17 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         if (pdfEngineResponse.getErrorMessage() == null) {
             pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------
+
+    private static int envInt(String name, int defaultValue) {
+        return Integer.parseInt(System.getenv().getOrDefault(name, Integer.toString(defaultValue)));
+    }
+
+    private static long envLong(String name, long defaultValue) {
+        return Long.parseLong(System.getenv().getOrDefault(name, Long.toString(defaultValue)));
     }
 }

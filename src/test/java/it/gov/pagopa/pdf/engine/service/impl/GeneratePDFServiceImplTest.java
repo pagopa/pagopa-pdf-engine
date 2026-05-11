@@ -120,9 +120,10 @@ class GeneratePDFServiceImplTest {
 
     private static <T> void setMock(Class<T> classToMock, T mock) {
         try {
-            Field instance = classToMock.getDeclaredField("instance");
+            Class<?> holder = Class.forName(classToMock.getName() + "$Holder");
+            Field instance = holder.getDeclaredField("INSTANCE");
             instance.setAccessible(true);
-            instance.set(instance, mock);
+            instance.set(null, mock);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
