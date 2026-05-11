@@ -1,6 +1,5 @@
-package it.gov.pagopa.pdf.engine.client;
+package it.gov.pagopa.pdf.engine.client.impl;
 
-import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import net.lingala.zip4j.ZipFile;

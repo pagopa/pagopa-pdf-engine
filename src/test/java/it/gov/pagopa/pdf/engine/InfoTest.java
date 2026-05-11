@@ -64,7 +64,7 @@ class InfoTest {
     private static <T> void setMock(Class<T> classToMock, T mock) {
         try {
             Class<?> holder = Class.forName(classToMock.getName() + "$Holder");
-            Field instance = holder.getDeclaredField("INSTANCE");
+            Field instance = holder.getDeclaredField("instance");
             instance.setAccessible(true);
             instance.set(null, mock);
         } catch (Exception e) {

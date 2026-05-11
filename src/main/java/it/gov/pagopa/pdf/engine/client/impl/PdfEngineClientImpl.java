@@ -5,6 +5,7 @@ import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.PdfEngineErrorResponse;
 import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
+import it.gov.pagopa.pdf.engine.util.Constants;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
@@ -44,10 +45,7 @@ import java.util.concurrent.TimeUnit;
  * Client for the PDF Engine.
  *
  * <p>A single, pooled {@link CloseableHttpClient} instance is reused for the
- * lifetime of the JVM. This avoids repeated TLS handshakes and – more
- * importantly – Azure App Service SNAT port exhaustion that was causing
- * systematic {@link ConnectTimeoutException}s under load towards the APIM
- * endpoint ({@code api.platform.pagopa.it}).</p>
+ * lifetime of the JVM.</p>
  */
 public class PdfEngineClientImpl implements PdfEngineClient {
 
@@ -57,24 +55,17 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault(
             "PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
 
-    private static final String DATA_KEY = "data";
-    private static final String TEMPLATE_KEY = "template";
-
     private final Header subKeyHeader = new BasicHeader(
             "Ocp-Apim-Subscription-Key",
             System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
 
-    // ---------- HTTP timeouts (ms), tunable via env ----------
+    // ---------- HTTP timeouts (ms) ----------
     private static final int CONNECT_TIMEOUT_MS = envInt("PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS", 5_000);
     private static final int CONNECTION_REQUEST_TIMEOUT_MS = envInt("PDF_ENGINE_HTTP_CONN_REQUEST_TIMEOUT_MS", 2_000);
     private static final int SOCKET_TIMEOUT_MS = envInt("PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", 30_000);
     private static final int RETRY_COUNT = envInt("PDF_ENGINE_HTTP_RETRY_COUNT", 2);
 
-    // ---------- Connection pool, tunable via env ----------
-    // The engine talks to a single upstream host (APIM), so all calls share one
-    // route: MAX_CONN_TOTAL is therefore aligned with MAX_CONN_PER_ROUTE. Raise
-    // MAX_CONN_TOTAL only if /info or future endpoints are exposed on a
-    // different host (=> different route).
+    // ---------- Connection pool ----------
     private static final int MAX_CONN_PER_ROUTE = envInt("PDF_ENGINE_HTTP_MAX_CONN_PER_ROUTE", 100);
     private static final int MAX_CONN_TOTAL = envInt("PDF_ENGINE_HTTP_MAX_CONN_TOTAL", MAX_CONN_PER_ROUTE);
     private static final long CONN_TTL_SECONDS = envLong("PDF_ENGINE_HTTP_CONN_TTL_SECONDS", 60L);
@@ -86,11 +77,6 @@ public class PdfEngineClientImpl implements PdfEngineClient {
      */
     private final CloseableHttpClient httpClient;
 
-    // ---------- Singleton (Bill Pugh: initialization-on-demand holder) ----------
-    // Lazy + thread-safe by JLS class-initialization semantics, with no need for
-    // synchronization or volatile on getInstance().
-    // INSTANCE is intentionally NOT final so that integration tests can swap in
-    // a mocked PdfEngineClientImpl via reflection.
     private static final class Holder {
         private static PdfEngineClientImpl instance = new PdfEngineClientImpl();
     }
@@ -106,36 +92,25 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     /**
      * Visible for tests: allows injecting a mocked or custom client.
      */
-    public PdfEngineClientImpl(CloseableHttpClient httpClient) {
+    protected PdfEngineClientImpl(CloseableHttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
-    // -----------------------------------------------------------------
-    // Public API
-    // -----------------------------------------------------------------
-
     /**
-     * Sends the request to the PDF engine and returns the response.
-     *
-     * @param pdfEngineRequest input request
-     * @return response containing the generated PDF or an error description
+     * {@inheritDoc}
      */
     @Override
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
         try {
             HttpPost request = buildGenerateRequest(pdfEngineRequest);
             return executeGenerate(request);
         } catch (Exception e) {
-            handleExceptionErrorMessage(pdfEngineResponse, e);
-            return pdfEngineResponse;
+            return buildExceptionResponse(e);
         }
     }
 
     /**
-     * Pings the underlying service info endpoint.
-     *
-     * @return {@code true} if the service answered with HTTP 200, {@code false} otherwise
+     * {@inheritDoc}
      */
     @Override
     public boolean info() {
@@ -221,8 +196,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
         HttpEntity entity = MultipartEntityBuilder.create()
                 .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
-                .addPart(DATA_KEY, dataBody)
-                .addPart(TEMPLATE_KEY, templateBody)
+                .addPart(Constants.DATA_KEY, dataBody)
+                .addPart(Constants.TEMPLATE_KEY, templateBody)
                 .build();
 
         HttpPost request = new HttpPost(pdfEngineEndpoint);
@@ -232,57 +207,60 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     }
 
     private PdfEngineResponse executeGenerate(HttpPost request) {
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             HttpEntity entityResponse = response.getEntity();
 
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 try (InputStream inputStream = entityResponse.getContent()) {
-                    pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                    saveTempPdf(pdfEngineResponse, inputStream);
+                    return buildSuccessResponse(inputStream);
                 }
-            } else {
-                pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-                handleErrorResponse(pdfEngineResponse, response, entityResponse);
             }
+            return buildErrorResponse(response, entityResponse);
         } catch (Exception e) {
-            handleExceptionErrorMessage(pdfEngineResponse, e);
+            return buildExceptionResponse(e);
         }
-        return pdfEngineResponse;
     }
 
     /**
-     * Persists the PDF returned by the engine to a temporary file.
+     * Persists the PDF returned by the engine to a temporary file and returns
+     * a successful {@link PdfEngineResponse} pointing at it.
      */
-    private void saveTempPdf(PdfEngineResponse pdfEngineResponse, InputStream inputStream) throws IOException {
+    private PdfEngineResponse buildSuccessResponse(InputStream pdfStream) throws IOException {
         File tempDirectory = new File("temp");
         if (!tempDirectory.exists()) {
             Files.createDirectory(tempDirectory.toPath());
         }
         File targetFile = File.createTempFile("tempFile", ".pdf", tempDirectory);
-        FileUtils.copyInputStreamToFile(inputStream, targetFile);
+        FileUtils.copyInputStreamToFile(pdfStream, targetFile);
 
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
         pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
         pdfEngineResponse.setTempDirectoryPath(tempDirectory.getAbsolutePath());
+        return pdfEngineResponse;
     }
 
     /**
-     * Translates an exception thrown during the call into an error response.
+     * Builds an error {@link PdfEngineResponse} from an exception raised
+     * while contacting the PDF engine.
      */
-    private void handleExceptionErrorMessage(PdfEngineResponse pdfEngineResponse, Exception e) {
+    private PdfEngineResponse buildExceptionResponse(Exception e) {
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
         pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         pdfEngineResponse.setErrorMessage(String.format("Exception thrown during pdf generation process: %s", e));
         pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
+        return pdfEngineResponse;
     }
 
     /**
-     * Maps a non-2xx response from the PDF engine onto the {@link PdfEngineResponse}.
+     * Builds an error {@link PdfEngineResponse} from a non-2xx response
+     * returned by the PDF engine.
      */
-    private void handleErrorResponse(
-            PdfEngineResponse pdfEngineResponse,
-            CloseableHttpResponse response,
-            HttpEntity entityResponse
-    ) throws IOException {
+    private PdfEngineResponse buildErrorResponse(CloseableHttpResponse response, HttpEntity entityResponse)
+            throws IOException {
+        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+        pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+
         if (response != null
                 && response.getStatusLine() != null
                 && response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
@@ -305,6 +283,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         if (pdfEngineResponse.getErrorMessage() == null) {
             pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
         }
+        return pdfEngineResponse;
     }
 
     // -----------------------------------------------------------------
