@@ -72,9 +72,9 @@ jobs:
         run: yarn --cwd ./node install --frozen-lockfile --ignore-scripts
 
       - name: Install Puppeteer browser
-        # Run only the trusted Puppeteer postinstall to download Chromium,
-        # which was skipped above by --ignore-scripts.
-        run: node ./node/node_modules/puppeteer/install.mjs
+        # Use Puppeteer's public CLI (stable API) to download the browser,
+        # since lifecycle scripts were skipped above by --ignore-scripts.
+        run: yarn --cwd ./node exec puppeteer browsers install chrome
 
       - name: Start Node Server
         run: yarn --cwd ./node run start-detached
