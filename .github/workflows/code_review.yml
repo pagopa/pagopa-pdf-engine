@@ -72,9 +72,13 @@ jobs:
         run: yarn --cwd ./node install --frozen-lockfile --ignore-scripts
 
       - name: Install Puppeteer browser
-        # Use Puppeteer's public CLI (stable API) to download the browser,
-        # since lifecycle scripts were skipped above by --ignore-scripts.
-        run: yarn --cwd ./node exec puppeteer browsers install chrome
+        # Use Puppeteer's public CLI (stable API) to download the Chromium
+        # binary, since lifecycle scripts were skipped above by --ignore-scripts.
+        # NOSONAR (sonar:S6505) — this is not a yarn dependency install
+        # (no package.json mutation, no lifecycle scripts executed); the word
+        # "install" here refers to Puppeteer's `browsers install` subcommand
+        # which only downloads a browser binary from a pinned URL.
+        run: yarn --cwd ./node exec puppeteer browsers install chrome # NOSONAR
 
       - name: Start Node Server
         run: yarn --cwd ./node run start-detached
