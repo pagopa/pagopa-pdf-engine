@@ -15,6 +15,60 @@ const fse = require('fs-extra');
 const telemetryClient = require('./utils/telemetry');
 const crypto = require('crypto');
 
+// ---------------------------------------------------------------------------
+// Lightweight performance instrumentation.
+//
+// Activate with PERF_LOG=1 (or =true). When disabled the helper functions
+// reduce to no-ops, so leaving the calls in production is safe.
+// All timings are in milliseconds with sub-ms precision (process.hrtime.bigint).
+// Output format (single line, easy to grep / parse):
+//   PERF | reqId=<id> phase=<name> ms=<value>
+//   PERF_TOTAL | reqId=<id> total_ms=<value> phases=<json>
+// ---------------------------------------------------------------------------
+const PERF_LOG = /^(1|true|yes)$/i.test(String(process.env.PERF_LOG || true));
+
+function nowNs() { return process.hrtime.bigint(); }
+function nsToMs(ns) { return Number(ns) / 1e6; }
+
+function createPerfTracker(reqId) {
+    const phases = {};
+    const startTotal = nowNs();
+    return {
+        reqId,
+        // Measure a synchronous or async function call.
+        async measure(name, fn) {
+            if (!PERF_LOG) return fn();
+            const s = nowNs();
+            try {
+                return await fn();
+            } finally {
+                const ms = nsToMs(nowNs() - s);
+                phases[name] = (phases[name] || 0) + ms;
+                console.log(`PERF | reqId=${reqId} phase=${name} ms=${ms.toFixed(2)}`);
+            }
+        },
+        // Manual span (when measure() doesn't fit, e.g. interleaved code).
+        start(name) {
+            if (!PERF_LOG) return () => {};
+            const s = nowNs();
+            return () => {
+                const ms = nsToMs(nowNs() - s);
+                phases[name] = (phases[name] || 0) + ms;
+                console.log(`PERF | reqId=${reqId} phase=${name} ms=${ms.toFixed(2)}`);
+            };
+        },
+        flush(extra) {
+            if (!PERF_LOG) return;
+            const total = nsToMs(nowNs() - startTotal);
+            console.log(
+                `PERF_TOTAL | reqId=${reqId} total_ms=${total.toFixed(2)} ` +
+                `phases=${JSON.stringify(phases)}` +
+                (extra ? ` extra=${JSON.stringify(extra)}` : '')
+            );
+        }
+    };
+}
+
 // Cache of compiled Handlebars templates keyed by the SHA-1 of the
 // template source. The same `template.html` is used over and over again
 // across requests, so recompiling it every time is pure overhead.
@@ -81,14 +135,22 @@ const generatePdf = async function (req, res, next) {
     var page;
 
     let timestampLog = `${Date.now()}`;
+    const reqId = (req.headers && (req.headers['x-request-id'] || req.headers['x-correlation-id']))
+        || crypto.randomBytes(6).toString('hex');
+    const perf = createPerfTracker(reqId);
+    let zipEntryCount = 0;
+    let waitRenderIterations = 0;
+    let pdfBytes = 0;
 
     console.time(timestampLog);
-    console.info(`Starting generate pdf nodejs function`);
+    console.info(`Starting generate pdf nodejs function reqId=${reqId}`);
 
     try {
 
         try {
+            const endMkdir = perf.start('mkdtemp');
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
+            endMkdir();
         } catch (err) {
             trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
@@ -109,28 +171,43 @@ const generatePdf = async function (req, res, next) {
         var zip = new AdmZip(req.file.buffer);
         var zipEntries = zip.getEntries();
 
-
+        // NOTE: previously fse.outputFile was fired in a fire-and-forget
+        // fashion inside the loop, which (a) made it impossible to know
+        // when the files were really on disk and (b) hid the real cost of
+        // this phase from any timing logs. We now await every write so the
+        // perf measurement is meaningful and the page.goto below cannot
+        // race the writes.
+        const endZip = perf.start('zip_extract');
+        const writes = [];
         for (const zipEntry of zipEntries) {
             if (!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
-                fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
-                    if (err) {
-                        trackCustomEvent({
-                            name: "PDF_ENGINE_NODE",
-                            properties: {
-                                "type": "PDF_ENGINE_NODE_ERROR",
-                                "title": "outputFile error",
-                                "details": "An error occurred writing file " + zipEntry.entryName,
-                                "cause": err.toString()
-                            }
-                        });
-                        console.error(err);
-                    }
-                });
+                zipEntryCount++;
+                writes.push(
+                    fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData())
+                        .catch(err => {
+                            trackCustomEvent({
+                                name: "PDF_ENGINE_NODE",
+                                properties: {
+                                    "type": "PDF_ENGINE_NODE_ERROR",
+                                    "title": "outputFile error",
+                                    "details": "An error occurred writing file " + zipEntry.entryName,
+                                    "cause": err.toString()
+                                }
+                            });
+                            console.error(err);
+                        })
+                );
             }
         }
+        await Promise.all(writes);
+        endZip();
 
+        const endBrowser = perf.start('browser_session');
         const browser = await getBrowserSession();
+        endBrowser();
+        const endNewPage = perf.start('new_page');
         page = await browser.newPage();
+        endNewPage();
 
         let data = req.body.data;
         let title = req.body.title;
@@ -159,11 +236,19 @@ const generatePdf = async function (req, res, next) {
         try {
 
             const jsonData = JSON.parse(data);
+            const endRead = perf.start('read_template');
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
+            endRead();
+            const endCompile = perf.start('handlebars_compile');
             let template = getCompiledTemplate(templateFile);
+            endCompile();
             jsonData.tempPath = workingDir;
+            const endRender = perf.start('handlebars_render');
             let html = template(jsonData);
+            endRender();
+            const endWrite = perf.start('write_compiled_html');
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+            endWrite();
 
         } catch (err) {
             trackCustomEvent({
@@ -183,12 +268,17 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
+            const endGoto = perf.start('page_goto');
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
                 waitUntil: ['domcontentloaded', 'networkidle0']
             });
+            endGoto();
             // path, can be relative or absolute path
             //await page.addStyleTag({path: path.join(workingDir, "style.css")});
-            await waitForRender(page);
+            const endWait = perf.start('wait_for_render');
+            waitRenderIterations = await waitForRender(page);
+            endWait();
+            const endPdf = perf.start('page_pdf');
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
                 title: title,
@@ -196,6 +286,7 @@ const generatePdf = async function (req, res, next) {
                 landscape: false,
                 printBackground: true,
             });
+            endPdf();
         } catch (err) {
             trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
@@ -222,8 +313,11 @@ const generatePdf = async function (req, res, next) {
             }
         });
         let content = readFileSync(path.join(workingDir, "pagopa-receipt.pdf"));
+        pdfBytes = content.length;
         res.setHeader('content-type', 'application/pdf');
+        const endSend = perf.start('res_send');
         res.send(content);
+        endSend();
 
     } catch (err) {
         trackCustomEvent({
@@ -240,13 +334,23 @@ const generatePdf = async function (req, res, next) {
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {
         if (page) {
+            const endClose = perf.start('page_close');
             await page.close();
+            endClose();
         }
 
         if (workingDir) {
+            const endRm = perf.start('rm_workdir');
             rmSync(workingDir, {recursive: true, force: true});
+            endRm();
         }
 
+        console.timeEnd(timestampLog);
+        perf.flush({
+            zipEntries: zipEntryCount,
+            waitRenderIterations,
+            pdfBytes
+        });
     }
 
 }
@@ -260,22 +364,27 @@ const waitForRender = async (page, timeout = 30000) => {
     const minStableSizeIterations = Number(process.env.MIN_STABLE_SIZE_ITERATIONS) || 3;
 
     // Wait for fonts to be ready up-front
+    const fontsStart = PERF_LOG ? nowNs() : null;
     try {
         await page.evaluate(() => document.fonts?.ready);
     } catch (_) { /* ignore: page may have already been torn down */ }
+    if (PERF_LOG) {
+        console.log(`PERF | phase=fonts_ready ms=${nsToMs(nowNs() - fontsStart).toFixed(2)}`);
+    }
 
+    let iterations = 0;
     while (checkCounts++ <= maxChecks) {
-        // Previously we used `await page.content()` which serializes the
-        // *entire* DOM and ships it back over CDP on every iteration.
-        // Reading just two integers from the page is orders of magnitude
-        // cheaper and still detects when rendering has stabilised.
+        iterations++;
+        const iterStart = PERF_LOG ? nowNs() : null;
         const currentSize = await page.evaluate(() => {
             const body = document.body;
             if (!body) return 0;
-            // Combine length + scrollHeight so we catch both DOM mutations
-            // and reflow-induced size changes (e.g. async font loading).
             return body.innerHTML.length * 31 + body.scrollHeight;
         });
+        if (PERF_LOG && iterations <= 3) {
+            // log only the first few to avoid noise
+            console.log(`PERF | phase=wait_iter#${iterations} ms=${nsToMs(nowNs() - iterStart).toFixed(2)} size=${currentSize}`);
+        }
 
         if (lastSize !== 0 && currentSize === lastSize)
             countStableSizeIterations++;
@@ -289,6 +398,7 @@ const waitForRender = async (page, timeout = 30000) => {
         lastSize = currentSize;
         await new Promise(r => setTimeout(r, checkInterval));
     }
+    return iterations;
 };
 
 module.exports = {info, generatePdf, shutdown};
