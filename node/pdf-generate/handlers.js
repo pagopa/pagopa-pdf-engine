@@ -30,9 +30,37 @@ const PERF_LOG = /^(1|true|yes)$/i.test(String(process.env.PERF_LOG || true));
 function nowNs() { return process.hrtime.bigint(); }
 function nsToMs(ns) { return Number(ns) / 1e6; }
 
+// Emit a perf event through Application Insights (trackCustomEvent) and,
+// as a fallback for local runs without telemetry, also to stdout.
+// Kept centralized so the payload shape stays consistent across all phases.
+function emitPerfEvent(name, properties, measurements) {
+    trackCustomEvent({
+        name: "PDF_ENGINE_NODE",
+        properties: {
+            type: "PDF_ENGINE_NODE_PERF",
+            title: name,
+            ...properties
+        },
+        measurements
+    });
+    // Mirror to console for local development / docker logs.
+    if (!telemetryClient) {
+        console.log(`PERF | ${name} ${JSON.stringify({ ...properties, ...measurements })}`);
+    }
+}
+
 function createPerfTracker(reqId) {
     const phases = {};
     const startTotal = nowNs();
+    const recordPhase = (phaseName, ms) => {
+        phases[phaseName] = (phases[phaseName] || 0) + ms;
+        emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
+            reqId,
+            phase: phaseName
+        }, {
+            duration_ms: ms
+        });
+    };
     return {
         reqId,
         // Measure a synchronous or async function call.
@@ -42,29 +70,34 @@ function createPerfTracker(reqId) {
             try {
                 return await fn();
             } finally {
-                const ms = nsToMs(nowNs() - s);
-                phases[name] = (phases[name] || 0) + ms;
-                console.log(`PERF | reqId=${reqId} phase=${name} ms=${ms.toFixed(2)}`);
+                recordPhase(name, nsToMs(nowNs() - s));
             }
         },
         // Manual span (when measure() doesn't fit, e.g. interleaved code).
         start(name) {
             if (!PERF_LOG) return () => {};
             const s = nowNs();
-            return () => {
-                const ms = nsToMs(nowNs() - s);
-                phases[name] = (phases[name] || 0) + ms;
-                console.log(`PERF | reqId=${reqId} phase=${name} ms=${ms.toFixed(2)}`);
-            };
+            return () => recordPhase(name, nsToMs(nowNs() - s));
         },
         flush(extra) {
             if (!PERF_LOG) return;
             const total = nsToMs(nowNs() - startTotal);
-            console.log(
-                `PERF_TOTAL | reqId=${reqId} total_ms=${total.toFixed(2)} ` +
-                `phases=${JSON.stringify(phases)}` +
-                (extra ? ` extra=${JSON.stringify(extra)}` : '')
-            );
+            // Build a measurements object: total_ms + every phase as its own
+            // numeric metric (App Insights will index them as customMetrics).
+            const measurements = { total_ms: total };
+            for (const [k, v] of Object.entries(phases)) {
+                measurements[`phase_${k}_ms`] = v;
+            }
+            if (extra) {
+                for (const [k, v] of Object.entries(extra)) {
+                    if (typeof v === 'number') measurements[k] = v;
+                }
+            }
+            emitPerfEvent("PDF_ENGINE_NODE_PERF_TOTAL", {
+                reqId,
+                phases: JSON.stringify(phases),
+                extra: extra ? JSON.stringify(extra) : undefined
+            }, measurements);
         }
     };
 }
@@ -369,7 +402,11 @@ const waitForRender = async (page, timeout = 30000) => {
         await page.evaluate(() => document.fonts?.ready);
     } catch (_) { /* ignore: page may have already been torn down */ }
     if (PERF_LOG) {
-        console.log(`PERF | phase=fonts_ready ms=${nsToMs(nowNs() - fontsStart).toFixed(2)}`);
+        emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
+            phase: "fonts_ready"
+        }, {
+            duration_ms: nsToMs(nowNs() - fontsStart)
+        });
     }
 
     let iterations = 0;
@@ -383,7 +420,12 @@ const waitForRender = async (page, timeout = 30000) => {
         });
         if (PERF_LOG && iterations <= 3) {
             // log only the first few to avoid noise
-            console.log(`PERF | phase=wait_iter#${iterations} ms=${nsToMs(nowNs() - iterStart).toFixed(2)} size=${currentSize}`);
+            emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
+                phase: `wait_iter_${iterations}`
+            }, {
+                duration_ms: nsToMs(nowNs() - iterStart),
+                size: currentSize
+            });
         }
 
         if (lastSize !== 0 && currentSize === lastSize)
