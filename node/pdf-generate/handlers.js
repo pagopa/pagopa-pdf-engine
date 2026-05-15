@@ -13,6 +13,79 @@ const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
 const telemetryClient = require('./utils/telemetry');
+const crypto = require('crypto');
+
+// ---------------------------------------------------------------------------
+// Lightweight performance instrumentation.
+//
+// Activate with PERF_LOG=1 (or =true). When disabled the helper functions
+// reduce to no-ops, so leaving the calls in production is safe.
+// All timings are in milliseconds with sub-ms precision (process.hrtime.bigint).
+// Events are emitted via Application Insights trackCustomEvent and mirrored
+// to stdout when telemetry is not configured.
+// ---------------------------------------------------------------------------
+const PERF_LOG = /^(1|true|yes)$/i.test(String(process.env.PERF_LOG || true));
+
+function nowNs() { return process.hrtime.bigint(); }
+function nsToMs(ns) { return Number(ns) / 1e6; }
+
+// Emit a perf event through Application Insights (trackCustomEvent) and,
+// as a fallback for local runs without telemetry, also to stdout.
+function emitPerfEvent(name, properties, measurements) {
+    trackCustomEvent({
+        name: "PDF_ENGINE_NODE",
+        properties: {
+            type: "PDF_ENGINE_NODE_PERF",
+            title: name,
+            ...properties
+        },
+        measurements
+    });
+    if (!telemetryClient) {
+        console.log(`PERF | ${name} ${JSON.stringify({ ...properties, ...measurements })}`);
+    }
+}
+
+function createPerfTracker(reqId) {
+    const phases = {};
+    const startTotal = nowNs();
+    const recordPhase = (phaseName, ms) => {
+        phases[phaseName] = (phases[phaseName] || 0) + ms;
+        emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
+            reqId,
+            phase: phaseName
+        }, {
+            duration_ms: ms
+        });
+    };
+    return {
+        reqId,
+        // Manual span (when measure() doesn't fit, e.g. interleaved code).
+        start(name) {
+            if (!PERF_LOG) return () => {};
+            const s = nowNs();
+            return () => recordPhase(name, nsToMs(nowNs() - s));
+        },
+        flush(extra) {
+            if (!PERF_LOG) return;
+            const total = nsToMs(nowNs() - startTotal);
+            const measurements = { total_ms: total };
+            for (const [k, v] of Object.entries(phases)) {
+                measurements[`phase_${k}_ms`] = v;
+            }
+            if (extra) {
+                for (const [k, v] of Object.entries(extra)) {
+                    if (typeof v === 'number') measurements[k] = v;
+                }
+            }
+            emitPerfEvent("PDF_ENGINE_NODE_PERF_TOTAL", {
+                reqId,
+                phases: JSON.stringify(phases),
+                extra: extra ? JSON.stringify(extra) : undefined
+            }, measurements);
+        }
+    };
+}
 
 
 const info = async function (req, res, next) {
@@ -55,14 +128,21 @@ const generatePdf = async function (req, res, next) {
     var page;
 
     let timestampLog = `${Date.now()}`;
+    const reqId = (req.headers && (req.headers['x-request-id'] || req.headers['x-correlation-id']))
+        || crypto.randomBytes(6).toString('hex');
+    const perf = createPerfTracker(reqId);
+    let zipEntryCount = 0;
+    let pdfBytes = 0;
 
     console.time(timestampLog);
-    console.info(`Starting generate pdf nodejs function`);
+    console.info(`Starting generate pdf nodejs function reqId=${reqId}`);
 
     try {
 
         try {
+            const endMkdir = perf.start('mkdtemp');
             workingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdfenginetmp-'));
+            endMkdir();
         } catch (err) {
             trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
@@ -84,8 +164,14 @@ const generatePdf = async function (req, res, next) {
         var zipEntries = zip.getEntries();
 
 
+        // NOTE: this loop is intentionally left as the original 2.10.23
+        // fire-and-forget code, so the perf measurement only covers the
+        // synchronous part (entry iteration + getData). The actual disk
+        // write happens asynchronously after this span completes.
+        const endZip = perf.start('zip_extract');
         for (const zipEntry of zipEntries) {
             if (!zipEntry.entryName.includes("._") && !zipEntry.isDirectory) {
+                zipEntryCount++;
                 fse.outputFile(path.join(workingDir, zipEntry.entryName), zipEntry.getData(), err => {
                     if (err) {
                         trackCustomEvent({
@@ -102,9 +188,14 @@ const generatePdf = async function (req, res, next) {
                 });
             }
         }
+        endZip();
 
+        const endBrowser = perf.start('browser_session');
         const browser = await getBrowserSession();
+        endBrowser();
+        const endNewPage = perf.start('new_page');
         page = await browser.newPage();
+        endNewPage();
 
         let data = req.body.data;
         let title = req.body.title;
@@ -133,11 +224,19 @@ const generatePdf = async function (req, res, next) {
         try {
 
             const jsonData = JSON.parse(data);
+            const endRead = perf.start('read_template');
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
+            endRead();
+            const endCompile = perf.start('handlebars_compile');
             let template = handlebars.compile(templateFile);
+            endCompile();
             jsonData.tempPath = workingDir;
+            const endRender = perf.start('handlebars_render');
             let html = template(jsonData);
+            endRender();
+            const endWrite = perf.start('write_compiled_html');
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
+            endWrite();
 
         } catch (err) {
             trackCustomEvent({
@@ -157,12 +256,17 @@ const generatePdf = async function (req, res, next) {
         }
 
         try {
+            const endGoto = perf.start('page_goto');
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
                 waitUntil: ['load', 'domcontentloaded']
             });
+            endGoto();
             // path, can be relative or absolute path
             //await page.addStyleTag({path: path.join(workingDir, "style.css")});
+            const endWait = perf.start('wait_for_render');
             await waitForRender(page);
+            endWait();
+            const endPdf = perf.start('page_pdf');
             await page.pdf({
                 path: path.join(workingDir, "pagopa-receipt.pdf"),
                 title: title,
@@ -170,6 +274,7 @@ const generatePdf = async function (req, res, next) {
                 landscape: false,
                 printBackground: true,
             });
+            endPdf();
         } catch (err) {
             trackCustomEvent({
                 name: "PDF_ENGINE_NODE",
@@ -196,8 +301,11 @@ const generatePdf = async function (req, res, next) {
             }
         });
         let content = readFileSync(path.join(workingDir, "pagopa-receipt.pdf"));
+        pdfBytes = content.length;
         res.setHeader('content-type', 'application/pdf');
+        const endSend = perf.start('res_send');
         res.send(content);
+        endSend();
 
     } catch (err) {
         trackCustomEvent({
@@ -214,13 +322,22 @@ const generatePdf = async function (req, res, next) {
         res.json(buildResponseBody(500, 'PDFE_902', "Error generating the PDF document"));
     } finally {
         if (page) {
+            const endClose = perf.start('page_close');
             await page.close();
+            endClose();
         }
 
         if (workingDir) {
+            const endRm = perf.start('rm_workdir');
             rmSync(workingDir, {recursive: true, force: true});
+            endRm();
         }
 
+        console.timeEnd(timestampLog);
+        perf.flush({
+            zipEntries: zipEntryCount,
+            pdfBytes
+        });
     }
 
 }
@@ -233,9 +350,21 @@ const waitForRender = async (page, timeout = 30000) => {
     let countStableSizeIterations = 0;
     const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
 
+    let iterations = 0;
     while (checkCounts++ <= maxChecks) {
+        iterations++;
+        const iterStart = PERF_LOG ? nowNs() : null;
         let html = await page.content();
         let currentSize = html.length;
+        if (PERF_LOG && iterations <= 3) {
+            // log only the first few iterations to avoid noise
+            emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
+                phase: `wait_iter_${iterations}`
+            }, {
+                duration_ms: nsToMs(nowNs() - iterStart),
+                size: currentSize
+            });
+        }
 
         if (lastSize != 0 && currentSize == lastSize)
             countStableSizeIterations++;
@@ -248,6 +377,13 @@ const waitForRender = async (page, timeout = 30000) => {
 
         lastSize = currentSize;
         await new Promise(r => setTimeout(r, checkInterval))
+    }
+    if (PERF_LOG) {
+        emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
+            phase: "wait_for_render_iterations"
+        }, {
+            iterations
+        });
     }
 };
 
