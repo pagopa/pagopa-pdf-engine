@@ -33,23 +33,35 @@ function nsToMs(ns) { return Number(ns) / 1e6; }
 // ---------------------------------------------------------------------------
 // Per-process concurrency limiter for generatePdf.
 //
-// The previous implementation let an unbounded number of concurrent requests
-// hit the single shared Chromium browser. Performance data showed that under
-// load every page.* operation degraded ~100x (newPage from ~50ms -> ~5s)
-// because Chromium became oversubscribed.
+// Without a limit, an unbounded number of concurrent requests can hit the
+// single shared Chromium browser. Performance data showed that under load
+// every page.* operation degraded ~100x (newPage from ~50ms -> ~5s) because
+// Chromium became oversubscribed.
 //
-// We serialize generations to at most PDF_CONCURRENCY requests at a time
-// (default = number of vCPUs). Excess requests wait in a FIFO queue
-// instead of piling up on Chromium. Override with the PDF_CONCURRENCY env
-// var (set to a high number to effectively disable).
+// This limiter is OPT-IN: the limit is applied ONLY if the PDF_CONCURRENCY
+// environment variable is set to a positive integer. When unset (or invalid),
+// no limit is enforced and the queue/wait code is bypassed entirely - this
+// keeps the historical behavior in environments (e.g. perf tests with k6 +
+// fixed maxVUs) where queueing artificially lowers measured throughput due
+// to Little's law.
+//
+// Recommended values:
+//   - production:    PDF_CONCURRENCY = vCPU  (e.g. 4 on a P2v3) or 2*vCPU
+//                    to absorb micro-bursts while protecting Chromium
+//   - perf test k6:  do not set (unlimited) so total throughput isn't
+//                    bounded by maxVUs / queue_latency
+//   - local dev:     do not set
 // ---------------------------------------------------------------------------
-const PDF_CONCURRENCY = Math.max(
-    1,
-    Number(process.env.PDF_CONCURRENCY) || os.cpus().length
-);
+const _rawConcurrency = Number(process.env.PDF_CONCURRENCY);
+const PDF_CONCURRENCY = Number.isFinite(_rawConcurrency) && _rawConcurrency > 0
+    ? Math.floor(_rawConcurrency)
+    : 0; // 0 => disabled (unlimited)
+const CONCURRENCY_ENABLED = PDF_CONCURRENCY > 0;
+
 let _activeGenerations = 0;
 const _generationQueue = [];
 function acquireGenerationSlot() {
+    if (!CONCURRENCY_ENABLED) return Promise.resolve();
     if (_activeGenerations < PDF_CONCURRENCY) {
         _activeGenerations++;
         return Promise.resolve();
@@ -57,6 +69,7 @@ function acquireGenerationSlot() {
     return new Promise(resolve => _generationQueue.push(resolve));
 }
 function releaseGenerationSlot() {
+    if (!CONCURRENCY_ENABLED) return;
     if (_generationQueue.length > 0) {
         // Hand the slot directly to the next waiter (no counter change).
         const next = _generationQueue.shift();
@@ -65,7 +78,11 @@ function releaseGenerationSlot() {
         _activeGenerations = Math.max(0, _activeGenerations - 1);
     }
 }
-console.info(`PDF generation concurrency limit = ${PDF_CONCURRENCY}`);
+console.info(
+    CONCURRENCY_ENABLED
+        ? `PDF generation concurrency limit = ${PDF_CONCURRENCY}`
+        : `PDF generation concurrency limit = DISABLED (set PDF_CONCURRENCY to enable)`
+);
 
 // Emit a perf event through Application Insights (trackCustomEvent) and,
 // as a fallback for local runs without telemetry, also to stdout.
@@ -195,12 +212,16 @@ const generatePdf = async function (req, res, next) {
     // Acquire a concurrency slot BEFORE doing any heavy work so we don't
     // pile up requests on Chromium. We also measure the time spent waiting
     // in the queue: it's a key signal for capacity planning.
+    // When PDF_CONCURRENCY is not set, acquire/release are no-ops and we
+    // skip the concurrency_wait phase entirely to avoid noise in metrics.
     const reqId = (req.headers && (req.headers['x-request-id'] || req.headers['x-correlation-id']))
         || crypto.randomBytes(6).toString('hex');
     const perf = createPerfTracker(reqId);
-    const endQueueWait = perf.start('concurrency_wait');
-    await acquireGenerationSlot();
-    endQueueWait();
+    if (CONCURRENCY_ENABLED) {
+        const endQueueWait = perf.start('concurrency_wait');
+        await acquireGenerationSlot();
+        endQueueWait();
+    }
 
     trackCustomEvent({
         name: "PDF_ENGINE_NODE",
