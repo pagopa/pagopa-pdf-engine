@@ -184,7 +184,7 @@ const generatePdf = async function (req, res, next) {
 
         try {
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
-                waitUntil: ['load', 'domcontentloaded']
+                waitUntil: ['domcontentloaded', 'networkidle0']
             });
             // path, can be relative or absolute path
             //await page.addStyleTag({path: path.join(workingDir, "style.css")});
@@ -252,18 +252,32 @@ const generatePdf = async function (req, res, next) {
 }
 
 const waitForRender = async (page, timeout = 30000) => {
-    const checkInterval = process.env.CHECK_SIZE_INTERVAL || 100;
+    const checkInterval = Number(process.env.CHECK_SIZE_INTERVAL) || 100;
     const maxChecks = timeout / checkInterval;
     let lastSize = 0;
     let checkCounts = 1;
     let countStableSizeIterations = 0;
-    const minStableSizeIterations = process.env.MIN_STABLE_SIZE_ITERATIONS || 3;
+    const minStableSizeIterations = Number(process.env.MIN_STABLE_SIZE_ITERATIONS) || 3;
+
+    // Wait for fonts to be ready up-front
+    try {
+        await page.evaluate(() => document.fonts?.ready);
+    } catch (_) { /* ignore: page may have already been torn down */ }
 
     while (checkCounts++ <= maxChecks) {
-        let html = await page.content();
-        let currentSize = html.length;
+        // Previously we used `await page.content()` which serializes the
+        // *entire* DOM and ships it back over CDP on every iteration.
+        // Reading just two integers from the page is orders of magnitude
+        // cheaper and still detects when rendering has stabilised.
+        const currentSize = await page.evaluate(() => {
+            const body = document.body;
+            if (!body) return 0;
+            // Combine length + scrollHeight so we catch both DOM mutations
+            // and reflow-induced size changes (e.g. async font loading).
+            return body.innerHTML.length * 31 + body.scrollHeight;
+        });
 
-        if (lastSize != 0 && currentSize == lastSize)
+        if (lastSize !== 0 && currentSize === lastSize)
             countStableSizeIterations++;
         else
             countStableSizeIterations = 0;
@@ -273,7 +287,7 @@ const waitForRender = async (page, timeout = 30000) => {
         }
 
         lastSize = currentSize;
-        await new Promise(r => setTimeout(r, checkInterval))
+        await new Promise(r => setTimeout(r, checkInterval));
     }
 };
 
