@@ -303,7 +303,7 @@ const generatePdf = async function (req, res, next) {
         try {
             const endGoto = perf.start('page_goto');
             await page.goto('file:' + path.join(workingDir, "compiledTemplate.html"), {
-                waitUntil: ['domcontentloaded', 'networkidle0']
+                waitUntil: ['load', 'domcontentloaded']
             });
             endGoto();
             // path, can be relative or absolute path
