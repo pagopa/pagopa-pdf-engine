@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine Node - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.10.29-4-PIDM-1954-improve-performance-app-node"
+    "version": "2.10.29-5-PIDM-1954-improve-performance-app-node"
   },
   "servers": [
     {
