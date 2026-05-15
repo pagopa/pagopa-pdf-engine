@@ -13,6 +13,32 @@ const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
 const telemetryClient = require('./utils/telemetry');
+const crypto = require('crypto');
+
+// Cache of compiled Handlebars templates keyed by the SHA-1 of the
+// template source. The same `template.html` is used over and over again
+// across requests, so recompiling it every time is pure overhead.
+// A small bounded LRU-like cache keeps memory usage in check.
+const TEMPLATE_CACHE_MAX = 32;
+const compiledTemplateCache = new Map();
+
+function getCompiledTemplate(source) {
+    const key = crypto.createHash('sha1').update(source).digest('hex');
+    let tpl = compiledTemplateCache.get(key);
+    if (tpl) {
+        // refresh LRU position
+        compiledTemplateCache.delete(key);
+        compiledTemplateCache.set(key, tpl);
+        return tpl;
+    }
+    tpl = handlebars.compile(source);
+    compiledTemplateCache.set(key, tpl);
+    if (compiledTemplateCache.size > TEMPLATE_CACHE_MAX) {
+        const oldest = compiledTemplateCache.keys().next().value;
+        compiledTemplateCache.delete(oldest);
+    }
+    return tpl;
+}
 
 
 const info = async function (req, res, next) {
@@ -134,7 +160,7 @@ const generatePdf = async function (req, res, next) {
 
             const jsonData = JSON.parse(data);
             let templateFile = readFileSync(path.join(workingDir, "template.html")).toString();
-            let template = handlebars.compile(templateFile);
+            let template = getCompiledTemplate(templateFile);
             jsonData.tempPath = workingDir;
             let html = template(jsonData);
             fs.writeFileSync(path.join(workingDir, "compiledTemplate.html"), html);
