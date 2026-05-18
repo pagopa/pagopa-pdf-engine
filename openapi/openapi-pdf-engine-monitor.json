@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.10.23-1-test-with-trace-log"
+    "version": "2.10.23-2-test-with-trace-log"
   },
   "servers": [
     {
