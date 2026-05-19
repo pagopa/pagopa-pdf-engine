@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.10.29-7-PIDM-1954-improve-performance-app-node</version>
+    <version>2.10.29-8-PIDM-1954-improve-performance-app-node</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
