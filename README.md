@@ -11,6 +11,31 @@ The project is composed of two processes:
 | **Java function** (Azure Functions HTTP trigger) | `src/` | Java 17 | Public REST entry point. Receives the multipart request, forwards it to the Node sidecar, then converts the returned PDF to **PDF/A-2a** with Spire.PDF and (optionally) zips the result. |
 | **Node.js sidecar** | `node/` | Node.js ≥ 24 | Renders the Handlebars template (with i18n support), launches a headless Chromium via Puppeteer and produces a plain PDF. |
 
+
+### Deployment topology
+
+Two components are deployed on **two distinct Azure App Service plans**, scaled independently.
+
+```mermaid
+flowchart LR
+    Client([Client])
+
+    subgraph AzJava["Azure App Service — Java plan"]
+        Java["Java function<br/>Azure Functions<br/>Spire.PDF (PDF → PDF/A-2a)"]
+    end
+
+    subgraph AzNode["Azure App Service — Node plan"]
+        Node["Node sidecar<br/>Puppeteer + Chrome"]
+    end
+
+    Client -- "POST /generate-pdf<br/>multipart" --> Java
+    Java -- "POST /generate-pdf<br/>HTTP" --> Node
+    Node -- "application/pdf" --> Java
+    Java -- "application/pdf<br/>or application/zip" --> Client
+```
+
+### Request flow
+
 ```mermaid
 sequenceDiagram
     autonumber
