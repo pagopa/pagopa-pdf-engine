@@ -177,7 +177,6 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/src/app/.cache/puppeteer/chrome/linux-${PINNE
 | `PUPPETEER_EXECUTABLE_PATH` | set by the Dockerfile to the pinned Chrome | Override the Chrome binary used by Puppeteer |
 | `PUPPETEER_CACHE_DIR` | `/usr/src/app/.cache/puppeteer` | Where Puppeteer looks for installed browsers |
 | `PUPPETEER_SKIP_DOWNLOAD` | `true` in the image | Skip automatic Chrome download during `yarn install` |
-| `PDF_CONCURRENCY` | _unset_ (unlimited) | Optional per-process cap on concurrent `generatePdf` invocations. Set to e.g. `2 × vCPU` in production to protect Chromium; leave unset for k6 perf tests to avoid Little's-law artefacts. |
 | `CHECK_SIZE_INTERVAL` | `100` (ms) | Polling interval used by `waitForRender` |
 | `MIN_STABLE_SIZE_ITERATIONS` | `3` | Number of stable polls before the page is considered fully rendered |
 | `PERF_LOG` | `true` | Emit fine-grained per-phase timings as App Insights `PDF_ENGINE_NODE_PERF_*` custom events |
