@@ -1,13 +1,10 @@
-const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 const readFileSync = require('fs').readFileSync
 const rmSync = require('fs').rmSync
 const os = require('os');
-const {getBrowserSession, closeBrowserSession} = require('./utils/browserManager');
+const {getBrowserSession} = require('./utils/browserManager');
 const buildResponseBody = require('./utils/buildUtils');
-const multer = require('multer');
-const express = require('express');
 let handlebars = require("handlebars");
 const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
@@ -157,7 +154,6 @@ const generatePdf = async function (req, res, next) {
 
         let data = req.body.data;
         let title = req.body.title;
-        let renderMode = req.body.renderMode || 'handlebar';
 
         if (title == undefined) {
             title = "Documento PDF PagoPA";
