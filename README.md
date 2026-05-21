@@ -179,7 +179,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/src/app/.cache/puppeteer/chrome/linux-${PINNE
 | `PUPPETEER_SKIP_DOWNLOAD` | `true` in the image | Skip automatic Chrome download during `yarn install` |
 | `CHECK_SIZE_INTERVAL` | `100` (ms) | Polling interval used by `waitForRender` |
 | `MIN_STABLE_SIZE_ITERATIONS` | `3` | Number of stable polls before the page is considered fully rendered |
-| `PERF_LOG` | `true` | Emit fine-grained per-phase timings as App Insights `PDF_ENGINE_NODE_PERF_*` custom events |
+| `PERF_LOG` | `false` | When set to `1`/`true`/`yes`, emit fine-grained per-phase timings as App Insights `PDF_ENGINE_NODE` custom events with `properties.type = "PDF_ENGINE_NODE_PERF"`. Disabled by default to avoid telemetry noise/cost in production. |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | — | App Insights connection string for telemetry |
 
 ### Template zip layout

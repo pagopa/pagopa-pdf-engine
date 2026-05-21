@@ -12,96 +12,16 @@ let handlebars = require("handlebars");
 const packageJson = require("../package.json");
 var AdmZip = require("adm-zip");
 const fse = require('fs-extra');
-const telemetryClient = require('./utils/telemetry');
+const {
+    trackCustomEvent,
+    createPerfTracker,
+    emitPerfPhase,
+    PERF_LOG,
+    nowNs,
+    nsToMs
+} = require('./utils/telemetry');
 const crypto = require('crypto');
 
-// ---------------------------------------------------------------------------
-// Lightweight performance instrumentation.
-//
-// Activate with PERF_LOG=1 (or =true). When disabled the helper functions
-// reduce to no-ops, so leaving the calls in production is safe.
-// All timings are in milliseconds with sub-ms precision (process.hrtime.bigint).
-// Output format (single line, easy to grep / parse):
-//   PERF | reqId=<id> phase=<name> ms=<value>
-//   PERF_TOTAL | reqId=<id> total_ms=<value> phases=<json>
-// ---------------------------------------------------------------------------
-const PERF_LOG = /^(1|true|yes)$/i.test(String(process.env.PERF_LOG || true));
-
-function nowNs() { return process.hrtime.bigint(); }
-function nsToMs(ns) { return Number(ns) / 1e6; }
-
-
-// Emit a perf event through Application Insights (trackCustomEvent) and,
-// as a fallback for local runs without telemetry, also to stdout.
-// Kept centralized so the payload shape stays consistent across all phases.
-function emitPerfEvent(name, properties, measurements) {
-    trackCustomEvent({
-        name: "PDF_ENGINE_NODE",
-        properties: {
-            type: "PDF_ENGINE_NODE_PERF",
-            title: name,
-            ...properties
-        },
-        measurements
-    });
-    // Mirror to console for local development / docker logs.
-    if (!telemetryClient) {
-        console.log(`PERF | ${name} ${JSON.stringify({ ...properties, ...measurements })}`);
-    }
-}
-
-function createPerfTracker(reqId) {
-    const phases = {};
-    const startTotal = nowNs();
-    const recordPhase = (phaseName, ms) => {
-        phases[phaseName] = (phases[phaseName] || 0) + ms;
-        emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
-            reqId,
-            phase: phaseName
-        }, {
-            duration_ms: ms
-        });
-    };
-    return {
-        reqId,
-        // Measure a synchronous or async function call.
-        async measure(name, fn) {
-            if (!PERF_LOG) return fn();
-            const s = nowNs();
-            try {
-                return await fn();
-            } finally {
-                recordPhase(name, nsToMs(nowNs() - s));
-            }
-        },
-        // Manual span (when measure() doesn't fit, e.g. interleaved code).
-        start(name) {
-            if (!PERF_LOG) return () => {};
-            const s = nowNs();
-            return () => recordPhase(name, nsToMs(nowNs() - s));
-        },
-        flush(extra) {
-            if (!PERF_LOG) return;
-            const total = nsToMs(nowNs() - startTotal);
-            // Build a measurements object: total_ms + every phase as its own
-            // numeric metric (App Insights will index them as customMetrics).
-            const measurements = { total_ms: total };
-            for (const [k, v] of Object.entries(phases)) {
-                measurements[`phase_${k}_ms`] = v;
-            }
-            if (extra) {
-                for (const [k, v] of Object.entries(extra)) {
-                    if (typeof v === 'number') measurements[k] = v;
-                }
-            }
-            emitPerfEvent("PDF_ENGINE_NODE_PERF_TOTAL", {
-                reqId,
-                phases: JSON.stringify(phases),
-                extra: extra ? JSON.stringify(extra) : undefined
-            }, measurements);
-        }
-    };
-}
 
 // Cache of compiled Handlebars templates keyed by the SHA-1 of the
 // template source. The same `template.html` is used over and over again
@@ -145,14 +65,6 @@ const shutdown = async function (req, res, server) {
     process.exit(0);
 }
 
-function trackCustomEvent(msg) {
-    if (!telemetryClient) return;
-    try {
-        telemetryClient.trackEvent(msg);
-    } catch (e) {
-        console.error("custom event tracking failed", e);
-    }
-}
 
 const generatePdf = async function (req, res, next) {
 
@@ -403,11 +315,7 @@ const waitForRender = async (page, timeout = 30000) => {
         await page.evaluate(() => document.fonts?.ready);
     } catch (_) { /* ignore: page may have already been torn down */ }
     if (PERF_LOG) {
-        emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
-            phase: "fonts_ready"
-        }, {
-            duration_ms: nsToMs(nowNs() - fontsStart)
-        });
+        emitPerfPhase("fonts_ready", nsToMs(nowNs() - fontsStart));
     }
 
     let iterations = 0;
@@ -421,12 +329,12 @@ const waitForRender = async (page, timeout = 30000) => {
         });
         if (PERF_LOG && iterations <= 3) {
             // log only the first few to avoid noise
-            emitPerfEvent("PDF_ENGINE_NODE_PERF_PHASE", {
-                phase: `wait_iter_${iterations}`
-            }, {
-                duration_ms: nsToMs(nowNs() - iterStart),
-                size: currentSize
-            });
+            emitPerfPhase(
+                `wait_iter_${iterations}`,
+                nsToMs(nowNs() - iterStart),
+                {},
+                { size: currentSize }
+            );
         }
 
         if (lastSize !== 0 && currentSize === lastSize)
