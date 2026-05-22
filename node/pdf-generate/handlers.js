@@ -67,6 +67,7 @@ const generatePdf = async function (req, res, next) {
 
     const reqId = (req.headers && (req.headers['x-request-id'] || req.headers['x-correlation-id']))
         || crypto.randomBytes(6).toString('hex');
+    const safeReqId = String(reqId).replace(/[\r\n]/g, '_');
     const perf = createPerfTracker(reqId);
 
     trackCustomEvent({
@@ -86,7 +87,7 @@ const generatePdf = async function (req, res, next) {
     let pdfBytes = 0;
 
     console.time(timestampLog);
-    console.info(`Starting generate pdf nodejs function reqId=${reqId}`);
+    console.info(`Starting generate pdf nodejs function reqId=${safeReqId}`);
 
     try {
 
