@@ -19,6 +19,9 @@ on:
 
 env:
   PROJECT_KEY: pagopa_pagopa-pdf-engine
+  # Keep this aligned with the PINNED_CHROME_VERSION ARG in node/Dockerfile.
+  # See README.md → "Chrome version pinning" for the rationale
+  PINNED_CHROME_VERSION: 127.0.6533.88
 
 
 permissions:
@@ -71,14 +74,19 @@ jobs:
         # arbitrary lifecycle scripts of transitive dependencies.
         run: yarn --cwd ./node install --frozen-lockfile --ignore-scripts
 
-      - name: Install Puppeteer browser
-        # Use Puppeteer's public CLI (stable API) to download the Chromium
-        # binary, since lifecycle scripts were skipped above by --ignore-scripts.
-        # NOSONAR (sonar:S6505) — this is not a yarn dependency install
-        # (no package.json mutation, no lifecycle scripts executed); the word
-        # "install" here refers to Puppeteer's `browsers install` subcommand
-        # which only downloads a browser binary from a pinned URL.
-        run: yarn --cwd ./node exec puppeteer browsers install chrome # NOSONAR
+      - name: Install pinned Puppeteer browser
+        # Install the SAME Chrome version pinned in node/Dockerfile (see
+        # PINNED_CHROME_VERSION at workflow level) instead of letting Puppeteer
+        # download whatever build it currently bundles. This keeps the CI test
+        # run aligned with production behaviour.
+        # Lifecycle scripts were skipped above (--ignore-scripts, sonar:S6505),
+        # so we drive the install explicitly via @puppeteer/browsers.
+        # NOSONAR (sonar:S6505) — `install` here is Puppeteer's `browsers install`
+        # subcommand, not a package manager install: no package.json mutation,
+        # no lifecycle scripts executed, only a browser binary downloaded.
+        run: |
+          yarn --cwd ./node exec -- puppeteer browsers install "chrome@${PINNED_CHROME_VERSION}" # NOSONAR
+          echo "PUPPETEER_EXECUTABLE_PATH=$HOME/.cache/puppeteer/chrome/linux-${PINNED_CHROME_VERSION}/chrome-linux64/chrome" >> "$GITHUB_ENV"
 
       - name: Start Node Server
         run: yarn --cwd ./node run start-detached

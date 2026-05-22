@@ -148,9 +148,20 @@ RUN npx --yes @puppeteer/browsers install chrome@${PINNED_CHROME_VERSION} \
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/src/app/.cache/puppeteer/chrome/linux-${PINNED_CHROME_VERSION}/chrome-linux64/chrome
 ```
 
+### Where the version is declared
+
+The pinned Chrome version lives in **two** places that must stay in sync:
+
+| Location | Variable | Used by |
+|---|---|---|
+| [`node/Dockerfile`](./node/Dockerfile) | `ARG PINNED_CHROME_VERSION` (declared in both the `builder` and the runtime stage) | Runtime image deployed to Azure App Service |
+| [`.github/workflows/code_review.yml`](./.github/workflows/code_review.yml) | `env.PINNED_CHROME_VERSION` (workflow level) | `code-review-node` job: installs the same Chrome via `@puppeteer/browsers` and exports `PUPPETEER_EXECUTABLE_PATH` so unit tests run against the pinned binary, not the one Puppeteer would download by default |
+
+When bumping the pin, update **both** values (and `README.md` if you mention a specific build there).
+
 ### Maintenance
 
-- To try a different Chrome build, override the build arg:
+- To try a different Chrome build locally, override the build arg:
   `docker build --build-arg PINNED_CHROME_VERSION=128.0.6613.137 -t pdf-engine-node ./node`
 - Available builds: <https://googlechromelabs.github.io/chrome-for-testing/>
 - The pin should be re-evaluated every 3–6 months: if a newer Chrome stops exhibiting the PDF regression, remove the pin and let Puppeteer manage the browser.
