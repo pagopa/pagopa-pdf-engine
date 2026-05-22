@@ -10,6 +10,22 @@ WORKDIR /usr/src/build
 # the browser lives in ~/.cache/puppeteer, NOT in node_modules/puppeteer).
 ENV PUPPETEER_CACHE_DIR=/usr/src/build/.cache/puppeteer
 
+# --- Performance pinning ---------------------------------------------------
+# Puppeteer 25.x bundles Chrome 138+, which exhibits a measurable PDF
+# generation slowdown under load compared to Chrome 127 (last version
+# bundled with puppeteer 22.x, used by app v2.10.23 baseline).
+# We therefore:
+#   1) skip the automatic Chrome download during `yarn install`;
+#   2) install the older Chrome 127.0.6533.88 explicitly via @puppeteer/browsers
+#      into the same PUPPETEER_CACHE_DIR;
+#   3) tell Puppeteer to use that binary at runtime (PUPPETEER_EXECUTABLE_PATH
+#      is set on the runtime stage below).
+# Change PINNED_CHROME_VERSION to override.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ARG PINNED_CHROME_VERSION=127.0.6533.88
+ENV PINNED_CHROME_VERSION=${PINNED_CHROME_VERSION}
+# ---------------------------------------------------------------------------
+
 # Enable Yarn with package.json version
 RUN corepack enable
 
@@ -18,6 +34,12 @@ COPY package.json yarn.lock ./
 
 # Install only production dependencies (no devDependencies) and freeze lockfile to ensure reproducible builds
 RUN yarn install --frozen-lockfile --production
+
+# Install the pinned Chrome version into PUPPETEER_CACHE_DIR.
+# @puppeteer/browsers is already a transitive dependency of puppeteer.
+RUN npx --yes @puppeteer/browsers install chrome@${PINNED_CHROME_VERSION} \
+        --path ${PUPPETEER_CACHE_DIR} \
+    && ls -la ${PUPPETEER_CACHE_DIR}/chrome/
 
 # Copy source code to the build stage
 COPY . .
@@ -33,6 +55,11 @@ WORKDIR /usr/src/app
 
 # Tell Puppeteer where to find the Chromium copied from the builder stage.
 ENV PUPPETEER_CACHE_DIR=/usr/src/app/.cache/puppeteer
+
+# Pin runtime to the legacy Chrome installed in the builder stage.
+# The exact path depends on the version installed above.
+ARG PINNED_CHROME_VERSION=127.0.6533.88
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/src/app/.cache/puppeteer/chrome/linux-${PINNED_CHROME_VERSION}/chrome-linux64/chrome
 
 COPY ./package.json /usr/src/app/package.json
 COPY --from=builder /usr/src/build/pdf-generate /usr/src/app/pdf-generate
