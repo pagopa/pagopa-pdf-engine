@@ -1,14 +1,6 @@
 #!/bin/bash
 
-# sh ./run_docker.sh <local|dev|uat|prod>
-
-ENV=$1
-
-if [ -z "$ENV" ]
-then
-  ENV="local"
-  echo "No environment specified: local is used."
-fi
+# sh ./run_docker.sh
 
 stack_name=$(cd .. && basename "$PWD")
 docker build -t pagopa-pdf-engine-node ../node
