@@ -319,6 +319,23 @@ const waitForRender = async (page, timeout = 30000) => {
     while (checkCounts++ <= maxChecks) {
         iterations++;
         const iterStart = PERF_LOG ? nowNs() : null;
+        // Combine two render-progress signals into a single scalar so the
+        // stability loop below only needs one comparison per iteration:
+        //   - body.innerHTML.length: detects DOM mutations (i18n string
+        //     replacements, late template fragments, async content) that
+        //     don't necessarily trigger a reflow yet.
+        //   - body.scrollHeight: detects layout changes (images loaded,
+        //     fonts swapped in, reflow after CSS) that don't change the
+        //     DOM size.
+        // The multiplier 31 is the same odd prime used by JDK String.hashCode
+        // (`h = 31*h + c`); it's picked because (1) it's prime, so the two
+        // signals don't easily cancel out when they vary in opposite
+        // directions, and (2) `31*x` compiles to `(x<<5)-x`, making the
+        // computation effectively free even when polled every 100ms.
+        // The exact value is not load-bearing: any small odd prime that is
+        // larger than the expected per-iteration delta of scrollHeight works.
+        // This formula is part of the perf-tested baseline, change with care
+        // and re-run the k6 scenario before merging.
         const currentSize = await page.evaluate(() => {
             const body = document.body;
             if (!body) return 0;
