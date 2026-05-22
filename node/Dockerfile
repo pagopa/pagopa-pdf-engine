@@ -41,8 +41,8 @@ RUN npx --yes @puppeteer/browsers install chrome@${PINNED_CHROME_VERSION} \
         --path ${PUPPETEER_CACHE_DIR} \
     && ls -la ${PUPPETEER_CACHE_DIR}/chrome/
 
-# Copy source code to the build stage
-COPY . .
+# Copy ONLY the source actually shipped to the runtime stage.
+COPY pdf-generate ./pdf-generate
 
 FROM node@$NODE_VERSION
 LABEL maintainer="https://pagopa.it"
