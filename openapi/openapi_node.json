@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine Node",
-    "version": "2.10.29-8-PIDM-1954-improve-performance-app-node"
+    "version": "2.10.29-1-PIDM-1904-upgrade-to-node-24-lts"
   },
   "servers": [
     {
