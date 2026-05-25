@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.10.29-2-PIDM-1904-upgrade-to-node-24-lts</version>
+    <version>2.11.0</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
