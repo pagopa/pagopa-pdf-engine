@@ -19,6 +19,9 @@ on:
 
 env:
   PROJECT_KEY: pagopa_pagopa-pdf-engine
+  # Keep this aligned with the PINNED_CHROME_VERSION ARG in node/Dockerfile.
+  # See README.md → "Chrome version pinning" for the rationale
+  PINNED_CHROME_VERSION: 127.0.6533.88
 
 
 permissions:
@@ -52,16 +55,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+
       - name: Setup Node.js
-        uses: actions/setup-node@f1f314fca9dfce2769ece7d933488f076716723e # v1
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
-          node-version: 20
+          node-version-file: ./node/.nvmrc
+          cache: 'yarn'
+          cache-dependency-path: ./node/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: yarn --cwd ./node install
+        # --ignore-scripts mitigates supply-chain risk (sonar:S6505) by skipping
+        # arbitrary lifecycle scripts of transitive dependencies.
+        run: yarn --cwd ./node install --frozen-lockfile --ignore-scripts
+
+      - name: Install pinned Puppeteer browser
+        # Install the SAME Chrome version pinned in node/Dockerfile (see
+        # PINNED_CHROME_VERSION at workflow level) instead of letting Puppeteer
+        # download whatever build it currently bundles. This keeps the CI test
+        # run aligned with production behaviour.
+        # Lifecycle scripts were skipped above (--ignore-scripts, sonar:S6505),
+        # so we drive the install explicitly via @puppeteer/browsers.
+        # NOSONAR (sonar:S6505) — `install` here is Puppeteer's `browsers install`
+        # subcommand, not a package manager install: no package.json mutation,
+        # no lifecycle scripts executed, only a browser binary downloaded.
+        run: |
+          yarn --cwd ./node exec -- puppeteer browsers install "chrome@${PINNED_CHROME_VERSION}" # NOSONAR
+          echo "PUPPETEER_EXECUTABLE_PATH=$HOME/.cache/puppeteer/chrome/linux-${PINNED_CHROME_VERSION}/chrome-linux64/chrome" >> "$GITHUB_ENV"
 
       - name: Start Node Server
         run: yarn --cwd ./node run start-detached
@@ -113,7 +138,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Login
         id: login
