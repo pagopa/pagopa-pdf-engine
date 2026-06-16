@@ -11,18 +11,39 @@ import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
 import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
 import it.gov.pagopa.pdf.engine.util.ObjectMapperUtils;
 import org.apache.commons.io.IOUtils;
-
 import org.slf4j.Logger;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.*;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_902;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_903;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_904;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_905;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_906;
+import static it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum.PDFE_909;
+
 public class GeneratePDFServiceImpl implements GeneratePDFService {
+
+    private final PdfEngineClientImpl pdfEngineClient;
+
+    public GeneratePDFServiceImpl() {
+        this.pdfEngineClient = PdfEngineClientImpl.getInstance();
+    }
+
+    protected GeneratePDFServiceImpl(PdfEngineClientImpl pdfEngineClient) {
+        this.pdfEngineClient = pdfEngineClient;
+    }
 
     @Override
     public BufferedInputStream generatePDF(GeneratePDFInput generatePDFInput, Path workingDirPath, Logger logger)
@@ -31,8 +52,6 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
         File pdfTempFile = createTempFile("document", "pdf", workingDirPath, PDFE_903);
 
         try {
-
-            PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
             PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
             pdfEngineRequest.setTitle(generatePDFInput.getTitle() != null ?
                     generatePDFInput.getTitle() : "Documento PDF PagoPA");
@@ -44,7 +63,7 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             PdfEngineResponse response = pdfEngineClient.generatePDF(pdfEngineRequest);
             if (response.getStatusCode() != 200 || response.getTempPdfPath() == null) {
                 throw new GeneratePDFException(AppErrorCodeEnum.valueOf(
-                        response.getErrorCode()),response.getErrorMessage());
+                        response.getErrorCode()), response.getErrorMessage());
             }
 
             String originalPdfPath = response.getTempPdfPath();
@@ -57,11 +76,11 @@ public class GeneratePDFServiceImpl implements GeneratePDFService {
             } catch (ArrayIndexOutOfBoundsException e) {
                 logger.error("ArrayIndexOutOfBoundsException during PDF/A-2a conversion: {}", e.getMessage(), e);
                 throw new GeneratePDFException(PDFE_909,
-                    "Failed to convert PDF to PDF/A-2a format due to internal library error", e);
+                        "Failed to convert PDF to PDF/A-2a format due to internal library error", e);
             } catch (Exception e) {
                 logger.error("Unexpected exception during PDF/A-2a conversion: {}", e.getMessage(), e);
                 throw new GeneratePDFException(PDFE_909,
-                    "Failed to convert PDF to PDF/A-2a format", e);
+                        "Failed to convert PDF to PDF/A-2a format", e);
             }
 
             if (generatePDFInput.isGenerateZipped()) {
