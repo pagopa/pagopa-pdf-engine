@@ -14,7 +14,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "adm-zip": "^0.5.10",
+    "adm-zip": "^0.6.0",
     "applicationinsights": "^1.7.4",
     "axios": "^1.5.0",
     "bwip-js": "^4.3.2",
