@@ -42,7 +42,7 @@
                         classContainer='dense'
                         align="vertical"}}}
                     </dt>
-                    <dd>{{payee.name}}</dd>
+                    <dd>{{#if notice.postePayeeName}}{{notice.postePayeeName}}{{else}}{{payee.name}}{{/if}}</dd>
                 </dl>
 
 
