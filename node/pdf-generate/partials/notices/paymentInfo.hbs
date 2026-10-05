@@ -17,7 +17,7 @@
                 classPrimaryLang='body strong'
                 classSecondaryLang='body muted'}}}
             </dt>
-            <dd class="h1">{{notice.amount}} Euro</dd>
+            <dd class="h1">{{formatCurrency notice.amount}}</dd>
         </dl>
 
         {{#if notice.expiryDate}}

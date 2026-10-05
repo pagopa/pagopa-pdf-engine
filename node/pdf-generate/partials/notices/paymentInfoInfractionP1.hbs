@@ -6,7 +6,7 @@
 
     <div class="payment-amount-block-infraction start-grid-cell">
         <div class="amount-one-line grid-cell-span-2">
-            <p class="h1 not-shrinking">{{notice.instalments.discounted.amount}} Euro</p>
+            <p class="h1 not-shrinking">{{formatCurrency notice.instalments.discounted.amount}}</p>
             {{{languageHandler 'infraction.expiryDate.withAmount.discounted'
             classPrimaryLang='body'
             classSecondaryLang='body muted'
