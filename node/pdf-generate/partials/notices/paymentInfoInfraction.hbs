@@ -11,7 +11,7 @@
                     {{{languageHandler 'infraction.amount.discounted' classPrimaryLang='body strong'
                     classSecondaryLang='body muted' classContainer="dense" align="vertical"}}}
                 </dt>
-                <dd class="h1">{{notice.instalments.discounted.amount}} Euro</dd>
+                <dd class="h1">{{formatCurrency notice.instalments.discounted.amount}}</dd>
             </dl>
             {{{languageHandler 'infraction.expiryDate.extended.discounted' classPrimaryLang='body'
             classSecondaryLang='body muted' classContainer="amount-details" align="vertical"}}}
@@ -22,7 +22,7 @@
                     {{{languageHandler 'infraction.amount.reduced' classPrimaryLang='body strong'
                     classSecondaryLang='body muted' classContainer="dense" align="vertical"}}}
                 </dt>
-                <dd class="h1">{{notice.instalments.reduced.amount}} Euro</dd>
+                <dd class="h1">{{formatCurrency notice.instalments.reduced.amount}}</dd>
             </dl>
             {{{languageHandler 'infraction.expiryDate.extended.reduced' classPrimaryLang='body'
             classSecondaryLang='body muted' classContainer="amount-details" align="vertical"}}}
