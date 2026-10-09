@@ -56,8 +56,9 @@ class GeneratePDFServiceImplTest {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
         pdfEngineResponse.setStatusCode(200);
-        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).getPath());
+		pdfEngineResponse.setTempPdfPath(
+				Path.of(Objects.requireNonNull(this.getClass().getClassLoader().getResource("valid_pdf.pdf")).toURI())
+						.toString());
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
@@ -83,8 +84,9 @@ class GeneratePDFServiceImplTest {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
         pdfEngineResponse.setStatusCode(200);
-        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).toURI().normalize().getPath().replaceFirst("\\\\",""));
+		pdfEngineResponse.setTempPdfPath(
+				Path.of(Objects.requireNonNull(this.getClass().getClassLoader().getResource("valid_pdf.pdf")).toURI())
+						.toString());
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);

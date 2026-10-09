@@ -10,29 +10,36 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Client for the PDF Engine
  */
-public class PdfEngineClientImpl implements PdfEngineClient {
+public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 
     private static PdfEngineClientImpl instance = null;
 
@@ -43,38 +50,98 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private final Header subKeyHeader = new BasicHeader("Ocp-Apim-Subscription-Key", System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
 
-    private final HttpClientBuilder httpClientBuilder;
+    private final CloseableHttpClient httpClient;
+    
+	// Maximum number of pooled HTTP connections across all routes.
+	private final int maxConnectionsTotal = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_TOTAL", 32);
+	// Maximum number of pooled HTTP connections per route (per target host).
+	private final int maxConnectionsPerRoute = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_PER_ROUTE", 16);
+	// Maximum wait, in milliseconds, to lease a connection from the pool.
+	private final int poolAcquireTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_POOL_TIMEOUT_MS", 1_000);
+	// Timeout, in milliseconds, for a TCP connection attempt.
+	private final int connectTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS", 3_000);
+	// Maximum wait for data, in milliseconds, during a blocking socket read.
+	private final int socketTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", 15_000);
+	// Maximum connection age, in milliseconds, after which it cannot be reused.
+	private final long connectionTtlMs = readPositiveLongEnv("PDF_ENGINE_HTTP_TTL_MS", 600_000L);
+	// Maximum idle time, in milliseconds, after which a connection is evicted from the pool.
+	private final long idleConnectionTimeoutMs = readPositiveLongEnv("PDF_ENGINE_HTTP_IDLE_TIMEOUT_MS", 60_000L);
+	//Maximum additional attempts for recoverable transport failures. Zero value disables retries; one allows at most two attempts in total.
+	private final int maxRetries = readNonNegativeIntEnv("PDF_ENGINE_HTTP_MAX_RETRIES", 1);
+	// Base wait before each allowed retry, in milliseconds.
+	private final int retryBackoffMs = readNonNegativeIntEnv("PDF_ENGINE_HTTP_RETRY_BACKOFF_MS", 200);
+	// Maximum random delay added to the backoff, in milliseconds (inclusive). Zero disables jitter.
+	private final int retryJitterMs = readNonNegativeIntEnv("PDF_ENGINE_HTTP_RETRY_JITTER_MS", 200);
 
     private PdfEngineClientImpl() {
-        this.httpClientBuilder = HttpClientBuilder.create();
+        this(HttpClientBuilder.create().disableCookieManagement());
     }
 
-    public PdfEngineClientImpl(HttpClientBuilder clientBuilder) {
-        this.httpClientBuilder = clientBuilder;
-    }
+	public PdfEngineClientImpl(HttpClientBuilder clientBuilder) {
+		if (maxConnectionsPerRoute > maxConnectionsTotal) {
+			throw new IllegalArgumentException(
+					"PDF_ENGINE_HTTP_MAX_PER_ROUTE must not exceed " + "PDF_ENGINE_HTTP_MAX_TOTAL");
+		}
 
-    public static PdfEngineClientImpl getInstance() {
+		RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(poolAcquireTimeoutMs)
+				.setConnectTimeout(connectTimeoutMs).setSocketTimeout(socketTimeoutMs).build();
+
+		SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(socketTimeoutMs).build();
+
+		clientBuilder.setMaxConnTotal(maxConnectionsTotal);
+		clientBuilder.setMaxConnPerRoute(maxConnectionsPerRoute);
+
+		clientBuilder.setDefaultRequestConfig(requestConfig);
+		clientBuilder.setDefaultSocketConfig(socketConfig);
+
+		clientBuilder.setConnectionTimeToLive(connectionTtlMs, TimeUnit.MILLISECONDS);
+
+		clientBuilder.disableCookieManagement();
+		clientBuilder.setRetryHandler(createRetryHandler());
+
+		clientBuilder.evictExpiredConnections();
+		clientBuilder.evictIdleConnections(idleConnectionTimeoutMs, TimeUnit.MILLISECONDS);
+
+		this.httpClient = clientBuilder.build();
+	}
+
+    public static synchronized PdfEngineClientImpl getInstance() {
         if (instance == null) {
-            instance = new PdfEngineClientImpl();
+            PdfEngineClientImpl newInstance = new PdfEngineClientImpl();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    newInstance.close();
+                } catch (IOException e) {
+                    LoggerFactory.getLogger(PdfEngineClientImpl.class)
+                            .warn("Error closing PDF Engine HTTP client", e);
+                }
+            }, "pdf-engine-http-client-shutdown"));
+
+            instance = newInstance;
         }
 
         return instance;
     }
+    
+    @Override
+    public void close() throws IOException {
+        httpClient.close();
+    }
 
     /**
-     * Generate the client, builds the request and returns the response
+     * Builds the PDF generation request and executes it using the shared HTTP client.
      *
-     * @param pdfEngineRequest Request to the client
-     * @return response with the PDF or error message and the status
+     * @param pdfEngineRequest Data and template for PDF generation
+     * @return response containing the PDF location or error details and status
      */
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
-        //Generate client
-        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
+        // Build and execute the request using the shared HTTP client
+        try {
             //Encode template and data
-
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
             FileBody templateBody = new FileBody(pdfEngineRequest.getTemplate().getFile(), ContentType.DEFAULT_BINARY);
 
@@ -91,8 +158,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             request.setHeader(subKeyHeader);
             request.setEntity(entity);
 
-            pdfEngineResponse = handlePdfEngineResponse(client, request);
-        } catch (IOException e) {
+            pdfEngineResponse = handlePdfEngineResponse(httpClient, request);
+        } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
         }
 
@@ -103,17 +170,15 @@ public class PdfEngineClientImpl implements PdfEngineClient {
      * Method to contact the underlying service info endpoint
      * @return boolean to determine if the service is available or otherwise
      */
-    public boolean info() {
-
-        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
-            HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
-            request.setHeader(subKeyHeader);
-            return handleInfoResponse(client, request);
-        } catch (IOException e) {
-           return false;
-        }
-
-    }
+	public boolean info() {
+		try {
+			HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
+			request.setHeader(subKeyHeader);
+			return handleInfoResponse(httpClient, request);
+		} catch (IOException e) {
+			return false;
+		}
+	}
 
     /**
      * Calls the PDF Engine and handles its response, updating the PdfEngineResponse accordingly
@@ -140,6 +205,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
                 handleErrorResponse(pdfEngineResponse, response, entityResponse);
+                EntityUtils.consume(entityResponse);
             }
         } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
@@ -148,14 +214,15 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         return pdfEngineResponse;
     }
 
-    private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
-        try (CloseableHttpResponse response = client.execute(request)) {
-            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                return false;
-            }
-        }
-        return true;
-    }
+	private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
+		try (CloseableHttpResponse response = client.execute(request)) {
+			boolean successful = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+
+			EntityUtils.consume(response.getEntity());
+
+			return successful;
+		}
+	}
 
     /**
      * Saves pdf as temporary file
@@ -233,4 +300,83 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
         }
     }
+    
+	/**
+	 * Applies a configurable delay only to retries allowed by HttpClient's rules.
+	 */
+	private HttpRequestRetryHandler createRetryHandler() {
+		// false prevents retrying a fully sent non-idempotent request such as our POST.
+		DefaultHttpRequestRetryHandler retryRules = new DefaultHttpRequestRetryHandler(maxRetries, false);
+
+		return (exception, executionCount, context) -> {
+			if (Thread.currentThread().isInterrupted()
+					|| !retryRules.retryRequest(exception, executionCount, context)) {
+				return false;
+			}
+
+			// Use long arithmetic to avoid overflow when adding the two int settings.
+			long delayMs = (long) retryBackoffMs + ThreadLocalRandom.current().nextLong((long) retryJitterMs + 1);
+
+			try {
+				TimeUnit.MILLISECONDS.sleep(delayMs);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return false;
+			}
+
+			return !Thread.currentThread().isInterrupted()
+					&& retryRules.retryRequest(exception, executionCount, context);
+		};
+	}
+    
+	private static long readPositiveLongEnv(String name, long defaultValue) {
+		String configuredValue = System.getenv(name);
+
+		if (configuredValue == null) {
+			return defaultValue;
+		}
+
+		final long parsedValue;
+		try {
+			parsedValue = Long.parseLong(configuredValue.trim());
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException(name + " must contain a positive integer", e);
+		}
+
+		if (parsedValue <= 0) {
+			throw new IllegalArgumentException(name + " must be greater than zero");
+		}
+
+		return parsedValue;
+	}
+
+	private static int readPositiveIntEnv(String name, int defaultValue) {
+		long parsedValue = readPositiveLongEnv(name, defaultValue);
+
+		if (parsedValue > Integer.MAX_VALUE) {
+			throw new IllegalArgumentException(name + " must not exceed " + Integer.MAX_VALUE);
+		}
+
+		return (int) parsedValue;
+	}
+	
+	private static int readNonNegativeIntEnv(String name, int defaultValue) {
+		String configuredValue = System.getenv(name);
+		if (configuredValue == null) {
+			return defaultValue;
+		}
+
+		final int parsedValue;
+		try {
+			parsedValue = Integer.parseInt(configuredValue.trim());
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException(name + " must contain an integer between 0 and " + Integer.MAX_VALUE, e);
+		}
+
+		if (parsedValue < 0) {
+			throw new IllegalArgumentException(name + " must be greater than or equal to zero");
+		}
+
+		return parsedValue;
+	}
 }
