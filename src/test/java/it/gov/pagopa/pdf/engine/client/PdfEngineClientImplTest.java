@@ -18,6 +18,9 @@ import java.nio.file.Files;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PdfEngineClientImplTest {
@@ -60,18 +63,32 @@ class PdfEngineClientImplTest {
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
 
         HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockEntity.getContent()).thenReturn(InputStream.nullInputStream());
+		when(mockEntity.getContent()).thenAnswer(invocation -> InputStream.nullInputStream());
         when(mockResponse.getEntity()).thenReturn(mockEntity);
 
         when(mockClient.execute(any())).thenReturn(mockResponse);
         when(mockBuilder.build()).thenReturn(mockClient);
 
-        PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
-        PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
+		try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+			for (int i = 0; i < 2; i++) {
+				PdfEngineResponse response = client.generatePDF(pdfEngineRequest);
 
-        File tempPdf = new File(pdfEngineResponse.getTempPdfPath());
-        Assertions.assertTrue(tempPdf.delete());
-        Assertions.assertEquals(HttpStatus.SC_OK, pdfEngineResponse.getStatusCode());
+				Assertions.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+
+				File tempPdf = new File(response.getTempPdfPath());
+				Assertions.assertTrue(tempPdf.delete());
+			}
+
+			verify(mockBuilder, times(1)).build();
+			verify(mockClient, times(2)).execute(any());
+			verify(mockResponse, times(2)).close();
+
+			// Il client deve restare aperto tra le richieste.
+			verify(mockClient, never()).close();
+		}
+
+		// La chiusura avviene al termine del suo ciclo di vita.
+		verify(mockClient, times(1)).close();
     }
 
     @Test
@@ -112,11 +129,12 @@ class PdfEngineClientImplTest {
         when(mockClient.execute(any())).thenReturn(mockResponse);
         when(mockBuilder.build()).thenReturn(mockClient);
 
-        PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
-        PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
+		try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+			PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
 
-        Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
-        Assertions.assertNotNull(pdfEngineResponse.getErrorMessage());
+			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
+			Assertions.assertNotNull(pdfEngineResponse.getErrorMessage());
+		}
 
     }
 
@@ -168,11 +186,12 @@ class PdfEngineClientImplTest {
         when(mockClient.execute(any())).thenReturn(mockResponse);
         when(mockBuilder.build()).thenReturn(mockClient);
 
-        PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
-        PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
+		try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+			PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
 
-        Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
-        Assertions.assertEquals(ERROR_MESSAGE.replace("\"", ""), pdfEngineResponse.getErrorMessage());
+			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
+			Assertions.assertEquals(ERROR_MESSAGE.replace("\"", ""), pdfEngineResponse.getErrorMessage());
+		}
 
     }
 }

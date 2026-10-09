@@ -22,6 +22,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.nio.file.Files;
 /**
  * Client for the PDF Engine
  */
-public class PdfEngineClientImpl implements PdfEngineClient {
+public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 
     private static PdfEngineClientImpl instance = null;
 
@@ -43,38 +44,53 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private final Header subKeyHeader = new BasicHeader("Ocp-Apim-Subscription-Key", System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
 
-    private final HttpClientBuilder httpClientBuilder;
+    private final CloseableHttpClient httpClient;
 
     private PdfEngineClientImpl() {
-        this.httpClientBuilder = HttpClientBuilder.create();
+        this(HttpClientBuilder.create().disableCookieManagement());
     }
 
     public PdfEngineClientImpl(HttpClientBuilder clientBuilder) {
-        this.httpClientBuilder = clientBuilder;
+        this.httpClient = clientBuilder.build();
     }
 
-    public static PdfEngineClientImpl getInstance() {
+    public static synchronized PdfEngineClientImpl getInstance() {
         if (instance == null) {
-            instance = new PdfEngineClientImpl();
+            PdfEngineClientImpl newInstance = new PdfEngineClientImpl();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    newInstance.close();
+                } catch (IOException e) {
+                    LoggerFactory.getLogger(PdfEngineClientImpl.class)
+                            .warn("Error closing PDF Engine HTTP client", e);
+                }
+            }, "pdf-engine-http-client-shutdown"));
+
+            instance = newInstance;
         }
 
         return instance;
     }
+    
+    @Override
+    public void close() throws IOException {
+        httpClient.close();
+    }
 
     /**
-     * Generate the client, builds the request and returns the response
+     * Builds the PDF generation request and executes it using the shared HTTP client.
      *
-     * @param pdfEngineRequest Request to the client
-     * @return response with the PDF or error message and the status
+     * @param pdfEngineRequest Data and template for PDF generation
+     * @return response containing the PDF location or error details and status
      */
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
-        //Generate client
-        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
+        // Build and execute the request using the shared HTTP client
+        try {
             //Encode template and data
-
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
             FileBody templateBody = new FileBody(pdfEngineRequest.getTemplate().getFile(), ContentType.DEFAULT_BINARY);
 
@@ -91,8 +107,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             request.setHeader(subKeyHeader);
             request.setEntity(entity);
 
-            pdfEngineResponse = handlePdfEngineResponse(client, request);
-        } catch (IOException e) {
+            pdfEngineResponse = handlePdfEngineResponse(httpClient, request);
+        } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
         }
 
@@ -103,17 +119,15 @@ public class PdfEngineClientImpl implements PdfEngineClient {
      * Method to contact the underlying service info endpoint
      * @return boolean to determine if the service is available or otherwise
      */
-    public boolean info() {
-
-        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
-            HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
-            request.setHeader(subKeyHeader);
-            return handleInfoResponse(client, request);
-        } catch (IOException e) {
-           return false;
-        }
-
-    }
+	public boolean info() {
+		try {
+			HttpGet request = new HttpGet(pdfEngineInfoEndpoint);
+			request.setHeader(subKeyHeader);
+			return handleInfoResponse(httpClient, request);
+		} catch (IOException e) {
+			return false;
+		}
+	}
 
     /**
      * Calls the PDF Engine and handles its response, updating the PdfEngineResponse accordingly
@@ -140,6 +154,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
                 handleErrorResponse(pdfEngineResponse, response, entityResponse);
+                EntityUtils.consume(entityResponse);
             }
         } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
@@ -148,14 +163,15 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         return pdfEngineResponse;
     }
 
-    private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
-        try (CloseableHttpResponse response = client.execute(request)) {
-            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK ) {
-                return false;
-            }
-        }
-        return true;
-    }
+	private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
+		try (CloseableHttpResponse response = client.execute(request)) {
+			boolean successful = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+
+			EntityUtils.consume(response.getEntity());
+
+			return successful;
+		}
+	}
 
     /**
      * Saves pdf as temporary file
