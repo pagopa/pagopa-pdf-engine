@@ -15,6 +15,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -31,8 +32,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -47,10 +50,12 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
     private final String pdfEngineInfoEndpoint = System.getenv().getOrDefault("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://localhost:3000/info");
 
     private static final String DATA_KEY = "data";
+	private static final String HTTP_DEADLINE_ATTRIBUTE = PdfEngineClientImpl.class.getName() + ".deadline";
 
     private final Header subKeyHeader = new BasicHeader("Ocp-Apim-Subscription-Key", System.getenv().getOrDefault("PDF_ENGINE_NODE_SUBKEY", "NO_SUB_KEY"));
 
     private final CloseableHttpClient httpClient;
+    private final ScheduledThreadPoolExecutor deadlineExecutor;
     
 	// Maximum number of pooled HTTP connections across all routes.
 	private final int maxConnectionsTotal = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_TOTAL", 32);
@@ -72,6 +77,8 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 	private final int retryBackoffMs = readNonNegativeIntEnv("PDF_ENGINE_HTTP_RETRY_BACKOFF_MS", 200);
 	// Maximum random delay added to the backoff, in milliseconds (inclusive). Zero disables jitter.
 	private final int retryJitterMs = readNonNegativeIntEnv("PDF_ENGINE_HTTP_RETRY_JITTER_MS", 200);
+	// Total HTTP exchange budget, including pool wait, retries and response body reads.
+	private final int requestTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS", 20_000);
 
     private PdfEngineClientImpl() {
         this(HttpClientBuilder.create().disableCookieManagement());
@@ -103,6 +110,14 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 		clientBuilder.evictIdleConnections(idleConnectionTimeoutMs, TimeUnit.MILLISECONDS);
 
 		this.httpClient = clientBuilder.build();
+
+		// One shared scheduler per client; each request schedules only its own cancellation.
+		this.deadlineExecutor = new ScheduledThreadPoolExecutor(1, runnable -> {
+			Thread thread = new Thread(runnable, "pdf-engine-http-deadline");
+			thread.setDaemon(true);
+			return thread;
+		});
+		this.deadlineExecutor.setRemoveOnCancelPolicy(true);
 	}
 
     public static synchronized PdfEngineClientImpl getInstance() {
@@ -124,10 +139,14 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
         return instance;
     }
     
-    @Override
-    public void close() throws IOException {
-        httpClient.close();
-    }
+	@Override
+	public void close() throws IOException {
+		try {
+			httpClient.close();
+		} finally {
+			deadlineExecutor.shutdownNow();
+		}
+	}
 
     /**
      * Builds the PDF generation request and executes it using the shared HTTP client.
@@ -187,40 +206,76 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
      * @param request The request to the PDF engine
      * @return pdf engine response
      */
-    private static PdfEngineResponse handlePdfEngineResponse(CloseableHttpClient client, HttpPost request) {
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        //Execute call
-        try (CloseableHttpResponse response = client.execute(request)) {
-            //Retrieve response
-            HttpEntity entityResponse = response.getEntity();
+	private PdfEngineResponse handlePdfEngineResponse(CloseableHttpClient client, HttpPost request) {
+		PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
-            //Handles response
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
-                try (InputStream inputStream = entityResponse.getContent()) {
-                    pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
+		try (HttpRequestDeadline deadline = new HttpRequestDeadline(deadlineExecutor, request::abort,
+				requestTimeoutMs)) {
+			HttpClientContext context = HttpClientContext.create();
+			context.setAttribute(HTTP_DEADLINE_ATTRIBUTE, deadline);
 
-                    saveTempPdf(pdfEngineResponse, inputStream);
-                }
-            } else {
-                pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+			// Keep the deadline active until the entire response has been consumed and
+			// closed.
+			try (CloseableHttpResponse response = client.execute(request, context)) {
+				HttpEntity entityResponse = response.getEntity();
 
-                handleErrorResponse(pdfEngineResponse, response, entityResponse);
-                EntityUtils.consume(entityResponse);
-            }
-        } catch (Exception e) {
-            handleExceptionErrorMessage(pdfEngineResponse, e);
-        }
+				if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
+					try (InputStream inputStream = entityResponse.getContent()) {
+						saveTempPdf(pdfEngineResponse, inputStream);
+						pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
+					}
+				} else {
+					pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+					handleErrorResponse(pdfEngineResponse, response, entityResponse);
+					EntityUtils.consume(entityResponse);
+				}
+			} catch (Exception e) {
+				checkDeadlineAfterFailure(deadline, e);
+				throw e;
+			}
 
-        return pdfEngineResponse;
-    }
+			// A delayed timer must not allow a result that arrived after the budget
+			// expired.
+			deadline.complete();
+		} catch (Exception e) {
+			if (pdfEngineResponse.getTempPdfPath() != null) {
+				deleteTempPdf(new File(pdfEngineResponse.getTempPdfPath()), e);
+				pdfEngineResponse.setTempPdfPath(null);
+				pdfEngineResponse.setTempDirectoryPath(null);
+			}
+			handleExceptionErrorMessage(pdfEngineResponse, e);
+		}
 
-	private static boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
-		try (CloseableHttpResponse response = client.execute(request)) {
-			boolean successful = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+		return pdfEngineResponse;
+	}
 
-			EntityUtils.consume(response.getEntity());
+	private boolean handleInfoResponse(CloseableHttpClient client, HttpGet request) throws IOException {
+		try (HttpRequestDeadline deadline = new HttpRequestDeadline(deadlineExecutor, request::abort,
+				requestTimeoutMs)) {
+			HttpClientContext context = HttpClientContext.create();
+			context.setAttribute(HTTP_DEADLINE_ATTRIBUTE, deadline);
 
+			boolean successful;
+			try (CloseableHttpResponse response = client.execute(request, context)) {
+				successful = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+				EntityUtils.consume(response.getEntity());
+			} catch (IOException e) {
+				checkDeadlineAfterFailure(deadline, e);
+				throw e;
+			}
+
+			deadline.complete();
 			return successful;
+		}
+	}
+
+	private static void checkDeadlineAfterFailure(HttpRequestDeadline deadline, Exception failure)
+			throws SocketTimeoutException {
+		try {
+			deadline.complete();
+		} catch (SocketTimeoutException timeout) {
+			timeout.initCause(failure);
+			throw timeout;
 		}
 	}
 
@@ -231,19 +286,30 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
      * @param inputStream       InputStream pdf
      * @throws IOException In case of error to save
      */
-    private static void saveTempPdf(PdfEngineResponse pdfEngineResponse, InputStream inputStream) throws IOException {
-        File tempDirectory = new File("temp");
-        if (!tempDirectory.exists()) {
-            Files.createDirectory(tempDirectory.toPath());
-        }
+	private static void saveTempPdf(PdfEngineResponse pdfEngineResponse, InputStream inputStream) throws IOException {
+		File tempDirectory = new File("temp");
+		Files.createDirectories(tempDirectory.toPath());
+		File targetFile = Files.createTempFile(tempDirectory.toPath(), "tempFile", ".pdf").toFile();
 
-        File targetFile = File.createTempFile("tempFile", ".pdf", tempDirectory);
+		try {
+			FileUtils.copyInputStreamToFile(inputStream, targetFile);
+			pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
+			pdfEngineResponse.setTempDirectoryPath(tempDirectory.getAbsolutePath());
+		} catch (IOException | RuntimeException e) {
+			deleteTempPdf(targetFile, e);
+			throw e;
+		}
+	}
 
-        FileUtils.copyInputStreamToFile(inputStream, targetFile);
-
-        pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
-        pdfEngineResponse.setTempDirectoryPath(tempDirectory.getAbsolutePath());
-    }
+	private static void deleteTempPdf(File targetFile, Exception failure) {
+		try {
+			Files.deleteIfExists(targetFile.toPath());
+		} catch (IOException cleanupFailure) {
+			failure.addSuppressed(cleanupFailure);
+			LoggerFactory.getLogger(PdfEngineClientImpl.class)
+					.warn("Error deleting temporary PDF after a failed HTTP exchange", cleanupFailure);
+		}
+	}
 
     /**
      * Handles error message in case of error thrown
@@ -309,7 +375,8 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 		DefaultHttpRequestRetryHandler retryRules = new DefaultHttpRequestRetryHandler(maxRetries, false);
 
 		return (exception, executionCount, context) -> {
-			if (Thread.currentThread().isInterrupted()
+			HttpRequestDeadline deadline = (HttpRequestDeadline) context.getAttribute(HTTP_DEADLINE_ATTRIBUTE);
+			if (Thread.currentThread().isInterrupted() || (deadline != null && deadline.isExpired())
 					|| !retryRules.retryRequest(exception, executionCount, context)) {
 				return false;
 			}
@@ -318,13 +385,21 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 			long delayMs = (long) retryBackoffMs + ThreadLocalRandom.current().nextLong((long) retryJitterMs + 1);
 
 			try {
-				TimeUnit.MILLISECONDS.sleep(delayMs);
+				if (deadline != null) {
+					// Backoff uses the same budget and wakes when that budget expires.
+					if (!deadline.awaitRetryDelay(delayMs)) {
+						return false;
+					}
+				} else {
+					// Keep the configured delay for contexts without a request deadline.
+					TimeUnit.MILLISECONDS.sleep(delayMs);
+				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				return false;
 			}
 
-			return !Thread.currentThread().isInterrupted()
+			return !Thread.currentThread().isInterrupted() && (deadline == null || !deadline.isExpired())
 					&& retryRules.retryRequest(exception, executionCount, context);
 		};
 	}
