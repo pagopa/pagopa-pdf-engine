@@ -8,6 +8,7 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 
 import com.sun.net.httpserver.HttpServer;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -27,6 +28,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpCoreContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 import java.io.*;
@@ -34,12 +36,17 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +62,10 @@ import static org.mockito.Mockito.when;
 
 class PdfEngineClientImplTest {
 
+	// JUnit creates and removes an isolated directory for each test.
+	@TempDir
+	Path workingDir;
+
 	private static final String[] HTTP_SETTING_NAMES = { "PDF_ENGINE_HTTP_MAX_TOTAL", "PDF_ENGINE_HTTP_MAX_PER_ROUTE",
 			"PDF_ENGINE_HTTP_POOL_TIMEOUT_MS", "PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS",
 			"PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", "PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS", "PDF_ENGINE_HTTP_TTL_MS",
@@ -68,157 +79,143 @@ class PdfEngineClientImplTest {
 	@Test
 	void runOk() throws IOException {
 
-		File tempDirectory = new File("temp");
-		if (!tempDirectory.exists()) {
-			Files.createDirectory(tempDirectory.toPath());
-		}
+		File targetFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();
+		try (ZipFile zipFile = new ZipFile(targetFile)) {
+			byte[] template;
+			PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
+			pdfEngineRequest.setWorkingDirPath(workingDir.toString());
+			try (InputStream inputStream = FileInputStream.nullInputStream()) {
+				template = inputStream.readAllBytes();
 
-		File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
-		ZipFile zipFile = new ZipFile(targetFile);
-
-		byte[] template;
-		PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-		try (InputStream inputStream = FileInputStream.nullInputStream()) {
-			template = inputStream.readAllBytes();
-
-			pdfEngineRequest.setTemplate(zipFile);
-			pdfEngineRequest.setData(new String(template));
-		} finally {
-			targetFile.deleteOnExit();
-			tempDirectory.deleteOnExit();
-		}
-
-		HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
-		CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-
-		CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
-		StatusLine mockStatusLine = mock(StatusLine.class);
-		when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-		when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-
-		HttpEntity mockEntity = mock(HttpEntity.class);
-		when(mockEntity.getContent()).thenAnswer(invocation -> InputStream.nullInputStream());
-		when(mockResponse.getEntity()).thenReturn(mockEntity);
-
-		when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
-		when(mockBuilder.build()).thenReturn(mockClient);
-
-		try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
-			for (int i = 0; i < 2; i++) {
-				PdfEngineResponse response = client.generatePDF(pdfEngineRequest);
-
-				Assertions.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-
-				File tempPdf = new File(response.getTempPdfPath());
-				Assertions.assertTrue(tempPdf.delete());
+				pdfEngineRequest.setTemplate(zipFile);
+				pdfEngineRequest.setData(new String(template));
 			}
 
-			verify(mockBuilder, times(1)).build();
-			verify(mockClient, times(2)).execute(any(HttpPost.class), any(HttpClientContext.class));
-			verify(mockResponse, times(2)).close();
+			HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
+			CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
 
-			// Il client deve restare aperto tra le richieste.
-			verify(mockClient, never()).close();
+			CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
+			StatusLine mockStatusLine = mock(StatusLine.class);
+			when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+			when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+
+			HttpEntity mockEntity = mock(HttpEntity.class);
+			when(mockEntity.getContent()).thenAnswer(invocation -> InputStream.nullInputStream());
+			when(mockResponse.getEntity()).thenReturn(mockEntity);
+
+			when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
+			when(mockBuilder.build()).thenReturn(mockClient);
+
+			try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+				for (int i = 0; i < 2; i++) {
+					PdfEngineResponse response = client.generatePDF(pdfEngineRequest);
+
+					Assertions.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+
+					File tempPdf = new File(response.getTempPdfPath());
+					Path expectedDirectory = workingDir.toAbsolutePath().normalize();
+					Assertions.assertEquals(expectedDirectory, tempPdf.toPath().getParent());
+					Assertions.assertEquals(expectedDirectory.toString(), response.getTempDirectoryPath());
+					Assertions.assertTrue(tempPdf.delete());
+					Assertions.assertTrue(Files.isDirectory(workingDir),
+							"The request directory belongs to the caller and must remain available");
+				}
+
+				verify(mockBuilder, times(1)).build();
+				verify(mockClient, times(2)).execute(any(HttpPost.class), any(HttpClientContext.class));
+				verify(mockResponse, times(2)).close();
+
+				// Il client deve restare aperto tra le richieste.
+				verify(mockClient, never()).close();
+			}
+
+			// La chiusura avviene al termine del suo ciclo di vita.
+			verify(mockClient, times(1)).close();
 		}
-
-		// La chiusura avviene al termine del suo ciclo di vita.
-		verify(mockClient, times(1)).close();
 	}
 
 	@Test
 	void runKoUnauthorized() throws IOException {
 
-		File tempDirectory = new File("temp");
-		if (!tempDirectory.exists()) {
-			Files.createDirectory(tempDirectory.toPath());
+		File targetFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();
+		try (ZipFile zipFile = new ZipFile(targetFile)) {
+			byte[] template;
+			PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
+			pdfEngineRequest.setWorkingDirPath(workingDir.toString());
+			try (InputStream inputStream = FileInputStream.nullInputStream()) {
+				template = inputStream.readAllBytes();
+
+				pdfEngineRequest.setTemplate(zipFile);
+				pdfEngineRequest.setData(new String(template));
+			}
+
+			HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
+			CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
+
+			CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
+			StatusLine mockStatusLine = mock(StatusLine.class);
+			when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_UNAUTHORIZED);
+			when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+
+			HttpEntity mockEntity = mock(HttpEntity.class);
+			when(mockEntity.getContent()).thenReturn(InputStream.nullInputStream());
+			when(mockResponse.getEntity()).thenReturn(mockEntity);
+
+			when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
+			when(mockBuilder.build()).thenReturn(mockClient);
+
+			try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+				PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
+
+				Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
+				Assertions.assertEquals("Unauthorized call to PDF engine function",
+						pdfEngineResponse.getErrorMessage());
+			}
+
 		}
-
-		File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
-		ZipFile zipFile = new ZipFile(targetFile);
-
-		byte[] template;
-		PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-		try (InputStream inputStream = FileInputStream.nullInputStream()) {
-			template = inputStream.readAllBytes();
-
-			pdfEngineRequest.setTemplate(zipFile);
-			pdfEngineRequest.setData(new String(template));
-		} finally {
-			targetFile.deleteOnExit();
-			tempDirectory.deleteOnExit();
-		}
-
-		HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
-		CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-
-		CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
-		StatusLine mockStatusLine = mock(StatusLine.class);
-		when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_UNAUTHORIZED);
-		when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-
-		HttpEntity mockEntity = mock(HttpEntity.class);
-		when(mockEntity.getContent()).thenReturn(InputStream.nullInputStream());
-		when(mockResponse.getEntity()).thenReturn(mockEntity);
-
-		when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
-		when(mockBuilder.build()).thenReturn(mockClient);
-
-		try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
-			PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
-
-			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
-			Assertions.assertEquals("Unauthorized call to PDF engine function", pdfEngineResponse.getErrorMessage());
-		}
-
 	}
 
 	@Test
 	void runKo400() throws IOException {
-		File tempDirectory = new File("temp");
-		if (!tempDirectory.exists()) {
-			Files.createDirectory(tempDirectory.toPath());
+		File targetFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();
+		try (ZipFile zipFile = new ZipFile(targetFile)) {
+			byte[] template;
+			PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
+			pdfEngineRequest.setWorkingDirPath(workingDir.toString());
+			try (InputStream inputStream = FileInputStream.nullInputStream()) {
+				template = inputStream.readAllBytes();
+				pdfEngineRequest.setTemplate(zipFile);
+				pdfEngineRequest.setData(new String(template));
+			}
+
+			HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
+			CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
+
+			CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
+			StatusLine mockStatusLine = mock(StatusLine.class);
+			when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_BAD_REQUEST);
+			when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+
+			HttpEntity mockEntity = mock(HttpEntity.class);
+			String errorMessage = "\"Invalid request\"";
+			String errorResponseBody = "{\n" + "  \"errorId\": \"a3779a25-9c8a-4a6f-9272-a052119cfd2e\",\n"
+					+ "  \"httpStatusCode\": \"BAD_REQUEST\",\n" + "  \"httpStatusDescription\": \"Bad Request\",\n"
+					+ "  \"appErrorCode\": \"PDFE_898\",\n" + "  \"errors\": [\n" + "    {\n" + "      \"message\": "
+					+ errorMessage + "    }\n" + "  ]\n" + "}";
+			when(mockEntity.getContent()).thenReturn(new ByteArrayInputStream(errorResponseBody.getBytes()));
+			when(mockResponse.getEntity()).thenReturn(mockEntity);
+
+			when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
+			when(mockBuilder.build()).thenReturn(mockClient);
+
+			try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+				PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
+
+				Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
+				Assertions.assertEquals(errorMessage.replace("\"", ""), pdfEngineResponse.getErrorMessage());
+			}
+
 		}
-
-		File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
-		ZipFile zipFile = new ZipFile(targetFile);
-		byte[] template;
-		PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-		try (InputStream inputStream = FileInputStream.nullInputStream()) {
-			template = inputStream.readAllBytes();
-			pdfEngineRequest.setTemplate(zipFile);
-			pdfEngineRequest.setData(new String(template));
-		} finally {
-			targetFile.deleteOnExit();
-			tempDirectory.deleteOnExit();
-		}
-
-		HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
-		CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-
-		CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
-		StatusLine mockStatusLine = mock(StatusLine.class);
-		when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_BAD_REQUEST);
-		when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-
-		HttpEntity mockEntity = mock(HttpEntity.class);
-		String ERROR_MESSAGE = "\"Invalid request\"";
-		String ERROR_400 = "{\n" + "  \"errorId\": \"a3779a25-9c8a-4a6f-9272-a052119cfd2e\",\n"
-				+ "  \"httpStatusCode\": \"BAD_REQUEST\",\n" + "  \"httpStatusDescription\": \"Bad Request\",\n"
-				+ "  \"appErrorCode\": \"PDFE_898\",\n" + "  \"errors\": [\n" + "    {\n" + "      \"message\": "
-				+ ERROR_MESSAGE + "    }\n" + "  ]\n" + "}";
-		when(mockEntity.getContent()).thenReturn(new ByteArrayInputStream(ERROR_400.getBytes()));
-		when(mockResponse.getEntity()).thenReturn(mockEntity);
-
-		when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
-		when(mockBuilder.build()).thenReturn(mockClient);
-
-		try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
-			PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
-
-			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
-			Assertions.assertEquals(ERROR_MESSAGE.replace("\"", ""), pdfEngineResponse.getErrorMessage());
-		}
-
 	}
 
 	@Test
@@ -229,7 +226,7 @@ class PdfEngineClientImplTest {
 		AtomicInteger receivedRequests = new AtomicInteger();
 
 		server.createContext("/info", exchange -> {
-			try {
+			try (exchange) {
 				sourcePorts.add(exchange.getRemoteAddress().getPort());
 				receivedRequests.incrementAndGet();
 
@@ -239,8 +236,6 @@ class PdfEngineClientImplTest {
 				try (OutputStream output = exchange.getResponseBody()) {
 					output.write(body);
 				}
-			} finally {
-				exchange.close();
 			}
 		});
 
@@ -286,7 +281,7 @@ class PdfEngineClientImplTest {
 		AtomicInteger receivedRequests = new AtomicInteger();
 
 		server.createContext("/info", exchange -> {
-			try {
+			try (exchange) {
 				int requestNumber = receivedRequests.incrementAndGet();
 
 				if (requestNumber == 1) {
@@ -309,8 +304,6 @@ class PdfEngineClientImplTest {
 				try (OutputStream output = exchange.getResponseBody()) {
 					output.write(body);
 				}
-			} finally {
-				exchange.close();
 			}
 		});
 
@@ -371,10 +364,10 @@ class PdfEngineClientImplTest {
 
 		byte[] pdf = "%PDF-1.4\nlocal test PDF\n%%EOF".getBytes(StandardCharsets.UTF_8);
 
-		File templateFile = Files.createTempFile("pdf-engine-template-", ".zip").toFile();
+		File templateFile = Files.createTempFile(workingDir, "pdf-engine-template-", ".zip").toFile();
 
 		server.createContext("/generate-pdf", exchange -> {
-			try {
+			try (exchange) {
 				exchange.getRequestBody().readAllBytes();
 				int requestNumber = receivedRequests.incrementAndGet();
 
@@ -395,14 +388,12 @@ class PdfEngineClientImplTest {
 				try (OutputStream output = exchange.getResponseBody()) {
 					output.write(pdf);
 				}
-			} finally {
-				exchange.close();
 			}
 		});
 
 		server.start();
 
-		try {
+		try (ZipFile template = new ZipFile(templateFile)) {
 			String endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/generate-pdf";
 
 			EnvironmentVariables environment = new EnvironmentVariables()
@@ -412,8 +403,9 @@ class PdfEngineClientImplTest {
 					.set("PDF_ENGINE_HTTP_TTL_MS", "60000").set("PDF_ENGINE_HTTP_IDLE_TIMEOUT_MS", "60000");
 
 			PdfEngineRequest request = new PdfEngineRequest();
+			request.setWorkingDirPath(workingDir.toString());
 			request.setData("{}");
-			request.setTemplate(new ZipFile(templateFile));
+			request.setTemplate(template);
 
 			environment.execute(() -> {
 				try (PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create())) {
@@ -582,7 +574,7 @@ class PdfEngineClientImplTest {
 		AtomicLong secondRequestNanos = new AtomicLong();
 
 		server.createContext("/info", exchange -> {
-			try {
+			try (exchange) {
 				if (receivedRequests.incrementAndGet() == 1) {
 					firstRequestNanos.set(System.nanoTime());
 					// Close without an HTTP response to simulate a recoverable failure.
@@ -593,8 +585,6 @@ class PdfEngineClientImplTest {
 				byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
 				exchange.sendResponseHeaders(200, body.length);
 				exchange.getResponseBody().write(body);
-			} finally {
-				exchange.close();
 			}
 		});
 		server.start();
@@ -649,14 +639,7 @@ class PdfEngineClientImplTest {
 							worker.start();
 
 							try {
-								long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
-
-								while (worker.isAlive() && worker.getState() != Thread.State.TIMED_WAITING
-										&& System.nanoTime() < deadline) {
-									Thread.sleep(1);
-								}
-
-								Assertions.assertEquals(Thread.State.TIMED_WAITING, worker.getState(),
+								Assertions.assertTrue(awaitRetryBackoff(worker),
 										"Worker did not enter the backoff wait");
 
 								if (interrupt) {
@@ -689,23 +672,22 @@ class PdfEngineClientImplTest {
 		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 		AtomicInteger receivedRequests = new AtomicInteger();
 		AtomicInteger receivedBodyBytes = new AtomicInteger();
-		File templateFile = Files.createTempFile("pdf-engine-template-", ".zip").toFile();
+		File templateFile = Files.createTempFile(workingDir, "pdf-engine-template-", ".zip").toFile();
 
 		server.createContext("/generate-pdf", exchange -> {
-			try {
+			try (exchange) {
 				receivedRequests.incrementAndGet();
 				// Receive the complete body, then close without sending a response.
 				receivedBodyBytes.set(exchange.getRequestBody().readAllBytes().length);
-			} finally {
-				exchange.close();
 			}
 		});
 		server.start();
 
-		try {
+		try (ZipFile template = new ZipFile(templateFile)) {
 			PdfEngineRequest request = new PdfEngineRequest();
+			request.setWorkingDirPath(workingDir.toString());
 			request.setData("{}");
-			request.setTemplate(new ZipFile(templateFile));
+			request.setTemplate(template);
 
 			validHttpEnvironment()
 					.set("PDF_ENGINE_NODE_GENERATE_ENDPOINT",
@@ -735,23 +717,42 @@ class PdfEngineClientImplTest {
 	void deadlineStopsSlowPdfDownloadAndClientRecovers() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 		ExecutorService serverExecutor = Executors.newFixedThreadPool(2);
+		ScheduledExecutorService responseScheduler = Executors.newSingleThreadScheduledExecutor();
 		server.setExecutor(serverExecutor);
 		AtomicInteger receivedRequests = new AtomicInteger();
 		byte[] pdf = "%PDF-1.4\nlocal test PDF\n%%EOF".getBytes(StandardCharsets.UTF_8);
-		File templateFile = Files.createTempFile("pdf-engine-template-", ".zip").toFile();
+		File templateFile = Files.createTempFile(workingDir, "pdf-engine-template-", ".zip").toFile();
 
 		server.createContext("/generate-pdf", exchange -> {
-			try {
+			try (exchange) {
 				exchange.getRequestBody().readAllBytes();
 				int number = receivedRequests.incrementAndGet();
 				exchange.sendResponseHeaders(HttpStatus.SC_OK, pdf.length);
 				try (OutputStream output = exchange.getResponseBody()) {
 					if (number == 1) {
-						// Data keeps arriving before the read timeout, but the full PDF is slow.
-						for (byte value : pdf) {
-							output.write(value);
-							output.flush();
-							TimeUnit.MILLISECONDS.sleep(75);
+						BlockingQueue<Byte> chunks = new LinkedBlockingQueue<>();
+						AtomicInteger nextByte = new AtomicInteger();
+
+						// Model a server that produces a new PDF byte every 75 ms.
+						ScheduledFuture<?> producer = responseScheduler.scheduleWithFixedDelay(() -> {
+							int index = nextByte.getAndIncrement();
+							if (index < pdf.length) {
+								chunks.add(pdf[index]);
+							}
+						}, 0, 75, TimeUnit.MILLISECONDS);
+
+						try {
+							for (int i = 0; i < pdf.length; i++) {
+								// Wait for an actual chunk; all socket writes stay on this handler thread.
+								Byte value = chunks.poll(5, TimeUnit.SECONDS);
+								if (value == null) {
+									throw new IOException("Scheduled PDF chunk was not produced");
+								}
+								output.write(value);
+								output.flush();
+							}
+						} finally {
+							producer.cancel(false);
 						}
 					} else {
 						output.write(pdf);
@@ -761,16 +762,15 @@ class PdfEngineClientImplTest {
 				Thread.currentThread().interrupt();
 			} catch (IOException e) {
 				// Closing the connection at the deadline can interrupt server-side writes.
-			} finally {
-				exchange.close();
 			}
 		});
 		server.start();
 
-		try {
+		try (ZipFile template = new ZipFile(templateFile)) {
 			PdfEngineRequest request = new PdfEngineRequest();
+			request.setWorkingDirPath(workingDir.toString());
 			request.setData("{}");
-			request.setTemplate(new ZipFile(templateFile));
+			request.setTemplate(template);
 
 			validHttpEnvironment()
 					.set("PDF_ENGINE_NODE_GENERATE_ENDPOINT",
@@ -779,7 +779,7 @@ class PdfEngineClientImplTest {
 					.set("PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", "400").set("PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS", "700")
 					.set("PDF_ENGINE_HTTP_MAX_RETRIES", "1").execute(() -> {
 						try (PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create())) {
-							Set<String> filesBefore = temporaryPdfFiles();
+							Set<String> filesBefore = temporaryPdfFiles(workingDir);
 							long started = System.nanoTime();
 							PdfEngineResponse timedOut = client.generatePDF(request);
 							long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
@@ -792,7 +792,7 @@ class PdfEngineClientImplTest {
 									"Deadline took " + elapsedMs + " ms");
 							Assertions.assertNull(timedOut.getTempPdfPath());
 							Assertions.assertNull(timedOut.getTempDirectoryPath());
-							Assertions.assertEquals(filesBefore, temporaryPdfFiles(),
+							Assertions.assertEquals(filesBefore, temporaryPdfFiles(workingDir),
 									"A failed download must not leave a temporary PDF");
 							Assertions.assertEquals(1, receivedRequests.get());
 
@@ -811,6 +811,7 @@ class PdfEngineClientImplTest {
 		} finally {
 			server.stop(0);
 			serverExecutor.shutdownNow();
+			responseScheduler.shutdownNow();
 			Files.deleteIfExists(templateFile.toPath());
 		}
 	}
@@ -820,9 +821,10 @@ class PdfEngineClientImplTest {
 		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 		AtomicInteger receivedRequests = new AtomicInteger();
 		server.createContext("/info", exchange -> {
-			receivedRequests.incrementAndGet();
-			// No HTTP response: an eligible GET failure would normally trigger a retry.
-			exchange.close();
+			try (exchange) {
+				receivedRequests.incrementAndGet();
+				// Closing without a response produces an eligible GET failure.
+			}
 		});
 		server.start();
 
@@ -851,15 +853,26 @@ class PdfEngineClientImplTest {
 	void deadlineIsSharedAcrossRetryAttempts() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 		ExecutorService serverExecutor = Executors.newFixedThreadPool(2);
+		ScheduledExecutorService responseScheduler = Executors.newSingleThreadScheduledExecutor();
 		server.setExecutor(serverExecutor);
 		AtomicInteger receivedRequests = new AtomicInteger();
 		CountDownLatch releaseSecondRequest = new CountDownLatch(1);
 		server.createContext("/info", exchange -> {
-			try {
+			try (exchange) {
 				int number = receivedRequests.incrementAndGet();
 				if (number == 1) {
-					// The first attempt consumes half of the overall two-second budget.
-					TimeUnit.MILLISECONDS.sleep(1000);
+					CountDownLatch failFirstAttempt = new CountDownLatch(1);
+					// Schedule the simulated transport failure after half of the two-second budget.
+					ScheduledFuture<?> failure = responseScheduler.schedule(failFirstAttempt::countDown, 1000,
+							TimeUnit.MILLISECONDS);
+					try {
+						if (!failFirstAttempt.await(5, TimeUnit.SECONDS)) {
+							throw new IOException("Scheduled first-attempt failure did not occur");
+						}
+					} finally {
+						failure.cancel(false);
+					}
+					// Leaving try-with-resources closes the exchange without an HTTP response.
 					return;
 				}
 				if (number == 2 && !releaseSecondRequest.await(5, TimeUnit.SECONDS)) {
@@ -874,8 +887,6 @@ class PdfEngineClientImplTest {
 				Thread.currentThread().interrupt();
 			} catch (IOException e) {
 				// The client may have aborted the second attempt before it is released.
-			} finally {
-				exchange.close();
 			}
 		});
 		server.start();
@@ -903,6 +914,7 @@ class PdfEngineClientImplTest {
 			releaseSecondRequest.countDown();
 			server.stop(0);
 			serverExecutor.shutdownNow();
+			responseScheduler.shutdownNow();
 		}
 	}
 
@@ -911,34 +923,30 @@ class PdfEngineClientImplTest {
 		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 		AtomicInteger receivedRequests = new AtomicInteger();
 		server.createContext("/info", exchange -> {
-			try {
+			try (exchange) {
 				receivedRequests.incrementAndGet();
 				byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
 				exchange.sendResponseHeaders(HttpStatus.SC_OK, body.length);
 				try (OutputStream output = exchange.getResponseBody()) {
 					output.write(body);
 				}
-			} finally {
-				exchange.close();
 			}
 		});
 		server.start();
 
-		PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
-		// Hold the only pool slot independently of an HTTP call's own deadline.
-		manager.setMaxTotal(1);
-		manager.setDefaultMaxPerRoute(1);
-		HttpRoute route = new HttpRoute(new HttpHost("127.0.0.1", server.getAddress().getPort(), "http"));
-		HttpClientConnection heldConnection = manager.requestConnection(route, null).get(1, TimeUnit.SECONDS);
-
-		try {
+		try (PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager()) {
+			// Hold the only pool slot independently of an HTTP call's own deadline.
+			manager.setMaxTotal(1);
+			manager.setDefaultMaxPerRoute(1);
+			HttpRoute route = new HttpRoute(new HttpHost("127.0.0.1", server.getAddress().getPort(), "http"));
+			HttpClientConnection heldConnection = manager.requestConnection(route, null).get(1, TimeUnit.SECONDS);
 			validHttpEnvironment()
 					.set("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://127.0.0.1:" + server.getAddress().getPort() + "/info")
 					.set("PDF_ENGINE_HTTP_MAX_TOTAL", "1").set("PDF_ENGINE_HTTP_MAX_PER_ROUTE", "1")
 					.set("PDF_ENGINE_HTTP_POOL_TIMEOUT_MS", "5000").set("PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS", "400")
 					.execute(() -> {
-						try (PdfEngineClientImpl client = new PdfEngineClientImpl(
-								HttpClientBuilder.create().setConnectionManager(manager))) {
+						try (PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create()
+								.setConnectionManager(manager).setConnectionManagerShared(true))) {
 							long started = System.nanoTime();
 							Assertions.assertFalse(client.info());
 							long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
@@ -952,9 +960,160 @@ class PdfEngineClientImplTest {
 						}
 					});
 		} finally {
-			manager.releaseConnection(heldConnection, null, 0, TimeUnit.MILLISECONDS);
-			manager.close();
 			server.stop(0);
+		}
+	}
+
+	@Test
+	void invalidWorkingDirectoryDoesNotSendHttpRequest() throws Exception {
+		File templateFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();
+		Path missingDirectory = workingDir.resolve("missing");
+		String[] invalidDirectories = { null, "", "   ", missingDirectory.toString(), templateFile.getAbsolutePath() };
+
+		try (ZipFile template = new ZipFile(templateFile)) {
+			validHttpEnvironment().execute(() -> {
+				HttpClientBuilder builder = mock(HttpClientBuilder.class);
+				CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
+				when(builder.build()).thenReturn(httpClient);
+
+				try (PdfEngineClientImpl client = new PdfEngineClientImpl(builder)) {
+					for (String directory : invalidDirectories) {
+						PdfEngineRequest request = new PdfEngineRequest();
+						request.setWorkingDirPath(directory);
+						request.setData("{}");
+						request.setTemplate(template);
+
+						PdfEngineResponse response = client.generatePDF(request);
+
+						Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
+						Assertions.assertEquals("PDFE_902", response.getErrorCode());
+						Assertions.assertNotNull(response.getErrorMessage());
+						Assertions.assertTrue(response.getErrorMessage().contains("workingDirPath"),
+								response.getErrorMessage());
+						Assertions.assertNull(response.getTempPdfPath());
+						Assertions.assertNull(response.getTempDirectoryPath());
+					}
+
+					// Validate the directory before starting an HTTP exchange.
+					verify(httpClient, never()).execute(any(HttpPost.class), any(HttpClientContext.class));
+					Assertions.assertFalse(Files.exists(missingDirectory),
+							"The client must not create a missing request directory");
+				}
+			});
+		}
+	}
+
+	@Test
+	void requestDirectoriesKeepConcurrentPdfsIsolated() throws Exception {
+		Path directoryA = Files.createDirectory(workingDir.resolve("request-a"));
+		Path directoryB = Files.createDirectory(workingDir.resolve("request-b"));
+		File templateFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();
+		byte[] pdfA = "%PDF-1.4\nPDF for request A\n%%EOF".getBytes(StandardCharsets.UTF_8);
+		byte[] pdfB = "%PDF-1.4\nPDF for request B\n%%EOF".getBytes(StandardCharsets.UTF_8);
+
+		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+		ExecutorService serverExecutor = Executors.newFixedThreadPool(2);
+		ExecutorService callerExecutor = Executors.newFixedThreadPool(2);
+		server.setExecutor(serverExecutor);
+		CountDownLatch bothRequestsReceived = new CountDownLatch(2);
+		AtomicInteger receivedRequests = new AtomicInteger();
+
+		server.createContext("/generate-pdf", exchange -> {
+			try (exchange) {
+				String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+				receivedRequests.incrementAndGet();
+				bothRequestsReceived.countDown();
+
+				// Neither response starts until both requests have reached the server.
+				if (!bothRequestsReceived.await(3, TimeUnit.SECONDS)) {
+					exchange.sendResponseHeaders(HttpStatus.SC_SERVICE_UNAVAILABLE, -1);
+					return;
+				}
+
+				byte[] pdf = requestBody.contains("request-a") ? pdfA : pdfB;
+				exchange.sendResponseHeaders(HttpStatus.SC_OK, pdf.length);
+				try (OutputStream output = exchange.getResponseBody()) {
+					output.write(pdf);
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		server.start();
+
+		try (ZipFile template = new ZipFile(templateFile)) {
+			PdfEngineRequest requestA = new PdfEngineRequest();
+			requestA.setWorkingDirPath(directoryA.toString());
+			requestA.setData("{\"request\":\"request-a\"}");
+			requestA.setTemplate(template);
+
+			PdfEngineRequest requestB = new PdfEngineRequest();
+			requestB.setWorkingDirPath(directoryB.toString());
+			requestB.setData("{\"request\":\"request-b\"}");
+			requestB.setTemplate(template);
+
+			validHttpEnvironment()
+					.set("PDF_ENGINE_NODE_GENERATE_ENDPOINT",
+							"http://127.0.0.1:" + server.getAddress().getPort() + "/generate-pdf")
+					.set("PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", "5000").set("PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS", "8000")
+					.execute(() -> {
+						try (PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create())) {
+							Future<PdfEngineResponse> callA = callerExecutor.submit(() -> client.generatePDF(requestA));
+							Future<PdfEngineResponse> callB = callerExecutor.submit(() -> client.generatePDF(requestB));
+							PdfEngineResponse responseA = callA.get(8, TimeUnit.SECONDS);
+							PdfEngineResponse responseB = callB.get(8, TimeUnit.SECONDS);
+
+							Assertions.assertEquals(HttpStatus.SC_OK, responseA.getStatusCode(),
+									responseA.getErrorMessage());
+							Assertions.assertEquals(HttpStatus.SC_OK, responseB.getStatusCode(),
+									responseB.getErrorMessage());
+							Assertions.assertEquals(2, receivedRequests.get());
+
+							Path generatedPdfA = Path.of(responseA.getTempPdfPath());
+							Path generatedPdfB = Path.of(responseB.getTempPdfPath());
+							Assertions.assertEquals(directoryA.toAbsolutePath().normalize(), generatedPdfA.getParent());
+							Assertions.assertEquals(directoryB.toAbsolutePath().normalize(), generatedPdfB.getParent());
+							Assertions.assertEquals(directoryA.toAbsolutePath().normalize().toString(),
+									responseA.getTempDirectoryPath());
+							Assertions.assertEquals(directoryB.toAbsolutePath().normalize().toString(),
+									responseB.getTempDirectoryPath());
+							Assertions.assertArrayEquals(pdfA, Files.readAllBytes(generatedPdfA));
+							Assertions.assertArrayEquals(pdfB, Files.readAllBytes(generatedPdfB));
+
+							// Simulate the caller's cleanup for request A after processing its PDF.
+							FileUtils.deleteDirectory(directoryA.toFile());
+							Assertions.assertFalse(Files.exists(directoryA));
+							Assertions.assertFalse(Files.exists(generatedPdfA));
+							Assertions.assertTrue(Files.isDirectory(directoryB));
+							Assertions.assertTrue(Files.exists(generatedPdfB),
+									"Cleaning request A must not remove the PDF belonging to request B");
+							Assertions.assertArrayEquals(pdfB, Files.readAllBytes(generatedPdfB));
+						}
+					});
+		} finally {
+			callerExecutor.shutdownNow();
+			server.stop(0);
+			serverExecutor.shutdownNow();
+		}
+	}
+
+	/**
+	 * Waits for the worker to enter the timed backoff before interrupting or
+	 * aborting it. The latch returns as soon as that condition is observed, within
+	 * a one-second limit.
+	 */
+	private static boolean awaitRetryBackoff(Thread worker) throws InterruptedException {
+		CountDownLatch backoffStarted = new CountDownLatch(1);
+		ScheduledExecutorService observer = Executors.newSingleThreadScheduledExecutor();
+		try {
+			observer.scheduleWithFixedDelay(() -> {
+				if (worker.getState() == Thread.State.TIMED_WAITING) {
+					backoffStarted.countDown();
+				}
+			}, 0, 10, TimeUnit.MILLISECONDS);
+			return backoffStarted.await(1, TimeUnit.SECONDS);
+		} finally {
+			observer.shutdownNow();
 		}
 	}
 
@@ -982,12 +1141,11 @@ class PdfEngineClientImplTest {
 		});
 	}
 
-	private static Set<String> temporaryPdfFiles() throws IOException {
-		java.nio.file.Path directory = new File("temp").toPath();
+	private static Set<String> temporaryPdfFiles(Path directory) throws IOException {
 		if (!Files.exists(directory)) {
 			return Set.of();
 		}
-		try (java.util.stream.Stream<java.nio.file.Path> files = Files.list(directory)) {
+		try (java.util.stream.Stream<Path> files = Files.list(directory)) {
 			return files.filter(path -> path.getFileName().toString().endsWith(".pdf"))
 					.map(path -> path.getFileName().toString()).collect(java.util.stream.Collectors.toSet());
 		}
