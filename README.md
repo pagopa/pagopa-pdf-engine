@@ -327,6 +327,13 @@ yarn install
 yarn test            # or: yarn test:coverage
 ```
 
+### HTTP network timeout tests
+
+The opt-in `ConnectTimeoutNetworkIT` laboratory verifies real TCP connection timeouts, cancellation by the overall HTTP request deadline, and recovery using the same client. It runs explicitly in an isolated Linux Docker container and is excluded from the ordinary Java test selection.
+
+See [HTTP network timeout tests](./docker/network-tests/README.md) for prerequisites, commands, covered scenarios and report locations.
+
+
 ### Integration tests
 
 ```bash
