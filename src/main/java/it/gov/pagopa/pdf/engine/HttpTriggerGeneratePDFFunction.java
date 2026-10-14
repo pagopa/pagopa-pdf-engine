@@ -70,127 +70,114 @@ public class HttpTriggerGeneratePDFFunction {
      * curl -d "HTTP Body" {your host}/api/generate-pdf
      */
     @FunctionName("generate-pdf")
-    public HttpResponseMessage run(
-            @HttpTrigger(
-                    name = "req",
-                    methods = {HttpMethod.POST},
-                    authLevel = AuthorizationLevel.ANONYMOUS)
-            HttpRequestMessage<Optional<byte[]>> request,
-            final ExecutionContext context) {
+	public HttpResponseMessage run(@HttpTrigger(name = "req", methods = {
+			HttpMethod.POST }, authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<byte[]>> request,
+			final ExecutionContext context) {
 
-        AppInsightTelemetryClient appInsightTelemetryClient = new AppInsightTelemetryClient();
+		AppInsightTelemetryClient appInsightTelemetryClient = new AppInsightTelemetryClient();
 
-        logger.info("Generate PDF function called at {}", LocalDateTime.now());
+		logger.info("Generate PDF function called at {}", LocalDateTime.now());
 
-        Optional<byte[]> optionalRequestBody = request.getBody();
-        if (optionalRequestBody.isEmpty()) {
-            appInsightTelemetryClient.createCustomEventError("Invalid request the payload is null");
-            logger.error("Invalid request the payload is null");
-            return request
-                    .createResponseBuilder(BAD_REQUEST)
-                    .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_899, INVALID_REQUEST_MESSAGE))
-                    .build();
-        }
+		Optional<byte[]> optionalRequestBody = request.getBody();
+		if (optionalRequestBody.isEmpty()) {
+			appInsightTelemetryClient.createCustomEventError("Invalid request the payload is null");
+			logger.error("Invalid request the payload is null");
+			return request.createResponseBuilder(BAD_REQUEST)
+					.body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_899, INVALID_REQUEST_MESSAGE)).build();
+		}
 
-        Path workingDirPath;
-        try {
-            File workingDirectory = createWorkingDirectory();
-            workingDirPath = Files.createTempDirectory(
-                    workingDirectory.toPath(),
-                    DateTimeFormatter.ofPattern(PATTERN_FORMAT)
-                            .withZone(ZoneId.systemDefault())
-                            .format(Instant.now())
-            );
-        } catch (IOException e) {
-            appInsightTelemetryClient.createCustomEventError(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
-            logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            buildResponseBody(
-                                    INTERNAL_SERVER_ERROR,
-                                    AppErrorCodeEnum.PDFE_908,
-                                    "An error occurred on processing the request"))
-                    .build();
-        }
+		Path workingDirPath;
+		try {
+			File workingDirectory = createWorkingDirectory();
+			workingDirPath = Files.createTempDirectory(workingDirectory.toPath(),
+					DateTimeFormatter.ofPattern(PATTERN_FORMAT).withZone(ZoneId.systemDefault()).format(Instant.now()));
+		} catch (IOException e) {
+			appInsightTelemetryClient.createCustomEventError(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
+			logger.error(AppErrorCodeEnum.PDFE_908.getErrorMessage(), e);
+			return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(buildResponseBody(INTERNAL_SERVER_ERROR, AppErrorCodeEnum.PDFE_908,
+							"An error occurred on processing the request"))
+					.build();
+		}
 
-        byte[] requestBody = optionalRequestBody.get();
-        GeneratePDFInput generatePDFInput;
-        try {
-            generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders(), workingDirPath);
-        } catch (PDFEngineException e) {
-            appInsightTelemetryClient.createCustomEventError("Error retrieving input data from request body", e);
+		// Once the request directory exists, every exit path must attempt cleanup.
+		try {
+			return processRequest(request, optionalRequestBody.get(), workingDirPath, appInsightTelemetryClient);
+		} finally {
+			clearTempDirectory(workingDirPath);
+		}
+	}
 
-            logger.error("Error retrieving input data from request body", e);
-            HttpStatus status = getHttpStatus(e);
-            return request
-                    .createResponseBuilder(status)
-                    .body(buildResponseBody(status, e.getErrorCode(), INVALID_REQUEST_MESSAGE))
-                    .build();
-        }
+	/**
+	 * Processes the request inside run's cleanup scope. This method borrows the
+	 * request directory; run removes it after parsing, validation and generation.
+	 */
+	private HttpResponseMessage processRequest(HttpRequestMessage<Optional<byte[]>> request, byte[] requestBody,
+			Path workingDirPath, AppInsightTelemetryClient appInsightTelemetryClient) {
 
-        if (generatePDFInput.getTemplateZip() == null) {
-            appInsightTelemetryClient.createCustomEventError("Invalid request, template HTML not provided");
+		GeneratePDFInput generatePDFInput;
+		try {
+			generatePDFInput = this.parseRequestBodyService.retrieveInputData(requestBody, request.getHeaders(),
+					workingDirPath);
+		} catch (PDFEngineException e) {
+			appInsightTelemetryClient.createCustomEventError("Error retrieving input data from request body", e);
 
-            logger.error("Invalid request, template HTML not provided");
-            return request
-                    .createResponseBuilder(BAD_REQUEST)
-                    .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_897, INVALID_REQUEST_MESSAGE))
-                    .build();
-        }
+			logger.error("Error retrieving input data from request body", e);
 
-        if (generatePDFInput.getData() == null) {
-            appInsightTelemetryClient.createCustomEventError("Invalid request the PDF document input data are null");
+			HttpStatus status = getHttpStatus(e);
+			return request.createResponseBuilder(status)
+					.body(buildResponseBody(status, e.getErrorCode(), INVALID_REQUEST_MESSAGE)).build();
+		}
 
-            logger.error("Invalid request the PDF document input data are null");
-            return request
-                    .createResponseBuilder(BAD_REQUEST)
-                    .body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE))
-                    .build();
-        }
+		if (generatePDFInput.getTemplateZip() == null) {
+			appInsightTelemetryClient.createCustomEventError("Invalid request, template HTML not provided");
 
-        appInsightTelemetryClient.createCustomEvent("Starting Generation PDF", generatePDFInput.toString());
+			logger.error("Invalid request, template HTML not provided");
 
-        try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath, logger)){
-            byte[] fileBytes = inputStream.readAllBytes();
+			return request.createResponseBuilder(BAD_REQUEST)
+					.body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_897, INVALID_REQUEST_MESSAGE)).build();
+		}
 
-            return request
-                    .createResponseBuilder(HttpStatus.OK)
-                    .header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
-                    .header("content-length", String.valueOf(fileBytes.length))
-                    .header("content-disposition", "attachment; ")
-                    .body(fileBytes)
-                    .build();
-        } catch (PDFEngineException e) {
-            appInsightTelemetryClient.createCustomEventError("Error generating the PDF document", e);
+		if (generatePDFInput.getData() == null) {
+			appInsightTelemetryClient.createCustomEventError("Invalid request the PDF document input data are null");
 
-            logger.error("Error generating the PDF document", e);
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            buildResponseBody(
-                                    INTERNAL_SERVER_ERROR,
-                                    e.getErrorCode(),
-                                    ERROR_GENERATING_PDF_MESSAGE))
-                    .build();
-        } catch (IOException e) {
-            appInsightTelemetryClient.createCustomEventError("Error handling the generated stream", e);
+			logger.error("Invalid request the PDF document input data are null");
 
-            logger.error("Error handling the generated stream", e);
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            buildResponseBody(
-                                    INTERNAL_SERVER_ERROR,
-                                    AppErrorCodeEnum.PDFE_907,
-                                    ERROR_GENERATING_PDF_MESSAGE))
-                    .build();
-        } finally {
-            clearTempDirectory(workingDirPath);
-        }
+			return request.createResponseBuilder(BAD_REQUEST)
+					.body(buildResponseBody(BAD_REQUEST, AppErrorCodeEnum.PDFE_898, INVALID_REQUEST_MESSAGE)).build();
+		}
 
+		appInsightTelemetryClient.createCustomEvent("Starting Generation PDF", generatePDFInput.toString());
 
-    }
+		try (BufferedInputStream inputStream = generatePDFService.generatePDF(generatePDFInput, workingDirPath,
+				logger)) {
+
+			byte[] fileBytes = inputStream.readAllBytes();
+
+			return request.createResponseBuilder(HttpStatus.OK)
+					.header("content-type", generatePDFInput.isGenerateZipped() ? "application/zip" : "application/pdf")
+					.header("content-length", String.valueOf(fileBytes.length))
+					.header("content-disposition", "attachment; ").body(fileBytes).build();
+
+		} catch (PDFEngineException e) {
+			appInsightTelemetryClient.createCustomEventError("Error generating the PDF document", e);
+
+			logger.error("Error generating the PDF document", e);
+
+			return request.createResponseBuilder(INTERNAL_SERVER_ERROR)
+					.body(buildResponseBody(INTERNAL_SERVER_ERROR, e.getErrorCode(), ERROR_GENERATING_PDF_MESSAGE))
+					.build();
+
+		} catch (IOException e) {
+			appInsightTelemetryClient.createCustomEventError("Error handling the generated stream", e);
+
+			logger.error("Error handling the generated stream", e);
+
+			return request.createResponseBuilder(INTERNAL_SERVER_ERROR).body(
+					buildResponseBody(INTERNAL_SERVER_ERROR, AppErrorCodeEnum.PDFE_907, ERROR_GENERATING_PDF_MESSAGE))
+					.build();
+		}
+	}
 
     private static HttpStatus getHttpStatus(PDFEngineException e) {
         HttpStatus status;
