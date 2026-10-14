@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -1094,6 +1095,206 @@ class PdfEngineClientImplTest {
 			callerExecutor.shutdownNow();
 			server.stop(0);
 			serverExecutor.shutdownNow();
+		}
+	}
+
+	@Test
+	void expiredConnectionIsReplaced() throws Exception {
+		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+
+		Set<Integer> sourcePorts = ConcurrentHashMap.newKeySet();
+		AtomicInteger receivedRequests = new AtomicInteger();
+
+		server.createContext("/info", exchange -> {
+			try (exchange) {
+				sourcePorts.add(exchange.getRemoteAddress().getPort());
+				receivedRequests.incrementAndGet();
+
+				byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
+				exchange.sendResponseHeaders(HttpStatus.SC_OK, body.length);
+
+				try (OutputStream output = exchange.getResponseBody()) {
+					output.write(body);
+				}
+			}
+		});
+		server.start();
+
+		try {
+			validHttpEnvironment()
+					.set("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://127.0.0.1:" + server.getAddress().getPort() + "/info")
+					.set("PDF_ENGINE_HTTP_TTL_MS", "500").set("PDF_ENGINE_HTTP_IDLE_TIMEOUT_MS", "60000")
+					.set("PDF_ENGINE_HTTP_MAX_RETRIES", "0").execute(() -> {
+						try (PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create())) {
+
+							Assertions.assertTrue(client.info());
+							long firstResponseCompleted = System.nanoTime();
+							Assertions.assertEquals(1, sourcePorts.size());
+
+							// The connection already existed when the first response completed.
+							Assertions.assertTrue(
+									awaitCondition(() -> System.nanoTime()
+											- firstResponseCompleted >= TimeUnit.MILLISECONDS.toNanos(700), 3000),
+									"The connection must reach its configured TTL");
+
+							Assertions.assertTrue(client.info());
+							Assertions.assertEquals(2, receivedRequests.get());
+							Assertions.assertEquals(2, sourcePorts.size(), "An expired connection must not be reused");
+						}
+					});
+		} finally {
+			server.stop(0);
+		}
+	}
+
+	@Test
+	void idleConnectionIsEvictedWithoutAnotherRequest() throws Exception {
+		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+
+		Set<Integer> sourcePorts = ConcurrentHashMap.newKeySet();
+		AtomicInteger receivedRequests = new AtomicInteger();
+
+		server.createContext("/info", exchange -> {
+			try (exchange) {
+				sourcePorts.add(exchange.getRemoteAddress().getPort());
+				receivedRequests.incrementAndGet();
+
+				byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
+				exchange.sendResponseHeaders(HttpStatus.SC_OK, body.length);
+
+				try (OutputStream output = exchange.getResponseBody()) {
+					output.write(body);
+				}
+			}
+		});
+		server.start();
+
+		try {
+			validHttpEnvironment()
+					.set("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://127.0.0.1:" + server.getAddress().getPort() + "/info")
+					.set("PDF_ENGINE_HTTP_TTL_MS", "60000").set("PDF_ENGINE_HTTP_IDLE_TIMEOUT_MS", "500")
+					.set("PDF_ENGINE_HTTP_MAX_RETRIES", "0").execute(() -> {
+						// A supplied manager lets the test observe background eviction directly.
+						// It is not shared: the client must own and run its eviction thread.
+						try (PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(
+								60000, TimeUnit.MILLISECONDS);
+								PdfEngineClientImpl client = new PdfEngineClientImpl(
+										HttpClientBuilder.create().setConnectionManager(connectionManager))) {
+
+							Assertions.assertTrue(client.info());
+							Assertions.assertEquals(1, connectionManager.getTotalStats().getAvailable());
+
+							Assertions.assertTrue(
+									awaitCondition(() -> connectionManager.getTotalStats().getAvailable() == 0, 5000),
+									"The idle connection must be evicted without a new request");
+
+							Assertions.assertEquals(1, receivedRequests.get(),
+									"Waiting for eviction must not send HTTP requests");
+							Assertions.assertEquals(0, connectionManager.getTotalStats().getLeased());
+
+							Assertions.assertTrue(client.info());
+							Assertions.assertEquals(2, receivedRequests.get());
+							Assertions.assertEquals(2, sourcePorts.size(),
+									"The next request must create a new TCP connection");
+						}
+					});
+		} finally {
+			server.stop(0);
+		}
+	}
+
+	@Test
+	void connectionCleanupDoesNotInterruptActiveRequest() throws Exception {
+		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+
+		ExecutorService callerExecutor = Executors.newSingleThreadExecutor();
+
+		Set<Integer> sourcePorts = ConcurrentHashMap.newKeySet();
+		AtomicInteger receivedRequests = new AtomicInteger();
+		CountDownLatch firstRequestReceived = new CountDownLatch(1);
+		CountDownLatch releaseFirstRequest = new CountDownLatch(1);
+
+		server.createContext("/info", exchange -> {
+			try (exchange) {
+				sourcePorts.add(exchange.getRemoteAddress().getPort());
+
+				if (receivedRequests.incrementAndGet() == 1) {
+					firstRequestReceived.countDown();
+
+					if (!releaseFirstRequest.await(10, TimeUnit.SECONDS)) {
+						return;
+					}
+				}
+
+				byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
+				exchange.sendResponseHeaders(HttpStatus.SC_OK, body.length);
+
+				try (OutputStream output = exchange.getResponseBody()) {
+					output.write(body);
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		server.start();
+
+		try {
+			validHttpEnvironment()
+					.set("PDF_ENGINE_NODE_INFO_ENDPOINT", "http://127.0.0.1:" + server.getAddress().getPort() + "/info")
+					.set("PDF_ENGINE_HTTP_TTL_MS", "500").set("PDF_ENGINE_HTTP_IDLE_TIMEOUT_MS", "200")
+					.set("PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS", "10000")
+					.set("PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS", "10000").set("PDF_ENGINE_HTTP_MAX_RETRIES", "0")
+					.execute(() -> {
+						try (PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create())) {
+
+							Future<Boolean> firstCall = callerExecutor.submit(client::info);
+
+							Assertions.assertTrue(firstRequestReceived.await(3, TimeUnit.SECONDS));
+
+							long requestReceived = System.nanoTime();
+
+							// Keep the request active past both TTL and the idle eviction threshold.
+							Assertions.assertTrue(awaitCondition(
+									() -> System.nanoTime() - requestReceived >= TimeUnit.MILLISECONDS.toNanos(700),
+									3000));
+
+							Assertions.assertFalse(firstCall.isDone(),
+									"Connection cleanup must not abort a request that is still active");
+
+							releaseFirstRequest.countDown();
+
+							Assertions.assertTrue(firstCall.get(3, TimeUnit.SECONDS));
+							Assertions.assertTrue(client.info());
+							Assertions.assertEquals(2, receivedRequests.get());
+							Assertions.assertEquals(2, sourcePorts.size(),
+									"After completing the active request, its expired connection must be replaced");
+						}
+					});
+		} finally {
+			releaseFirstRequest.countDown();
+			callerExecutor.shutdownNow();
+			server.stop(0);
+		}
+	}
+
+	/**
+	 * Observes a condition until it becomes true or the bounded wait expires.
+	 */
+	private static boolean awaitCondition(BooleanSupplier condition, long timeoutMs) throws InterruptedException {
+
+		CountDownLatch conditionReached = new CountDownLatch(1);
+		ScheduledExecutorService observer = Executors.newSingleThreadScheduledExecutor();
+
+		try {
+			observer.scheduleWithFixedDelay(() -> {
+				if (condition.getAsBoolean()) {
+					conditionReached.countDown();
+				}
+			}, 0, 10, TimeUnit.MILLISECONDS);
+
+			return conditionReached.await(timeoutMs, TimeUnit.MILLISECONDS);
+		} finally {
+			observer.shutdownNow();
 		}
 	}
 
