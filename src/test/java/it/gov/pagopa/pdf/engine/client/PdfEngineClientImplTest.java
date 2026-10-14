@@ -20,11 +20,15 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -33,6 +37,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1275,6 +1280,137 @@ class PdfEngineClientImplTest {
 			callerExecutor.shutdownNow();
 			server.stop(0);
 		}
+	}
+
+	@Test
+	void connectTimeoutIsAppliedAndClientRecovers() throws Exception {
+		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+
+		AtomicInteger receivedRequests = new AtomicInteger();
+
+		byte[] pdf = "%PDF-1.4\nlocal test PDF\n%%EOF".getBytes(StandardCharsets.UTF_8);
+
+		File templateFile = Files.createTempFile(workingDir, "pdf-engine-template-", ".zip").toFile();
+
+		server.createContext("/generate-pdf", exchange -> {
+			try (exchange) {
+				exchange.getRequestBody().readAllBytes();
+				receivedRequests.incrementAndGet();
+
+				exchange.sendResponseHeaders(HttpStatus.SC_OK, pdf.length);
+
+				try (OutputStream output = exchange.getResponseBody()) {
+					output.write(pdf);
+				}
+			}
+		});
+		server.start();
+
+		try {
+			for (int configuredTimeoutMs : new int[] { 250, 500 }) {
+				AtomicInteger connectionAttempts = new AtomicInteger();
+				AtomicInteger observedConnectTimeout = new AtomicInteger(-1);
+
+				ConnectionSocketFactory socketFactory = timeoutOnceSocketFactory(connectionAttempts,
+						observedConnectTimeout);
+
+				int requestsBefore = receivedRequests.get();
+
+				validHttpEnvironment()
+						.set("PDF_ENGINE_NODE_GENERATE_ENDPOINT",
+								"http://127.0.0.1:" + server.getAddress().getPort() + "/generate-pdf")
+						.set("PDF_ENGINE_HTTP_MAX_TOTAL", "1").set("PDF_ENGINE_HTTP_MAX_PER_ROUTE", "1")
+						.set("PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS", String.valueOf(configuredTimeoutMs))
+						.set("PDF_ENGINE_HTTP_MAX_RETRIES", "2").set("PDF_ENGINE_HTTP_RETRY_BACKOFF_MS", "0")
+						.set("PDF_ENGINE_HTTP_RETRY_JITTER_MS", "0").execute(() -> {
+							try (ZipFile template = new ZipFile(templateFile);
+									PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(
+											RegistryBuilder.<ConnectionSocketFactory>create()
+													.register("http", socketFactory).build());
+									PdfEngineClientImpl client = new PdfEngineClientImpl(
+											HttpClientBuilder.create().setConnectionManager(connectionManager))) {
+
+								// A supplied manager owns its pool limits; keep one slot to prove recovery.
+								connectionManager.setMaxTotal(1);
+								connectionManager.setDefaultMaxPerRoute(1);
+
+								PdfEngineRequest request = new PdfEngineRequest();
+								request.setWorkingDirPath(workingDir.toString());
+								request.setData("{}");
+								request.setTemplate(template);
+
+								Set<String> filesBefore = temporaryPdfFiles(workingDir);
+
+								PdfEngineResponse failed = client.generatePDF(request);
+
+								Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, failed.getStatusCode());
+								Assertions.assertEquals("PDFE_902", failed.getErrorCode());
+								Assertions.assertTrue(failed.getErrorMessage().contains("Simulated connect timeout"),
+										failed.getErrorMessage());
+
+								Assertions.assertEquals(configuredTimeoutMs, observedConnectTimeout.get(),
+										"The configured timeout must reach the socket connection phase");
+								Assertions.assertEquals(1, connectionAttempts.get(),
+										"Connect timeouts must not be retried even when retries are enabled");
+								Assertions.assertEquals(requestsBefore, receivedRequests.get(),
+										"The failed connection must not send a POST to the server");
+
+								Assertions.assertEquals(0, connectionManager.getTotalStats().getLeased());
+								Assertions.assertEquals(0, connectionManager.getTotalStats().getPending());
+
+								Assertions.assertNull(failed.getTempPdfPath());
+								Assertions.assertNull(failed.getTempDirectoryPath());
+								Assertions.assertEquals(filesBefore, temporaryPdfFiles(workingDir));
+
+								PdfEngineResponse recovered = client.generatePDF(request);
+
+								Assertions.assertEquals(HttpStatus.SC_OK, recovered.getStatusCode(),
+										recovered.getErrorMessage());
+								Assertions.assertEquals(configuredTimeoutMs, observedConnectTimeout.get());
+								Assertions.assertEquals(2, connectionAttempts.get());
+								Assertions.assertEquals(requestsBefore + 1, receivedRequests.get());
+
+								Path generatedPdf = Path.of(recovered.getTempPdfPath());
+
+								Assertions.assertArrayEquals(pdf, Files.readAllBytes(generatedPdf));
+
+								Files.deleteIfExists(generatedPdf);
+							}
+						});
+			}
+		} finally {
+			server.stop(0);
+			Files.deleteIfExists(templateFile.toPath());
+		}
+	}
+
+	/**
+	 * Simulates one connect timeout; subsequent attempts use actual TCP
+	 * connections.
+	 */
+	private static ConnectionSocketFactory timeoutOnceSocketFactory(AtomicInteger connectionAttempts,
+			AtomicInteger observedConnectTimeout) {
+
+		return new PlainConnectionSocketFactory() {
+			@Override
+			public Socket connectSocket(int connectTimeout, Socket socket, HttpHost host,
+					InetSocketAddress remoteAddress, InetSocketAddress localAddress, HttpContext context)
+					throws IOException {
+
+				observedConnectTimeout.set(connectTimeout);
+
+				if (connectionAttempts.incrementAndGet() == 1) {
+					// The socket is borrowed from HttpClient and has not been connected yet.
+					if (socket != null) {
+						socket.close();
+					}
+
+					throw new ConnectTimeoutException("Simulated connect timeout");
+				}
+
+				return super.connectSocket(connectTimeout, socket, host, remoteAddress, localAddress, context);
+			}
+		};
 	}
 
 	/**
