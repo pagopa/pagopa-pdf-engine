@@ -21,6 +21,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -69,8 +71,7 @@ import static org.mockito.Mockito.when;
 class PdfEngineClientImplTest {
 
 	// JUnit creates and removes an isolated directory for each test.
-	@TempDir
-	Path workingDir;
+	@TempDir Path workingDir;
 
 	private static final String[] HTTP_SETTING_NAMES = { "PDF_ENGINE_HTTP_MAX_TOTAL", "PDF_ENGINE_HTTP_MAX_PER_ROUTE",
 			"PDF_ENGINE_HTTP_POOL_TIMEOUT_MS", "PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS",
@@ -176,6 +177,7 @@ class PdfEngineClientImplTest {
 				Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
 				Assertions.assertEquals("Unauthorized call to PDF engine function",
 						pdfEngineResponse.getErrorMessage());
+				Assertions.assertEquals("PDFE_902", pdfEngineResponse.getErrorCode());
 			}
 
 		}
@@ -206,7 +208,7 @@ class PdfEngineClientImplTest {
 			String errorMessage = "\"Invalid request\"";
 			String errorResponseBody = "{\n" + "  \"errorId\": \"a3779a25-9c8a-4a6f-9272-a052119cfd2e\",\n"
 					+ "  \"httpStatusCode\": \"BAD_REQUEST\",\n" + "  \"httpStatusDescription\": \"Bad Request\",\n"
-					+ "  \"appErrorCode\": \"PDFE_898\",\n" + "  \"errors\": [\n" + "    {\n" + "      \"message\": "
+					+ "  \"appStatusCode\": \"PDFE_898\",\n" + "  \"errors\": [\n" + "    {\n" + "      \"message\": "
 					+ errorMessage + "    }\n" + "  ]\n" + "}";
 			when(mockEntity.getContent()).thenReturn(new ByteArrayInputStream(errorResponseBody.getBytes()));
 			when(mockResponse.getEntity()).thenReturn(mockEntity);
@@ -219,8 +221,78 @@ class PdfEngineClientImplTest {
 
 				Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, pdfEngineResponse.getStatusCode());
 				Assertions.assertEquals(errorMessage.replace("\"", ""), pdfEngineResponse.getErrorMessage());
+				Assertions.assertEquals("PDFE_898", pdfEngineResponse.getErrorCode());
 			}
 
+		}
+	}
+
+	@Test
+	void usesFallbackWhenUpstreamResponseHasNoBody() throws IOException {
+		for (int statusCode : new int[] { HttpStatus.SC_OK, HttpStatus.SC_SERVICE_UNAVAILABLE }) {
+			PdfEngineResponse response = generateWithUpstreamResponse(statusCode, null);
+			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
+			Assertions.assertEquals("PDFE_902", response.getErrorCode());
+			Assertions.assertEquals("Unknown error in PDF engine function", response.getErrorMessage());
+		}
+	}
+
+	@Test
+	void usesFallbackForAnEmptyErrorBody() throws IOException {
+		for (String responseBody : new String[] { "", " \n\t " }) {
+			PdfEngineResponse response = generateWithUpstreamResponse(HttpStatus.SC_SERVICE_UNAVAILABLE, responseBody);
+			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
+			Assertions.assertEquals("PDFE_902", response.getErrorCode());
+			Assertions.assertEquals("Unknown error in PDF engine function", response.getErrorMessage());
+		}
+	}
+
+	@Test
+	void usesFallbackForMissingOrUnknownUpstreamErrorCodes() throws IOException {
+		String[] responseBodies = { "{\"errors\":[{\"message\":\"Upstream failure\"}]}",
+				"{\"appStatusCode\":null,\"errors\":[{\"message\":\"Upstream failure\"}]}",
+				"{\"appStatusCode\":\"\",\"errors\":[{\"message\":\"Upstream failure\"}]}",
+				"{\"appStatusCode\":\"UNSUPPORTED_CODE\",\"errors\":[{\"message\":\"Upstream failure\"}]}" };
+		for (String responseBody : responseBodies) {
+			PdfEngineResponse response = generateWithUpstreamResponse(HttpStatus.SC_BAD_REQUEST, responseBody);
+			Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
+			Assertions.assertEquals("PDFE_902", response.getErrorCode(), responseBody);
+			Assertions.assertEquals("Upstream failure", response.getErrorMessage(), responseBody);
+		}
+	}
+
+	@Test
+	void preservesKnownUpstreamErrorCodeWithoutMessages() throws IOException {
+		PdfEngineResponse response = generateWithUpstreamResponse(HttpStatus.SC_BAD_REQUEST,
+				"{\"appStatusCode\":\"PDFE_898\"}");
+		Assertions.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
+		Assertions.assertEquals("PDFE_898", response.getErrorCode());
+		Assertions.assertEquals("Unknown error in PDF engine function", response.getErrorMessage());
+	}
+
+	private PdfEngineResponse generateWithUpstreamResponse(int statusCode, String responseBody) throws IOException {
+		File templateFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();
+		try (ZipFile template = new ZipFile(templateFile)) {
+			PdfEngineRequest request = new PdfEngineRequest();
+			request.setWorkingDirPath(workingDir.toString());
+			request.setTemplate(template);
+			request.setData("{}");
+
+			HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
+			CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
+			CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
+			StatusLine mockStatusLine = mock(StatusLine.class);
+			when(mockStatusLine.getStatusCode()).thenReturn(statusCode);
+			when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+			HttpEntity entity = responseBody == null ? null
+					: new StringEntity(responseBody, ContentType.APPLICATION_JSON);
+			when(mockResponse.getEntity()).thenReturn(entity);
+			when(mockClient.execute(any(HttpPost.class), any(HttpClientContext.class))).thenReturn(mockResponse);
+			when(mockBuilder.build()).thenReturn(mockClient);
+
+			try (PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder)) {
+				return client.generatePDF(request);
+			}
 		}
 	}
 

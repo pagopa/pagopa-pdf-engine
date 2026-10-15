@@ -386,6 +386,9 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 	 */
 	private static void handleErrorResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpResponse response,
 			HttpEntity entityResponse) throws IOException {
+
+		// Fallback error code: every error response must carry a code recognized by the Java service.
+		pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
 		// Verify if unauthorized
 		if (response != null && response.getStatusLine() != null
 				&& response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
@@ -395,13 +398,16 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 			// Handle JSON response
 			String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
 
-			if (!jsonString.isEmpty()) {
+			if (!jsonString.isBlank()) {
 				PdfEngineErrorResponse errorResponse = ObjectMapperUtils.mapString(jsonString,
 						PdfEngineErrorResponse.class);
 
+				// Resolve the code independently of the presence of error messages.
+				pdfEngineResponse.setErrorCode(
+						resolveErrorCode(errorResponse == null ? null : errorResponse.getAppStatusCode()));
+
 				if (errorResponse != null && errorResponse.getErrors() != null && !errorResponse.getErrors().isEmpty()
 						&& errorResponse.getErrors().get(0) != null) {
-					pdfEngineResponse.setErrorCode(errorResponse.getAppStatusCode());
 					pdfEngineResponse.setErrorMessage(errorResponse.getErrors().get(0).getMessage());
 				}
 			}
@@ -409,6 +415,22 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 
 		if (pdfEngineResponse.getErrorMessage() == null) {
 			pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
+		}
+	}
+
+	/**
+	 * Keeps recognized upstream codes; missing or unknown codes use the generic
+	 * PDF-generation failure code instead of reaching Enum.valueOf unchecked.
+	 */
+	private static String resolveErrorCode(String errorCode) {
+		if (errorCode == null || errorCode.isBlank()) {
+			return AppErrorCodeEnum.PDFE_902.getErrorCode();
+		}
+
+		try {
+			return AppErrorCodeEnum.valueOf(errorCode).getErrorCode();
+		} catch (IllegalArgumentException e) {
+			return AppErrorCodeEnum.PDFE_902.getErrorCode();
 		}
 	}
 
