@@ -180,9 +180,9 @@ When bumping the pin, update **both** values (and `README.md` if you mention a s
 | `PDF_ENGINE_NODE_SUBKEY` | `NO_SUB_KEY` | Value of the `Ocp-Apim-Subscription-Key` header sent to the sidecar |
 | `WORKING_DIRECTORY_PATH` | `""` (current dir) | Base directory for per-request temp folders |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | — | App Insights connection string for telemetry |
-| `PDF_ENGINE_HTTP_MAX_TOTAL` | `32` | Maximum pooled connections across all routes for this Java process. Positive integer. |
-| `PDF_ENGINE_HTTP_MAX_PER_ROUTE` | `16` | Maximum pooled connections per route, typically identified by scheme, host and port. Positive integer; must not exceed `PDF_ENGINE_HTTP_MAX_TOTAL`. |
-| `PDF_ENGINE_HTTP_POOL_TIMEOUT_MS` | `1000` | Maximum wait to lease a connection from the pool, in milliseconds. Positive integer. |
+| `PDF_ENGINE_HTTP_MAX_TOTAL` | `48` | Maximum pooled connections across all routes for this Java process. Positive integer. |
+| `PDF_ENGINE_HTTP_MAX_PER_ROUTE` | `48` | Maximum pooled connections per route, typically identified by scheme, host and port. Positive integer; must not exceed `PDF_ENGINE_HTTP_MAX_TOTAL`. |
+| `PDF_ENGINE_HTTP_POOL_TIMEOUT_MS` | `10000` | Maximum wait to lease a connection from the pool, in milliseconds. Positive integer. |
 | `PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS` | `3000` | Timeout for a TCP connection attempt, in milliseconds. Positive integer. |
 | `PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS` | `15000` | Maximum wait for data during a blocking socket read, in milliseconds; not a total request timeout. Positive integer. |
 | `PDF_ENGINE_HTTP_TTL_MS` | `600000` | Maximum connection age, in milliseconds, after which it cannot be reused. Does not abort an ongoing request. Positive integer. |

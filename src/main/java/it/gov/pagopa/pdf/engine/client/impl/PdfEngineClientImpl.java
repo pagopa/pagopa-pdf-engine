@@ -63,11 +63,11 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 	private final ScheduledThreadPoolExecutor deadlineExecutor;
 
 	// Maximum number of pooled HTTP connections across all routes.
-	private final int maxConnectionsTotal = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_TOTAL", 32);
+	private final int maxConnectionsTotal = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_TOTAL", 48);
 	// Maximum number of pooled HTTP connections per route (per target host).
-	private final int maxConnectionsPerRoute = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_PER_ROUTE", 16);
+	private final int maxConnectionsPerRoute = readPositiveIntEnv("PDF_ENGINE_HTTP_MAX_PER_ROUTE", 48);
 	// Maximum wait, in milliseconds, to lease a connection from the pool.
-	private final int poolAcquireTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_POOL_TIMEOUT_MS", 1_000);
+	private final int poolAcquireTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_POOL_TIMEOUT_MS", 10_000);
 	// Timeout, in milliseconds, for a TCP connection attempt.
 	private final int connectTimeoutMs = readPositiveIntEnv("PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS", 3_000);
 	// Maximum wait for data, in milliseconds, during a blocking socket read.
