@@ -14,7 +14,7 @@ const pdfEngineUri = `${vars.pdfEngineUri}`;
 const subKey = `${__ENV.SUBSCRIPTION_KEY}`;
 const fileName = `${__ENV.TEMPLATE_FILE_NAME}`;
 // Default to PDF when the variable is missing or empty; reject other invalid values.
-const generateZippedValue = __ENV.GENERATE_ZIPPED || 'false';
+const generateZippedValue = (__ENV.GENERATE_ZIPPED || '').trim().toLowerCase() || 'false';
 
 if (generateZippedValue !== 'true' && generateZippedValue !== 'false') {
   throw new Error('GENERATE_ZIPPED must be "true" or "false"');
