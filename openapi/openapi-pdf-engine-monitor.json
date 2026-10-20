@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.11.3-2-PIDM-2450-generatepdf-request-fail"
+    "version": "2.11.4"
   },
   "servers": [
     {
