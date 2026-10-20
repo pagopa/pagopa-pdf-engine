@@ -180,6 +180,30 @@ When bumping the pin, update **both** values (and `README.md` if you mention a s
 | `PDF_ENGINE_NODE_SUBKEY` | `NO_SUB_KEY` | Value of the `Ocp-Apim-Subscription-Key` header sent to the sidecar |
 | `WORKING_DIRECTORY_PATH` | `""` (current dir) | Base directory for per-request temp folders |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | — | App Insights connection string for telemetry |
+| `PDF_ENGINE_HTTP_MAX_TOTAL` | `48` | Maximum pooled connections across all routes for this Java process. Positive integer. |
+| `PDF_ENGINE_HTTP_MAX_PER_ROUTE` | `48` | Maximum pooled connections per route, typically identified by scheme, host and port. Positive integer; must not exceed `PDF_ENGINE_HTTP_MAX_TOTAL`. |
+| `PDF_ENGINE_HTTP_POOL_TIMEOUT_MS` | `10000` | Maximum wait to lease a connection from the pool, in milliseconds. Positive integer. |
+| `PDF_ENGINE_HTTP_CONNECT_TIMEOUT_MS` | `3000` | Timeout for a TCP connection attempt, in milliseconds. Positive integer. |
+| `PDF_ENGINE_HTTP_SOCKET_TIMEOUT_MS` | `15000` | Maximum wait for data during a blocking socket read, in milliseconds; not a total request timeout. Positive integer. |
+| `PDF_ENGINE_HTTP_TTL_MS` | `600000` | Maximum connection age, in milliseconds, after which it cannot be reused. Does not abort an ongoing request. Positive integer. |
+| `PDF_ENGINE_HTTP_IDLE_TIMEOUT_MS` | `60000` | Idle threshold for periodic eviction of unused pooled connections, in milliseconds. Positive integer. |
+| `PDF_ENGINE_HTTP_MAX_RETRIES` | `1` | Maximum additional attempts for eligible transport failures. `0` disables retries; `1` allows at most two attempts in total. |
+| `PDF_ENGINE_HTTP_RETRY_BACKOFF_MS` | `200` | Fixed wait before each allowed retry, in milliseconds. `0` removes the fixed wait. |
+| `PDF_ENGINE_HTTP_RETRY_JITTER_MS` | `200` | Maximum random delay added to the backoff, in milliseconds, inclusive. `0` disables jitter. |
+| `PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS` | `20000` | Total HTTP exchange budget, in milliseconds, including pool wait, connection establishment, upload, retries/backoff and full response-body reads. Positive integer. Excludes PDF/A conversion; cancellation is cooperative. |
+
+HTTP client configuration:
+
+- Values are read once when the shared HTTP client is created. Missing variables use the defaults above; restart the Java process to apply changes.
+- `MAX_TOTAL`, `MAX_PER_ROUTE`, `POOL_TIMEOUT_MS`, `CONNECT_TIMEOUT_MS`, `SOCKET_TIMEOUT_MS` and `REQUEST_TIMEOUT_MS` accept integers from `1` to `2147483647`.
+- `TTL_MS` and `IDLE_TIMEOUT_MS` accept integers from `1` to `9223372036854775807`.
+- `MAX_RETRIES`, `RETRY_BACKOFF_MS` and `RETRY_JITTER_MS` accept integers from `0` to `2147483647`. These names are abbreviated here; the table lists their full environment-variable names.
+- Empty, malformed or out-of-range values cause an `IllegalArgumentException` when the client is constructed. `PDF_ENGINE_HTTP_MAX_PER_ROUTE` must be less than or equal to `PDF_ENGINE_HTTP_MAX_TOTAL`.
+- Pool limits apply to this shared client in each Java process. Different URL paths on the same route share the per-route limit.
+- Each eligible retry waits for `RETRY_BACKOFF_MS + random(0..RETRY_JITTER_MS)` milliseconds, with an inclusive random range. Defaults give a configured delay between `200` and `400` ms; actual waiting can be longer due to scheduling.
+- Retries follow Apache HttpClient's transport-error rules: timeouts, DNS and SSL errors are excluded, and fully sent POST requests are not retried. HTTP error statuses do not trigger retries.
+- Pool, connect and socket timeouts limit individual phases. `PDF_ENGINE_HTTP_REQUEST_TIMEOUT_MS` adds one overall budget shared by every attempt and its backoff; it is not reset on retry.
+- Expiry requests local HTTP cancellation and prevents accepting a late result. It does not guarantee that the remote service stops processing or that native operations return at the exact expiry instant.
 
 ### Node sidecar
 
@@ -302,6 +326,13 @@ cd node
 yarn install
 yarn test            # or: yarn test:coverage
 ```
+
+### HTTP network timeout tests
+
+The opt-in `ConnectTimeoutNetworkIT` laboratory verifies real TCP connection timeouts, cancellation by the overall HTTP request deadline, and recovery using the same client. It runs explicitly in an isolated Linux Docker container and is excluded from the ordinary Java test selection.
+
+See [HTTP network timeout tests](./docker/network-tests/README.md) for prerequisites, commands, covered scenarios and report locations.
+
 
 ### Integration tests
 

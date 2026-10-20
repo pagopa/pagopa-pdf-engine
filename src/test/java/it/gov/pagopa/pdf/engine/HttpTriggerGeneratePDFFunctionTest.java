@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
@@ -31,9 +32,14 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
 import static com.microsoft.azure.functions.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -43,304 +49,465 @@ import static org.mockito.Mockito.*;
 @ExtendWith(SystemStubsExtension.class)
 class HttpTriggerGeneratePDFFunctionTest {
 
-    @SystemStub
-    private EnvironmentVariables environmentVariables;
+	// The base directory belongs to JUnit; the function owns only its request
+	// subdirectory.
+	@TempDir
+	Path workingDirectory;
 
-    private HttpTriggerGeneratePDFFunction function;
+	private Path requestWorkingDirectory;
+	private Path otherRequestDirectory;
 
-    private GeneratePDFService generatePDFServiceMock;
-    private ParseRequestBodyService parseRequestBodyServiceMock;
-    private ExecutionContext executionContextMock;
-    private TelemetryClient telemetryClientMock;
+	@SystemStub
+	private EnvironmentVariables environmentVariables;
 
-    @BeforeEach
-    void setUp() {
-        environmentVariables.set("WORKING_DIRECTORY_PATH", "temp");
-        environmentVariables.set("APPLICATIONINSIGHTS_CONNECTION_STRING", "secret");
+	private HttpTriggerGeneratePDFFunction function;
 
-        generatePDFServiceMock = mock(GeneratePDFService.class);
-        parseRequestBodyServiceMock = mock(ParseRequestBodyService.class);
-        executionContextMock = mock(ExecutionContext.class);
-        telemetryClientMock = mock(TelemetryClient.class);
-        function = spy(new HttpTriggerGeneratePDFFunction(generatePDFServiceMock, parseRequestBodyServiceMock));
-    }
+	private GeneratePDFService generatePDFServiceMock;
+	private ParseRequestBodyService parseRequestBodyServiceMock;
+	private ExecutionContext executionContextMock;
+	private TelemetryClient telemetryClientMock;
 
-    @Test
-    @SneakyThrows
-    void runGenerateNotZippedOk() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+	@BeforeEach
+	void setUp() throws IOException {
+		environmentVariables.set("WORKING_DIRECTORY_PATH", workingDirectory.toString());
+		environmentVariables.set("APPLICATIONINSIGHTS_CONNECTION_STRING", "secret");
 
-        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setData(Collections.singletonMap("a", "b"));
-        generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateZip(new ZipFile(""));
-        generatePDFInput.setGeneratorType(GeneratorType.ITEXT);
+		otherRequestDirectory = Files.createDirectory(workingDirectory.resolve("other-request"));
+		Files.writeString(otherRequestDirectory.resolve("keep.pdf"), "PDF belonging to another request");
 
-        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+		generatePDFServiceMock = mock(GeneratePDFService.class);
+		parseRequestBodyServiceMock = mock(ParseRequestBodyService.class);
+		executionContextMock = mock(ExecutionContext.class);
+		telemetryClientMock = mock(TelemetryClient.class);
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any(), any());
-        doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
+		function = spy(new HttpTriggerGeneratePDFFunction(generatePDFServiceMock, parseRequestBodyServiceMock));
+	}
 
-        createHttpMessageBuilderSub(request);
+	@Test
+	@SneakyThrows
+	void runGenerateNotZippedOk() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+		generatePDFInput.setData(Collections.singletonMap("a", "b"));
+		generatePDFInput.setApplySignature(false);
+		generatePDFInput.setTemplateZip(mock(ZipFile.class));
+		generatePDFInput.setGeneratorType(GeneratorType.ITEXT);
 
-        // Verify
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertEquals( "application/pdf", response.getHeader("content-type"));
-        assertEquals( "attachment; ", response.getHeader("content-disposition"));
-    }
+		BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
 
-    @Test
-    @SneakyThrows
-    void runGenerateZippedOk() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsedInput(generatePDFInput);
+		stubGeneratedStream(inputStreamMock);
+		doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
 
-        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setData(Collections.singletonMap("a", "b"));
-        generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateZip(new ZipFile(""));
-        generatePDFInput.setGenerateZipped(true);
+		createHttpMessageBuilderSub(request);
 
-        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any(), any());
-        doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
+		// Verify
+		assertEquals(HttpStatus.OK, response.getStatus());
+		assertEquals("application/pdf", response.getHeader("content-type"));
+		assertEquals("attachment; ", response.getHeader("content-disposition"));
+		assertRequestDirectoryCleaned();
+		verify(inputStreamMock).close();
+	}
 
-        createHttpMessageBuilderSub(request);
+	@Test
+	@SneakyThrows
+	void runGenerateZippedOk() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+		generatePDFInput.setData(Collections.singletonMap("a", "b"));
+		generatePDFInput.setApplySignature(false);
+		generatePDFInput.setTemplateZip(mock(ZipFile.class));
+		generatePDFInput.setGenerateZipped(true);
 
-        // Verify
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertEquals( "application/zip", response.getHeader("content-type"));
-        assertEquals( "attachment; ", response.getHeader("content-disposition"));
-    }
+		BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
 
-    @Test
-    void runFailOnInvalidInput() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsedInput(generatePDFInput);
+		stubGeneratedStream(inputStreamMock);
+		doReturn(new byte[5]).when(inputStreamMock).readAllBytes();
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.empty()).when(request).getBody();
-        createHttpMessageBuilderSub(request);
+		createHttpMessageBuilderSub(request);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        // Verify
-        assertEquals(BAD_REQUEST, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_899, ((ErrorResponse) body).getAppErrorCode());
-    }
+		// Verify
+		assertEquals(HttpStatus.OK, response.getStatus());
+		assertEquals("application/zip", response.getHeader("content-type"));
+		assertEquals("attachment; ", response.getHeader("content-disposition"));
+		assertRequestDirectoryCleaned();
+		verify(inputStreamMock).close();
+	}
 
-    @Test
-    void runFailOnCreateWorkingDirectory() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+	@Test
+	void runFailOnInvalidInput() throws IOException {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        createHttpMessageBuilderSub(request);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.empty()).when(request).getBody();
+		createHttpMessageBuilderSub(request);
 
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(
-                    () -> Files.createTempDirectory(any(), anyString())
-            ).thenThrow(IOException.class);
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-            // Invoke
-            final HttpResponseMessage response = function.run(request, executionContextMock);
+		// Verify
+		assertEquals(BAD_REQUEST, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_899, ((ErrorResponse) body).getAppErrorCode());
+		assertNoRequestDirectoryCreated();
+		verifyNoInteractions(parseRequestBodyServiceMock, generatePDFServiceMock);
+	}
 
-            // Verify
-            assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
-            Object body = response.getBody();
-            assertNotNull(body);
-            assertTrue(body instanceof ErrorResponse);
-            Assertions.assertEquals(AppErrorCodeEnum.PDFE_908, ((ErrorResponse) body).getAppErrorCode());
-        }
+	@Test
+	void runFailOnCreateWorkingDirectory() throws IOException {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-    }
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		createHttpMessageBuilderSub(request);
 
-    @Test
-    @SneakyThrows
-    void runFailOnParseRequestBodyWith400() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+		try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+			filesMockedStatic.when(() -> Files.createTempDirectory(any(), anyString())).thenThrow(IOException.class);
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        Mockito.doThrow(new RequestBodyParseException(AppErrorCodeEnum.PDFE_700, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        createHttpMessageBuilderSub(request);
+			// Invoke
+			final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+			// Verify
+			assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
+			Object body = response.getBody();
+			assertNotNull(body);
+			assertTrue(body instanceof ErrorResponse);
+			Assertions.assertEquals(AppErrorCodeEnum.PDFE_908, ((ErrorResponse) body).getAppErrorCode());
+		}
 
-        // Verify
-        assertEquals(BAD_REQUEST, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_700, ((ErrorResponse) body).getAppErrorCode());
-    }
+		assertNoRequestDirectoryCreated();
+		verifyNoInteractions(parseRequestBodyServiceMock, generatePDFServiceMock);
 
-    @Test
-    @SneakyThrows
-    void runFailOnParseRequestBodyWith500() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+	}
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doThrow(new RequestBodyParseException(AppErrorCodeEnum.PDFE_704, "")).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        createHttpMessageBuilderSub(request);
+	@Test
+	@SneakyThrows
+	void runFailOnParseRequestBodyWith400() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsingFailure(new RequestBodyParseException(AppErrorCodeEnum.PDFE_700, ""));
+		createHttpMessageBuilderSub(request);
 
-        // Verify
-        assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_704, ((ErrorResponse) body).getAppErrorCode());
-    }
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-    @Test
-    @SneakyThrows
-    void runFailOnInvalidTemplate() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+		// Verify
+		assertEquals(BAD_REQUEST, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_700, ((ErrorResponse) body).getAppErrorCode());
+		assertRequestDirectoryCleaned();
+		verifyNoInteractions(generatePDFServiceMock);
+	}
 
-        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+	@Test
+	@SneakyThrows
+	void runFailOnParseRequestBodyWith500() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        createHttpMessageBuilderSub(request);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsingFailure(new RequestBodyParseException(AppErrorCodeEnum.PDFE_704, ""));
+		createHttpMessageBuilderSub(request);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        // Verify
-        assertEquals(BAD_REQUEST, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_897, ((ErrorResponse) body).getAppErrorCode());
-    }
+		// Verify
+		assertEquals(INTERNAL_SERVER_ERROR, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_704, ((ErrorResponse) body).getAppErrorCode());
+		assertRequestDirectoryCleaned();
+		verifyNoInteractions(generatePDFServiceMock);
+	}
 
-    @Test
-    @SneakyThrows
-    void runFailOnInvalidData() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+	@Test
+	@SneakyThrows
+	void runFailOnInvalidTemplate() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setTemplateZip(new ZipFile(""));
+		GeneratePDFInput generatePDFInput = new GeneratePDFInput();
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        createHttpMessageBuilderSub(request);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsedInput(generatePDFInput);
+		createHttpMessageBuilderSub(request);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        // Verify
-        assertEquals(BAD_REQUEST, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_898, ((ErrorResponse) body).getAppErrorCode());
-    }
+		// Verify
+		assertEquals(BAD_REQUEST, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_897, ((ErrorResponse) body).getAppErrorCode());
+		assertRequestDirectoryCleaned();
+		verifyNoInteractions(generatePDFServiceMock);
+	}
 
-    @Test
-    @SneakyThrows
-    void runFailOnGeneratePDFForPDFEngineException() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+	@Test
+	@SneakyThrows
+	void runFailOnInvalidData() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setData(Collections.singletonMap("a", "b"));
-        generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateZip(new ZipFile(""));
+		GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+		generatePDFInput.setTemplateZip(mock(ZipFile.class));
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        Mockito.doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock).generatePDF(any(), any(), any());
-        createHttpMessageBuilderSub(request);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsedInput(generatePDFInput);
+		createHttpMessageBuilderSub(request);
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        // Verify
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        assertEquals(AppErrorCodeEnum.PDFE_901, ((ErrorResponse) body).getAppErrorCode());
-    }
+		// Verify
+		assertEquals(BAD_REQUEST, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_898, ((ErrorResponse) body).getAppErrorCode());
+		assertRequestDirectoryCleaned();
+		verifyNoInteractions(generatePDFServiceMock);
+	}
 
-    @Test
-    @SneakyThrows
-    void runFailOnReadPDFDocumentBytesForIOException() {
-        // Setup
-        @SuppressWarnings("unchecked")
-        final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+	@Test
+	@SneakyThrows
+	void runFailOnGeneratePDFForPDFEngineException() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        GeneratePDFInput generatePDFInput = new GeneratePDFInput();
-        generatePDFInput.setData(Collections.singletonMap("a", "b"));
-        generatePDFInput.setApplySignature(false);
-        generatePDFInput.setTemplateZip(new ZipFile(""));
+		GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+		generatePDFInput.setData(Collections.singletonMap("a", "b"));
+		generatePDFInput.setApplySignature(false);
+		generatePDFInput.setTemplateZip(mock(ZipFile.class));
 
-        BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsedInput(generatePDFInput);
+		Mockito.doThrow(new CompileTemplateException(AppErrorCodeEnum.PDFE_901, "")).when(generatePDFServiceMock)
+				.generatePDF(any(), any(), any());
+		createHttpMessageBuilderSub(request);
 
-        doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
-        doReturn(Optional.of(new byte[2])).when(request).getBody();
-        doReturn(generatePDFInput).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
-        doReturn(inputStreamMock).when(generatePDFServiceMock).generatePDF(any(), any(), any());
-        doThrow(IOException.class).when(inputStreamMock).readAllBytes();
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
 
-        createHttpMessageBuilderSub(request);
+		// Verify
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		assertEquals(AppErrorCodeEnum.PDFE_901, ((ErrorResponse) body).getAppErrorCode());
+		assertRequestDirectoryCleaned();
+	}
 
-        // Invoke
-        final HttpResponseMessage response = function.run(request, executionContextMock);
+	@Test
+	@SneakyThrows
+	void runFailOnReadPDFDocumentBytesForIOException() {
+		// Setup
+		@SuppressWarnings("unchecked")
+		final HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
 
-        // Verify
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-        Object body = response.getBody();
-        assertNotNull(body);
-        assertTrue(body instanceof ErrorResponse);
-        assertEquals(AppErrorCodeEnum.PDFE_907, ((ErrorResponse) body).getAppErrorCode());
-    }
+		GeneratePDFInput generatePDFInput = new GeneratePDFInput();
+		generatePDFInput.setData(Collections.singletonMap("a", "b"));
+		generatePDFInput.setApplySignature(false);
+		generatePDFInput.setTemplateZip(mock(ZipFile.class));
 
-    private void createHttpMessageBuilderSub(HttpRequestMessage<Optional<byte[]>> request) {
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-    }
+		BufferedInputStream inputStreamMock = mock(BufferedInputStream.class);
+
+		doReturn(Logger.getGlobal()).when(executionContextMock).getLogger();
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		stubParsedInput(generatePDFInput);
+		stubGeneratedStream(inputStreamMock);
+		doThrow(IOException.class).when(inputStreamMock).readAllBytes();
+
+		createHttpMessageBuilderSub(request);
+
+		// Invoke
+		final HttpResponseMessage response = function.run(request, executionContextMock);
+
+		// Verify
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+		Object body = response.getBody();
+		assertNotNull(body);
+		assertTrue(body instanceof ErrorResponse);
+		assertEquals(AppErrorCodeEnum.PDFE_907, ((ErrorResponse) body).getAppErrorCode());
+		assertRequestDirectoryCleaned();
+		verify(inputStreamMock).close();
+	}
+
+	@Test
+	void unexpectedParsingFailureStillCleansRequestDirectory() throws Exception {
+
+		@SuppressWarnings("unchecked")
+		HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		createHttpMessageBuilderSub(request);
+
+		doAnswer(invocation -> {
+			createRequestFiles(invocation.getArgument(2, Path.class));
+			throw new IllegalStateException("Unexpected parser failure");
+		}).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+
+		IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> function.run(request, executionContextMock));
+
+		assertEquals("Unexpected parser failure", failure.getMessage());
+		assertRequestDirectoryCleaned();
+		verifyNoInteractions(generatePDFServiceMock);
+	}
+
+	@Test
+	void successfulResponseClosesRealPdfStreamAndCleansAllRequestFiles() throws Exception {
+
+		@SuppressWarnings("unchecked")
+		HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+
+		doReturn(Optional.of(new byte[2])).when(request).getBody();
+		createHttpMessageBuilderSub(request);
+
+		GeneratePDFInput input = new GeneratePDFInput();
+		input.setData(Collections.singletonMap("a", "b"));
+		input.setTemplateZip(mock(ZipFile.class));
+		stubParsedInput(input);
+
+		byte[] pdf = "%PDF-1.4\nrequest PDF\n%%EOF".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+		AtomicReference<BufferedInputStream> returnedStream = new AtomicReference<>();
+
+		doAnswer(invocation -> {
+			Path directory = invocation.getArgument(1, Path.class);
+			assertEquals(requestWorkingDirectory, directory);
+
+			Files.write(directory.resolve("original-node.pdf"), pdf);
+			Path converted = Files.write(directory.resolve("converted-pdfa.pdf"), pdf);
+
+			// Ownership of this stream is transferred to the function's try-with-resources.
+			BufferedInputStream stream = spy(new BufferedInputStream(Files.newInputStream(converted)));
+
+			returnedStream.set(stream);
+			return stream;
+
+		}).when(generatePDFServiceMock).generatePDF(any(), any(), any());
+
+		HttpResponseMessage response = function.run(request, executionContextMock);
+
+		assertEquals(HttpStatus.OK, response.getStatus());
+		assertArrayEquals(pdf, (byte[]) response.getBody());
+		assertEquals(String.valueOf(pdf.length), response.getHeader("content-length"));
+
+		verify(returnedStream.get()).close();
+		assertRequestDirectoryCleaned();
+	}
+
+	private void createHttpMessageBuilderSub(HttpRequestMessage<Optional<byte[]>> request) {
+		doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+			HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+			return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+		}).when(request).createResponseBuilder(any(HttpStatus.class));
+	}
+
+	private void stubParsedInput(GeneratePDFInput input) throws Exception {
+		doAnswer(invocation -> {
+			createRequestFiles(invocation.getArgument(2, Path.class));
+			return input;
+		}).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+	}
+
+	private void stubParsingFailure(RequestBodyParseException failure) throws Exception {
+
+		doAnswer(invocation -> {
+			createRequestFiles(invocation.getArgument(2, Path.class));
+			throw failure;
+		}).when(parseRequestBodyServiceMock).retrieveInputData(any(), anyMap(), any());
+	}
+
+	private void createRequestFiles(Path directory) throws IOException {
+		requestWorkingDirectory = directory;
+
+		assertTrue(Files.isDirectory(directory), "The request directory must exist before parsing");
+
+		Files.writeString(directory.resolve("template.zip"), "Partial or complete uploaded template");
+
+		Path assets = Files.createDirectory(directory.resolve("assets"));
+		Files.writeString(assets.resolve("image.bin"), "Uploaded template asset");
+	}
+
+	private void stubGeneratedStream(BufferedInputStream stream) throws Exception {
+
+		doAnswer(invocation -> {
+			Path directory = invocation.getArgument(1, Path.class);
+			assertEquals(requestWorkingDirectory, directory);
+
+			Files.writeString(directory.resolve("original-node.pdf"), "Original PDF returned by Node");
+			Files.writeString(directory.resolve("converted-pdfa.pdf"), "Converted PDF");
+
+			return stream;
+		}).when(generatePDFServiceMock).generatePDF(any(), any(), any());
+	}
+
+	private void assertRequestDirectoryCleaned() throws IOException {
+		assertNotNull(requestWorkingDirectory, "The parser must receive the actual request directory");
+
+		assertFalse(Files.exists(requestWorkingDirectory),
+				"The function must remove the request directory and every file inside it");
+
+		assertOtherRequestIntact();
+	}
+
+	private void assertNoRequestDirectoryCreated() throws IOException {
+		assertNull(requestWorkingDirectory);
+
+		try (Stream<Path> entries = Files.list(workingDirectory)) {
+			assertEquals(Set.of(otherRequestDirectory), entries.collect(Collectors.toSet()));
+		}
+
+		assertOtherRequestIntact();
+	}
+
+	private void assertOtherRequestIntact() throws IOException {
+		assertTrue(Files.isDirectory(workingDirectory), "The shared base directory must remain available");
+		assertTrue(Files.isDirectory(otherRequestDirectory));
+
+		assertEquals("PDF belonging to another request", Files.readString(otherRequestDirectory.resolve("keep.pdf")));
+	}
 }

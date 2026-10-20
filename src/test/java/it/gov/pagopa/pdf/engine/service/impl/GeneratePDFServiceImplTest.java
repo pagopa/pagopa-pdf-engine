@@ -1,26 +1,23 @@
 
 package it.gov.pagopa.pdf.engine.service.impl;
 
-import it.gov.pagopa.pdf.engine.HttpTriggerGeneratePDFFunction;
-import it.gov.pagopa.pdf.engine.client.impl.PdfEngineClientImpl;
+import it.gov.pagopa.pdf.engine.client.PdfEngineClient;
 import it.gov.pagopa.pdf.engine.exception.GeneratePDFException;
 import it.gov.pagopa.pdf.engine.model.AppErrorCodeEnum;
 import it.gov.pagopa.pdf.engine.model.GeneratePDFInput;
+import it.gov.pagopa.pdf.engine.model.PdfEngineRequest;
 import it.gov.pagopa.pdf.engine.model.PdfEngineResponse;
-import it.gov.pagopa.pdf.engine.service.GeneratePDFService;
-import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -28,105 +25,133 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GeneratePDFServiceImplTest {
 
-    private GeneratePDFService sut;
+	private static final Logger LOGGER = LoggerFactory.getLogger(GeneratePDFServiceImplTest.class);
 
-    private Path workingPath;
+	private GeneratePDFServiceImpl sut;
+	private PdfEngineClient pdfEngineClient;
 
-    @BeforeEach
-    void setUp() throws IOException {
-        sut = spy(new GeneratePDFServiceImpl());
-        workingPath = Files.createTempDirectory("testDir");
-    }
+	private Path workingPath;
 
-    @AfterEach
-    void tearDown() throws IOException {
-        FileUtils.deleteDirectory(workingPath.toFile());
-    }
+	@BeforeEach
+	void setUp() throws IOException {
+		pdfEngineClient = mock(PdfEngineClient.class);
+		sut = new GeneratePDFServiceImpl(pdfEngineClient);
+		workingPath = Files.createTempDirectory("testDir");
+	}
 
-    @Test
-    @SneakyThrows
-    void generatePDFNotZippedWithSuccess() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.singletonMap("a", "b"));
-        pdfInput.setApplySignature(false);
+	@AfterEach
+	void tearDown() throws IOException {
+		FileUtils.deleteDirectory(workingPath.toFile());
+	}
 
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        pdfEngineResponse.setStatusCode(200);
-        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).getPath());
+	@Test
+	void generatePDFNotZippedWithSuccess() throws IOException, URISyntaxException, GeneratePDFException {
+		GeneratePDFInput pdfInput = new GeneratePDFInput();
+		pdfInput.setData(Collections.singletonMap("a", "b"));
+		pdfInput.setApplySignature(false);
 
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+		PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+		pdfEngineResponse.setStatusCode(200);
+		pdfEngineResponse.setTempPdfPath(
+				Path.of(Objects.requireNonNull(this.getClass().getClassLoader().getResource("valid_pdf.pdf")).toURI())
+						.toString());
 
-        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+		when(pdfEngineClient.generatePDF(any(PdfEngineRequest.class))).thenReturn(pdfEngineResponse);
 
-        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
+		try (BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, LOGGER)) {
+			assertNotNull(output);
+		}
+	}
 
-        assertNotNull(output);
-        output.close();
-    }
+	@Test
+	void generatePDFZippedWithSuccess() throws IOException, URISyntaxException, GeneratePDFException {
+		GeneratePDFInput pdfInput = new GeneratePDFInput();
+		pdfInput.setData(Collections.singletonMap("a", "b"));
+		pdfInput.setApplySignature(false);
+		pdfInput.setGenerateZipped(true);
+		pdfInput.setTitle("title");
 
+		PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
+		pdfEngineResponse.setStatusCode(200);
+		pdfEngineResponse.setTempPdfPath(
+				Path.of(Objects.requireNonNull(this.getClass().getClassLoader().getResource("valid_pdf.pdf")).toURI())
+						.toString());
 
-    @Test
-    @SneakyThrows
-    void generatePDFZippedWithSuccess() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
-        pdfInput.setData(Collections.singletonMap("a", "b"));
-        pdfInput.setApplySignature(false);
-        pdfInput.setGenerateZipped(true);
-        pdfInput.setTitle("title");
+		when(pdfEngineClient.generatePDF(any(PdfEngineRequest.class))).thenReturn(pdfEngineResponse);
 
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        pdfEngineResponse.setStatusCode(200);
-        pdfEngineResponse.setTempPdfPath(Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResource("valid_pdf.pdf")).toURI().normalize().getPath().replaceFirst("\\\\",""));
+		try (BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, LOGGER)) {
+			assertNotNull(output);
+		}
+	}
 
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+	@Test
+	void generatePDFCallException() {
+		GeneratePDFException failure = generateErrorResponse(400, "PDFE_901");
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_901, failure.getErrorCode());
+		Assertions.assertEquals("Upstream failure", failure.getMessage());
+	}
 
-        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+	@Test
+	void generatePDFWithMissingErrorCodeUsesFallback() {
+		GeneratePDFException failure = generateErrorResponse(503, null);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, failure.getErrorCode());
+		Assertions.assertEquals("Upstream failure", failure.getMessage());
+	}
 
-        BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, logger);
+	@Test
+	void generatePDFWithUnknownErrorCodeUsesFallback() {
+		GeneratePDFException failure = generateErrorResponse(503, "UNSUPPORTED_CODE");
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, failure.getErrorCode());
+		Assertions.assertEquals("Upstream failure", failure.getMessage());
+	}
 
-        assertNotNull(output);
-        output.close();
-    }
+	@Test
+	void generatePDFWithBlankErrorCodeUsesFallback() {
+		for (String errorCode : new String[] { "", " \t " }) {
+			GeneratePDFException failure = generateErrorResponse(503, errorCode);
+			Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, failure.getErrorCode());
+		}
+	}
 
-    @Test
-    @SneakyThrows
-    void generatePDFCallException() {
-        GeneratePDFInput pdfInput = new GeneratePDFInput();
+	@Test
+	void generatePDFWithMissingPdfUsesFallback() {
+		GeneratePDFException failure = generateErrorResponse(200, null);
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, failure.getErrorCode());
+	}
 
-        PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
-        pdfEngineResponse.setStatusCode(400);
-        pdfEngineResponse.setErrorCode(AppErrorCodeEnum.PDFE_902.getErrorCode());
+	@Test
+	void generatePDFWrapsUnexpectedClientFailureWithContext() {
+		GeneratePDFInput pdfInput = new GeneratePDFInput();
+		pdfInput.setData(Collections.singletonMap("a", "b"));
 
-        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
-        when(pdfEngineClient.generatePDF(Mockito.any())).thenReturn(pdfEngineResponse);
-        GeneratePDFServiceImplTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+		IllegalStateException originalCause = new IllegalStateException("Client is unavailable");
 
-        Logger logger = LoggerFactory.getLogger(HttpTriggerGeneratePDFFunction.class);
+		when(pdfEngineClient.generatePDF(any(PdfEngineRequest.class))).thenThrow(originalCause);
 
-        GeneratePDFException e = assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath, logger));
+		GeneratePDFException failure = assertThrows(GeneratePDFException.class,
+				() -> sut.generatePDF(pdfInput, workingPath, LOGGER));
 
-        Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, e.getErrorCode());
-    }
+		Assertions.assertEquals(AppErrorCodeEnum.PDFE_902, failure.getErrorCode());
+		Assertions.assertEquals("Unexpected error while generating the PDF document", failure.getMessage());
+		Assertions.assertSame(originalCause, failure.getCause());
+	}
 
-    private static <T> void setMock(Class<T> classToMock, T mock) {
-        try {
-            Field instance = classToMock.getDeclaredField("instance");
-            instance.setAccessible(true);
-            instance.set(instance, mock);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+	private GeneratePDFException generateErrorResponse(int statusCode, String errorCode) {
+		GeneratePDFInput pdfInput = new GeneratePDFInput();
+		pdfInput.setData(Collections.singletonMap("a", "b"));
 
+		PdfEngineResponse response = new PdfEngineResponse();
+		response.setStatusCode(statusCode);
+		response.setErrorCode(errorCode);
+		response.setErrorMessage("Upstream failure");
+		when(pdfEngineClient.generatePDF(any(PdfEngineRequest.class))).thenReturn(response);
 
+		return assertThrows(GeneratePDFException.class, () -> sut.generatePDF(pdfInput, workingPath, LOGGER));
+	}
 }

@@ -1,0 +1,32 @@
+name: pdf-engine-network-tests
+
+services:
+  tests:
+    build:
+      context: .
+    init: true
+    # Only loopback is available while the integration test runs.
+    network_mode: none
+    # Allows the test to manage packet filtering inside its own network namespace.
+    cap_add:
+      - NET_ADMIN
+    environment:
+      PDF_ENGINE_NETWORK_TESTS: "1"
+    volumes:
+      - type: bind
+        source: ../..
+        target: /source
+        read_only: true
+      # Reuse the dependencies already downloaded by the successful Windows builds.
+      - type: bind
+        source: "${USERPROFILE}/.m2/repository"
+        target: /maven-cache
+      - type: bind
+        source: ../../target/network-test-reports
+        target: /workspace/target/surefire-reports
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        cp -R /source/pom.xml /source/src /workspace/
+        exec mvn -B -ntp -o -Dmaven.repo.local=/maven-cache -Dtest=ConnectTimeoutNetworkIT test
