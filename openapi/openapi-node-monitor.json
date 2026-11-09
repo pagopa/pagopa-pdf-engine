@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine Node - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.11.4"
+    "version": "2.11.4-1-add-a11y-barcode-two-pages-support"
   },
   "servers": [
     {
