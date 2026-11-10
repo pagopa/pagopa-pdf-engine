@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "OpenAPI definition - PDF Engine Node",
-    "version": "2.11.4-1-add-a11y-barcode-two-pages-support"
+    "version": "2.11.4-2-add-a11y-barcode-two-pages-support"
   },
   "servers": [
     {

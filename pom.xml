@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.11.4-1-add-a11y-barcode-two-pages-support</version>
+    <version>2.11.4-2-add-a11y-barcode-two-pages-support</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
