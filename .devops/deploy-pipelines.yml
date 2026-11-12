@@ -131,10 +131,33 @@ stages:
                 $(Build.BuildId)
                 latest
 
+          - task: AzureCLI@2
+            displayName: Configure manual-only staging routing
+            condition: and(succeeded(), in('${{ parameters.ENV }}', 'prod', 'uat'))
+            inputs:
+              azureSubscription: '$(AZURE_SUBSCRIPTION)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az webapp deployment slot auto-swap \
+                  --name "$APP_NAME" \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --slot staging \
+                  --disable \
+                  --output none
+                az webapp traffic-routing set \
+                  --name "$APP_NAME" \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --distribution staging=0 \
+                  --output none
+            env:
+              APP_NAME: $(APP_NAME)
+              RESOURCE_GROUP: $(RESOURCE_GROUP)
+
           - task: AzureRMWebAppDeployment@4
             displayName: Azure App Service Deploy DEV
-            # condition: in('${{ parameters.ENV }}', 'dev', 'uat')
-            condition: in('${{ parameters.ENV }}', 'dev')
+            condition: and(succeeded(), eq('${{ parameters.ENV }}', 'dev'))
             inputs:
               appType: webAppContainer
               ConnectedServiceName: '$(AZURE_SUBSCRIPTION)'
@@ -143,9 +166,8 @@ stages:
               DockerRepository: '$(IMAGE_REPOSITORY)'
               DockerImageTag: '$(Build.BuildId)'
           - task: AzureRMWebAppDeployment@4
-            displayName: Azure App Service Deploy ${{ parameters.ENV }}
-            # condition: eq('${{ parameters.ENV }}', 'prod')
-            condition: in('${{ parameters.ENV }}', 'prod', 'uat')
+            displayName: Deploy ${{ parameters.ENV }} to staging
+            condition: and(succeeded(), in('${{ parameters.ENV }}', 'prod', 'uat'))
             inputs:
               appType: webAppContainer
               ConnectedServiceName: '$(AZURE_SUBSCRIPTION)'
@@ -159,10 +181,10 @@ stages:
           - script: |
               echo "##vso[task.setvariable variable=version;isOutput=true]$(pomversion.next)"
             name: dockerTag
-  # Prod deploy
+  # Promote staging only after a successful deployment and manual approval.
   - stage: deployApproval_PROD_UAT
-    # condition: eq('${{ parameters.ENV }}', 'prod')
-    condition: in('${{ parameters.ENV }}', 'prod', 'uat')
+    displayName: Approve and promote ${{ parameters.ENV }}
+    condition: and(succeeded(), in('${{ parameters.ENV }}', 'prod', 'uat'))
     dependsOn: deploy
     pool:
       vmImage: "ubuntu-latest"
@@ -174,11 +196,18 @@ stages:
         steps:
           - task: ManualValidation@0
             displayName: Manual Approval
+            timeoutInMinutes: 2880 # 2 days, less than the server job timeout
             inputs:
+              notifyUsers: ''
+              instructions: |
+                Validate build $(Build.BuildId) of $(APP_NAME) in the staging slot.
+                Use the production App Service URL with header Cookie: x-ms-routing-name=staging.
+                Ensure any gateway forwards this cookie and does not serve cached responses.
+                Approve to swap staging into production; reject to leave production unchanged.
               onTimeout: "reject"
 
       - job: completeProdDeploy
-        condition: succeeded('waitForApproval')
+        condition: and(succeeded(), eq(dependencies.waitForApproval.result, 'Succeeded'))
         displayName: complete ${{ parameters.ENV }} deploy
         dependsOn: waitForApproval
         steps:
@@ -186,6 +215,7 @@ stages:
           - task: AzureAppServiceManage@0
             displayName: Swapping App Service Deploy
             inputs:
+              Action: 'Swap Slots'
               ConnectedServiceName: $(AZURE_SUBSCRIPTION)
               WebAppName: '$(APP_NAME)'
               ResourceGroupName: $(RESOURCE_GROUP)
