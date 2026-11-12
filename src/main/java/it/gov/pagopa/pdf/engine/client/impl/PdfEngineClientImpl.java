@@ -196,6 +196,9 @@ public class PdfEngineClientImpl implements PdfEngineClient, AutoCloseable {
 			// Set endpoint and auth key
 			HttpPost request = new HttpPost(pdfEngineEndpoint);
 			request.setHeader(subKeyHeader);
+			if (pdfEngineRequest.isRouteToStaging()) {
+				request.setHeader("Cookie", "x-ms-routing-name=staging");
+			}
 			request.setEntity(entity);
 
 			pdfEngineResponse = handlePdfEngineResponse(httpClient, request, workingDirPath);

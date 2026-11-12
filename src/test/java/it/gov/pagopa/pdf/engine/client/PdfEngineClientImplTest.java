@@ -84,6 +84,56 @@ class PdfEngineClientImplTest {
 	}
 
 	@Test
+	void nodeRoutingCookieIsRequestScoped() throws Exception {
+		HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+		BlockingQueue<String> requests = new LinkedBlockingQueue<>();
+		server.createContext("/", exchange -> {
+			try (exchange) {
+				exchange.getRequestBody().readAllBytes();
+				requests.add(exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath() + " "
+						+ exchange.getRequestHeaders().getFirst("Cookie") + " "
+						+ exchange.getRequestHeaders().getFirst("Ocp-Apim-Subscription-Key"));
+				exchange.getResponseHeaders().add("Set-Cookie", "x-ms-routing-name=staging; Path=/");
+				byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
+				exchange.sendResponseHeaders(HttpStatus.SC_OK, body.length);
+				exchange.getResponseBody().write(body);
+			}
+		});
+		server.start();
+		try {
+			String endpoint = "http://127.0.0.1:" + server.getAddress().getPort();
+			EnvironmentVariables environment = new EnvironmentVariables()
+					.set("PDF_ENGINE_NODE_GENERATE_ENDPOINT", endpoint + "/generate-pdf")
+					.set("PDF_ENGINE_NODE_INFO_ENDPOINT", endpoint + "/info")
+					.set("PDF_ENGINE_NODE_SUBKEY", "test-sub-key");
+			environment.execute(() -> {
+				File template = Files.createTempFile(workingDir, "routing-template-", ".zip").toFile();
+				try (ZipFile zip = new ZipFile(template);
+						PdfEngineClientImpl client = new PdfEngineClientImpl(HttpClientBuilder.create())) {
+					PdfEngineRequest request = new PdfEngineRequest();
+					request.setTemplate(zip);
+					request.setData("{}");
+					request.setWorkingDirPath(workingDir.toString());
+					for (boolean staging : new boolean[] { false, true, false, true, false }) {
+						request.setRouteToStaging(staging);
+						String expectedCookie = staging ? "x-ms-routing-name=staging" : "null";
+						Assertions.assertTrue(client.info());
+						Assertions.assertEquals("GET /info null test-sub-key",
+								requests.poll(1, TimeUnit.SECONDS));
+						PdfEngineResponse response = client.generatePDF(request);
+						Assertions.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+						Assertions.assertEquals("POST /generate-pdf " + expectedCookie + " test-sub-key",
+								requests.poll(1, TimeUnit.SECONDS));
+						Files.delete(Path.of(response.getTempPdfPath()));
+					}
+				}
+			});
+		} finally {
+			server.stop(0);
+		}
+	}
+
+	@Test
 	void runOk() throws IOException {
 
 		File targetFile = Files.createTempFile(workingDir, "template-", ".zip").toFile();

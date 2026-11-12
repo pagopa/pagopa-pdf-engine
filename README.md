@@ -269,10 +269,20 @@ a standalone `x-ms-routing-name` header.
 If requests go through APIM or another proxy, it must forward the cookie to App
 Service and bypass caching for staging requests. Slot selection is not an
 authorization mechanism; existing authentication and access restrictions still
-apply. The cookie only selects the slot of the App Service receiving it: it is
-not automatically propagated to downstream Java-to-Node calls. To test both
-components in staging, configure the Java staging slot's Node endpoints as
-slot-specific settings pointing to the Node staging hostname. The GitHub release
+apply. For each PDF generation request, Java checks the incoming `Cookie` header.
+Only when it contains `x-ms-routing-name=staging`, Java sends
+`Cookie: x-ms-routing-name=staging` on the corresponding Node generation request.
+Other cookies are not forwarded. Missing cookies or other routing values keep
+the existing Node behavior (no routing cookie). The selection is request-scoped,
+including on the shared HTTP client; it is not retained for subsequent requests.
+No environment variable is needed. Java `/info` returns local application
+information and does not call Node.
+
+Keep the Java staging slot's Node endpoint settings pointed at the **production
+Node hostname** (or an APIM route forwarding the cookie to it); the cookie selects
+Node staging. Both Node staging and its explicit 0% routing rule must exist
+before testing. Any proxy between the client and Java must preserve the routing
+cookie so Java can read it. The GitHub release
 workflow still deploys and approves Node and Java separately, not as an atomic
 two-service release.
 
