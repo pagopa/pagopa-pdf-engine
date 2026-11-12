@@ -18,6 +18,7 @@ public class GeneratePDFInput {
     private Map<String, Object> data;
     private boolean applySignature;
     private boolean generateZipped;
+    private boolean routeToStaging;
     @ToString.Exclude
     private ZipFile templateZip;
     private String title;
