@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -84,6 +85,33 @@ class HttpTriggerGeneratePDFFunctionTest {
 	}
 
 	@Test
+	void forwardsOnlyExplicitStagingCookieAsRequestRouting() throws Exception {
+		for (String cookie : new String[] { "", "session=secret", "x-ms-routing-name=self",
+				"x-ms-routing-name=other", "other=x-ms-routing-name=staging",
+				"x-ms-routing-name=staging-extra", "x-ms-routing-name=staging",
+				"session=secret; x-ms-routing-name = staging; other=value" }) {
+			@SuppressWarnings("unchecked")
+			HttpRequestMessage<Optional<byte[]>> request = mock(HttpRequestMessage.class);
+			GeneratePDFInput input = new GeneratePDFInput();
+			input.setData(Collections.singletonMap("a", "b"));
+			input.setTemplateZip(mock(ZipFile.class));
+			// Parsed body data must not be able to override routing from HTTP headers.
+			input.setRouteToStaging(true);
+			when(request.getBody()).thenReturn(Optional.of(new byte[2]));
+			when(request.getHeaders()).thenReturn(Map.of("cOoKiE", cookie));
+			stubParsedInput(input);
+			BufferedInputStream stream = mock(BufferedInputStream.class);
+			when(stream.readAllBytes()).thenReturn(new byte[0]);
+			stubGeneratedStream(stream);
+			createHttpMessageBuilderSub(request);
+
+			assertEquals(HttpStatus.OK, function.run(request, executionContextMock).getStatus());
+			assertEquals(cookie.equals("x-ms-routing-name=staging") || cookie.contains(" = staging;"),
+					input.isRouteToStaging(), cookie);
+		}
+	}
+
+	@Test
 	@SneakyThrows
 	void runGenerateNotZippedOk() {
 		// Setup
@@ -115,6 +143,7 @@ class HttpTriggerGeneratePDFFunctionTest {
 		assertEquals("attachment; ", response.getHeader("content-disposition"));
 		assertRequestDirectoryCleaned();
 		verify(inputStreamMock).close();
+		assertFalse(generatePDFInput.isRouteToStaging());
 	}
 
 	@Test

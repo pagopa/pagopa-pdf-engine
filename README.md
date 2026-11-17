@@ -61,6 +61,7 @@ sequenceDiagram
 - [Architecture & request flow](#architecture--request-flow)
 - [Chrome version pinning](#chrome-version-pinning-)
 - [Configuration](#configuration)
+- [Blue-green deployment](#blue-green-deployment)
 - [Run locally](#run-locally-)
   * [With Docker (recommended)](#with-docker-recommended)
   * [Java function with Maven](#java-function-with-maven)
@@ -226,6 +227,72 @@ template.html        # main Handlebars template (mandatory)
 style.css            # CSS file referenced from template.html (optional, but recommended to avoid inline styles)
 assets/*             # optional assets referenced from template.html
 ```
+
+---
+
+## Blue-green deployment
+
+The Azure DevOps pipeline [`.devops/deploy-pipelines.yml`](./.devops/deploy-pipelines.yml)
+deploys DEV directly. For UAT and PROD it:
+
+1. Disables auto-swap and explicitly sets staging traffic to **0%**.
+2. Deploys the image tagged with `Build.BuildId` to the existing `staging` slot.
+3. Waits for manual approval in Azure DevOps (expires after two days with rejection).
+4. Swaps `staging` with production only after successful deployment and approval.
+
+The App Service plan must support deployment slots, the `staging` slot must already
+exist, and the Azure service connection must be allowed to configure routing,
+deploy to slots and swap them. Keep slot-specific settings and dependencies
+configured on the appropriate slot. Do not run overlapping deployments for the
+same App Service while approval is pending: they share the staging slot.
+
+Before approving, select staging on the **production App Service hostname** by
+sending this HTTP header on every test request:
+
+```http
+Cookie: x-ms-routing-name=staging
+```
+
+For example:
+
+```bash
+curl --fail-with-body \
+  -H 'Cookie: x-ms-routing-name=staging' \
+  'https://<app-service-production-hostname>/info'
+```
+
+The explicit 0% rule enables manual slot selection without randomly sending
+normal production traffic to staging. Use `Cookie: x-ms-routing-name=self` to
+explicitly select production. This is a cookie in the `Cookie` header, **not**
+a standalone `x-ms-routing-name` header.
+
+If requests go through APIM or another proxy, it must forward the cookie to App
+Service and bypass caching for staging requests. Slot selection is not an
+authorization mechanism; existing authentication and access restrictions still
+apply. For each PDF generation request, Java checks the incoming `Cookie` header.
+Only when it contains `x-ms-routing-name=staging`, Java sends
+`Cookie: x-ms-routing-name=staging` on the corresponding Node generation request.
+Other cookies are not forwarded. Missing cookies or other routing values keep
+the existing Node behavior (no routing cookie). The selection is request-scoped,
+including on the shared HTTP client; it is not retained for subsequent requests.
+No environment variable is needed. Java `/info` returns local application
+information and does not call Node.
+
+Keep the Java staging slot's Node endpoint settings pointed at the **production
+Node hostname** (or an APIM route forwarding the cookie to it); the cookie selects
+Node staging. Both Node staging and its explicit 0% routing rule must exist
+before testing. Any proxy between the client and Java must preserve the routing
+cookie so Java can read it. The GitHub release
+workflow still deploys and approves Node and Java separately, not as an atomic
+two-service release.
+
+Rejection or timeout leaves production unchanged and keeps the candidate in
+staging for inspection. After promotion, staging contains the previous production
+version: remove the staging cookie (or select `self`) to test the promoted version.
+An authorized operator can roll back by swapping the slots again, provided
+staging has not been overwritten by another deployment.
+
+See [App Service slot traffic routing](https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots#route-production-traffic-manually).
 
 ---
 

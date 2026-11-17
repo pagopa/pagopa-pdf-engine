@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "PDF Engine - Unified Monitoring (Shared & PrintIT)",
-    "version": "2.11.4-1"
+    "version": "2.11.4-2-PAGOPA-3814-receipts-pdf-review-bar-code-template"
   },
   "servers": [
     {
