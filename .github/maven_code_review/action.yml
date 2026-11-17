@@ -69,20 +69,25 @@ runs:
       shell: bash
       run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
         -Dsonar.organization=pagopa
-        -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+        "-Dsonar.projectKey=$SONAR_PROJECT_KEY"
         -Dsonar.coverage.jacoco.xmlReportPaths=./target/jacoco-report/jacoco.xml
-        -Dsonar.coverage.exclusions=${{inputs.coverage_exclusions}}
-        -Dsonar.cpd.exclusions=${{inputs.cpd_exclusions}}
+        "-Dsonar.coverage.exclusions=$COVERAGE_EXCLUSIONS"
+        "-Dsonar.cpd.exclusions=$CPD_EXCLUSIONS"
         -Dsonar.host.url=https://sonarcloud.io
-        -Dsonar.login=${{ inputs.sonar_token }}
-        -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
-        -Dsonar.pullrequest.branch=${{ github.head_ref }}
-        -Dsonar.pullrequest.base=${{ github.base_ref }}
+        "-Dsonar.pullrequest.key=$PR_NUMBER"
+        "-Dsonar.pullrequest.branch=$HEAD_REF"
+        "-Dsonar.pullrequest.base=$BASE_REF"
       env:
         # Needed to get some information about the pull request, if any
         GITHUB_TOKEN: ${{ inputs.github_token }}
         # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
         SONAR_TOKEN: ${{ inputs.sonar_token }}
+        SONAR_PROJECT_KEY: ${{ inputs.project_key }}
+        COVERAGE_EXCLUSIONS: ${{ inputs.coverage_exclusions }}
+        CPD_EXCLUSIONS: ${{ inputs.cpd_exclusions }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        HEAD_REF: ${{ github.head_ref }}
+        BASE_REF: ${{ github.base_ref }}
 
     - name: Build and analyze on Push main
       if: ${{ github.event_name != 'pull_request' }}
@@ -90,12 +95,15 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         SONAR_TOKEN: ${{ inputs.sonar_token }}
+        SONAR_PROJECT_KEY: ${{ inputs.project_key }}
+        COVERAGE_EXCLUSIONS: ${{ inputs.coverage_exclusions }}
+        CPD_EXCLUSIONS: ${{ inputs.cpd_exclusions }}
+        BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
         -Dsonar.organization=pagopa
-        -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+        "-Dsonar.projectKey=$SONAR_PROJECT_KEY"
         -Dsonar.coverage.jacoco.xmlReportPaths=./target/site/jacoco/jacoco.xml
-        -Dsonar.coverage.exclusions=${{inputs.coverage_exclusions}}
-        -Dsonar.cpd.exclusions=${{inputs.cpd_exclusions}}
-        -Dsonar.branch.name=${{ github.head_ref }}
+        "-Dsonar.coverage.exclusions=$COVERAGE_EXCLUSIONS"
+        "-Dsonar.cpd.exclusions=$CPD_EXCLUSIONS"
+        "-Dsonar.branch.name=$BRANCH_NAME"
         -Dsonar.host.url=https://sonarcloud.io
-        -Dsonar.login=${{ inputs.sonar_token }}
