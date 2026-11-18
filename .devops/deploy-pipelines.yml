@@ -7,6 +7,13 @@ parameters:
       - dev
       - uat
       - prod
+  - name: PROMOTION_MODE
+    displayName: Promotion after approval (UAT/PROD)
+    type: string
+    default: swap
+    values:
+      - swap
+      - deploy-primary
   - name: SEMVER
     displayName: "When packing a release, define the version bump to apply. Use only buildNumber or skip for manual deployment"
   - name: DOCKERFILE
@@ -183,7 +190,7 @@ stages:
             name: dockerTag
   # Promote staging only after a successful deployment and manual approval.
   - stage: deployApproval_PROD_UAT
-    displayName: Approve and promote ${{ parameters.ENV }}
+    displayName: Approve and promote ${{ parameters.ENV }} (${{ parameters.PROMOTION_MODE }})
     condition: and(succeeded(), in('${{ parameters.ENV }}', 'prod', 'uat'))
     dependsOn: deploy
     pool:
@@ -203,7 +210,11 @@ stages:
                 Validate build $(Build.BuildId) of $(APP_NAME) in the staging slot.
                 Use the production App Service URL with header Cookie: x-ms-routing-name=staging.
                 Ensure any gateway forwards this cookie and does not serve cached responses.
-                Approve to swap staging into production; reject to leave production unchanged.
+                Selected promotion mode: ${{ parameters.PROMOTION_MODE }}.
+                swap: promote staging by swapping slots; staging will contain the previous production version.
+                deploy-primary: deploy the same build image to production without swapping; staging stays on the candidate version.
+                deploy-primary updates/restarts production containers and does not retain the old image in staging for swap rollback.
+                Approve to promote using the selected mode; reject to leave production unchanged.
               onTimeout: "reject"
 
       - job: completeProdDeploy
@@ -211,14 +222,25 @@ stages:
         displayName: complete ${{ parameters.ENV }} deploy
         dependsOn: waitForApproval
         steps:
-          # deploy swap
-          - task: AzureAppServiceManage@0
-            displayName: Swapping App Service Deploy
-            inputs:
-              Action: 'Swap Slots'
-              ConnectedServiceName: $(AZURE_SUBSCRIPTION)
-              WebAppName: '$(APP_NAME)'
-              ResourceGroupName: $(RESOURCE_GROUP)
-              SourceSlot: staging
-              SwapWithProduction: true
-              Slot: production
+          - ${{ if eq(parameters.PROMOTION_MODE, 'swap') }}:
+              - task: AzureAppServiceManage@0
+                displayName: Swapping App Service Deploy
+                inputs:
+                  Action: 'Swap Slots'
+                  ConnectedServiceName: $(AZURE_SUBSCRIPTION)
+                  WebAppName: '$(APP_NAME)'
+                  ResourceGroupName: $(RESOURCE_GROUP)
+                  SourceSlot: staging
+                  SwapWithProduction: true
+                  Slot: production
+          - ${{ if eq(parameters.PROMOTION_MODE, 'deploy-primary') }}:
+              - task: AzureRMWebAppDeployment@4
+                displayName: Deploy approved image to primary without swap
+                inputs:
+                  appType: webAppContainer
+                  ConnectedServiceName: '$(AZURE_SUBSCRIPTION)'
+                  WebAppName: '$(APP_NAME)'
+                  DockerNamespace: '$(dockerNamespace)'
+                  DockerRepository: '$(IMAGE_REPOSITORY)'
+                  DockerImageTag: '$(Build.BuildId)'
+                  deployToSlotOrASE: false
