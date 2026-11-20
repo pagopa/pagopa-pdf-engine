@@ -61,6 +61,7 @@ sequenceDiagram
 - [Architecture & request flow](#architecture--request-flow)
 - [Chrome version pinning](#chrome-version-pinning-)
 - [Configuration](#configuration)
+- [Blue-green deployment](./.devops/README.md#blue-green-deployment)
 - [Run locally](#run-locally-)
   * [With Docker (recommended)](#with-docker-recommended)
   * [Java function with Maven](#java-function-with-maven)

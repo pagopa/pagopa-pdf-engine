@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 class GeneratePDFServiceImplTest {
 
@@ -55,6 +57,7 @@ class GeneratePDFServiceImplTest {
 		GeneratePDFInput pdfInput = new GeneratePDFInput();
 		pdfInput.setData(Collections.singletonMap("a", "b"));
 		pdfInput.setApplySignature(false);
+		pdfInput.setRouteToStaging(true);
 
 		PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 		pdfEngineResponse.setStatusCode(200);
@@ -67,6 +70,9 @@ class GeneratePDFServiceImplTest {
 		try (BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, LOGGER)) {
 			assertNotNull(output);
 		}
+		ArgumentCaptor<PdfEngineRequest> request = ArgumentCaptor.forClass(PdfEngineRequest.class);
+		verify(pdfEngineClient).generatePDF(request.capture());
+		Assertions.assertTrue(request.getValue().isRouteToStaging());
 	}
 
 	@Test
@@ -88,6 +94,9 @@ class GeneratePDFServiceImplTest {
 		try (BufferedInputStream output = sut.generatePDF(pdfInput, workingPath, LOGGER)) {
 			assertNotNull(output);
 		}
+		ArgumentCaptor<PdfEngineRequest> request = ArgumentCaptor.forClass(PdfEngineRequest.class);
+		verify(pdfEngineClient).generatePDF(request.capture());
+		Assertions.assertFalse(request.getValue().isRouteToStaging());
 	}
 
 	@Test

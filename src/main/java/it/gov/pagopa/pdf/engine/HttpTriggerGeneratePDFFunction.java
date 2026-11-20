@@ -32,6 +32,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.microsoft.azure.functions.HttpStatus.BAD_REQUEST;
@@ -129,6 +131,8 @@ public class HttpTriggerGeneratePDFFunction {
 					.body(buildResponseBody(status, e.getErrorCode(), INVALID_REQUEST_MESSAGE)).build();
 		}
 
+		generatePDFInput.setRouteToStaging(requestsStaging(request.getHeaders()));
+
 		if (generatePDFInput.getTemplateZip() == null) {
 			appInsightTelemetryClient.createCustomEventError("Invalid request, template HTML not provided");
 
@@ -178,6 +182,18 @@ public class HttpTriggerGeneratePDFFunction {
 					.build();
 		}
 	}
+
+    private static boolean requestsStaging(Map<String, String> headers) {
+        return headers.entrySet().stream()
+                .filter(header -> "Cookie".equalsIgnoreCase(header.getKey()))
+                .filter(header -> header.getValue() != null)
+                .flatMap(header -> Arrays.stream(header.getValue().split(";")))
+                .anyMatch(cookie -> {
+                    String[] parts = cookie.split("=", 2);
+                    return parts.length == 2 && "x-ms-routing-name".equals(parts[0].trim())
+                            && "staging".equals(parts[1].trim());
+                });
+    }
 
     private static HttpStatus getHttpStatus(PDFEngineException e) {
         HttpStatus status;

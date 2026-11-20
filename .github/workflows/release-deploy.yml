@@ -21,6 +21,14 @@ on:
         options:
           - weu-shared
           - itn-printit
+      promotion_mode:
+        required: true
+        type: choice
+        description: Promotion after approval (UAT/PROD)
+        default: swap
+        options:
+          - swap
+          - deploy-primary # Deploy the approved image directly to primary, without swapping slots
       semver:
         required: true
         type: choice
@@ -129,6 +137,7 @@ jobs:
             {
                 "ENV": "${{inputs.environment}}",
                 "SEMVER": "${{inputs.semver}}",
+                "PROMOTION_MODE": "${{ inputs.promotion_mode }}",
                 "DOCKERFILE": "node/Dockerfile",
                 "BUILD_CONTEXT": "./node",
                 "IMAGE_NAME": "pagopapdfengine",
@@ -163,6 +172,7 @@ jobs:
             {
                 "ENV": "${{inputs.environment}}",
                 "SEMVER": "${{inputs.semver}}",
+                "PROMOTION_MODE": "${{ inputs.promotion_mode }}",
                 "DOCKERFILE": "Dockerfile",
                 "BUILD_CONTEXT": ".",
                 "IMAGE_NAME": "pagopapdfenginejava",
