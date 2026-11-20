@@ -39,11 +39,7 @@ on:
         default: false
 
 permissions:
-  packages: write
-  contents: write
-  issues: write
-  id-token: write
-  actions: read
+  contents: read
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -81,6 +77,8 @@ jobs:
     name: Create a New Release
     runs-on: ubuntu-latest
     needs: [ setup ]
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
