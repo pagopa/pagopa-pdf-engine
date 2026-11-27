@@ -46,7 +46,7 @@ const getBrowserSession = async () => {
     for (const directoryPartialFile of directoryPartialFiles) {
         const partial = importFile(`${partialPath}/${envFolder}`, directoryPartialFile);
         handlebars.registerPartial(
-            path.parse(`${partialPath}/${envFolder}/${directoryPartialFile}`).name, partial);
+            path.parse(`${partialPath}/${envFolder}/${directoryPartialFile}`).name, handlebars.compile(partial));
     }
 
     browser = await puppeteer.launch({
