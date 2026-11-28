@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa</groupId>
     <artifactId>pdf-engine</artifactId>
-    <version>2.11.5-performance-test</version>
+    <version>2.11.6-performance-test</version>
     <packaging>jar</packaging>
 
     <name>pagopa-pdf-engine</name>
